@@ -71,6 +71,14 @@ def test_no_color_has_no_ansi(capsys):
 @pytest.mark.skipif(not NODE, reason="node not installed")
 def test_auto_delay_runs_hands_free(tmp_path, monkeypatch):
     sleeps = []
-    monkeypatch.setattr(present.time, "sleep", lambda s: sleeps.append(s))
+    real_sleep = present.time.sleep
+
+    def fake_sleep(s):  # record the between-step pause; keep real sleeps elsewhere (agent start-up polling)
+        if s == 2.5:
+            sleeps.append(s)
+        else:
+            real_sleep(s)
+
+    monkeypatch.setattr(present.time, "sleep", fake_sleep)
     assert present.present(free_port(), auto=True, out=tmp_path / "snap", delay=2.5) == 0
     assert sleeps.count(2.5) == len(present.STEPS) - 1  # one pause between consecutive steps

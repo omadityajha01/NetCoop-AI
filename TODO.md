@@ -300,6 +300,21 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   ~150 MB headless Chromium (network + heavy; no global installs). It is valid XML with no scripts. The layout was checked
   in the browser by measuring text boxes (no label overflows a box, no text overlaps), because screenshots time out here.
 
+## V4: publish (in progress)
+
+- Secrets scan of tracked files AND full history: no API keys/tokens/private keys, no .env (only `.env.example`
+  with no secret values), no absolute user paths. The only personal data is the commit author email in history (the
+  user's own git identity), which was not rewritten.
+- `gh` is **not installed** on this machine. The repo `omadityajha01/NetCoop-AI` already exists, is **public**, and is `origin`.
+- Existing CI: windows ✓, **ubuntu ✗ (tests)** on both pushed commits. Logs need auth, and WSL lacks venv/pip
+  (installing them needs sudo), so the failure was diagnosed by reasoning about Linux-only behavior:
+  - `present.port_free()` bound without SO_REUSEADDR, so on Linux a just-closed port in TIME_WAIT looks busy (breaks
+    `test_present_auto_writes_all_steps` and preflight's "stops cleanly"). Fixed: SO_REUSEADDR on non-Windows only.
+  - `test_auto_delay_runs_hands_free` patched `time.sleep` globally, which made agent start-up polling a busy loop;
+    on Linux refused connects return instantly, so the agent wasn't up yet. Fixed: only the step pause is faked.
+  - CI now turns failing tests into public `::error::` annotations, so a future failure is readable without auth.
+- Awaiting the user's decision on visibility / which repo before pushing or creating anything.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

@@ -86,7 +86,14 @@ def _agent_pids(port: int) -> list[int]:
 
 
 def port_free(port: int) -> bool:
+    """True if nothing is LISTENING on 127.0.0.1:port.
+
+    On Linux/macOS a just-closed server port sits in TIME_WAIT for ~60 s; SO_REUSEADDR lets the probe bind anyway
+    (servers do the same), while an active listener still makes the bind fail. Windows' SO_REUSEADDR means
+    something else (it would allow binding over a live listener), so it is not set there."""
     with socket.socket() as s:
+        if os.name != "nt":
+            s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
             s.bind(("127.0.0.1", port))
             return True

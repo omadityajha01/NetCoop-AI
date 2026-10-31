@@ -40,7 +40,13 @@ jobs:
         run: python tasks.py lint
 
       - name: Tests (offline)
-        run: python tasks.py test
+        run: |
+          set -o pipefail
+          python -m pytest tests -q -p no:warnings -rfE 2>&1 | tee pytest.log
+          status=${PIPESTATUS[0]}
+          # surface failing tests as public annotations (job logs need auth to read)
+          grep -E "^(FAILED|ERROR) " pytest.log | sed 's/^/::error title=pytest::/' || true
+          exit $status
 
       - name: Demo (all scenarios, LLM off)
         run: python tasks.py demo
