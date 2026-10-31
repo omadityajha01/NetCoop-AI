@@ -1,0 +1,225 @@
+{
+  "incident_id": "INC-QPKVQ6JL",
+  "status": "diagnosed",
+  "suspected_root_cause": "Likely physical interface fault causing errors and packet loss on L_DEPT_ACC_01",
+  "confidence": 1.0,
+  "affected_devices": [
+    "DEPT_ACC_SW_01"
+  ],
+  "supporting_evidence": [
+    {
+      "metric": "crc_errors_count",
+      "value": 112.0,
+      "unit": "count",
+      "entity": "DEPT_ACC_SW_01",
+      "interpretation": "Critical CRC error count",
+      "finding_id": "F-infrastructure_agent-10",
+      "source_agent": "infrastructure_agent",
+      "hypothesis": "interface_fault"
+    },
+    {
+      "metric": "interface_errors_count",
+      "value": 353.0,
+      "unit": "count",
+      "entity": "DEPT_ACC_SW_01",
+      "interpretation": "Critical interface error count",
+      "finding_id": "F-infrastructure_agent-17",
+      "source_agent": "infrastructure_agent",
+      "hypothesis": "interface_fault"
+    },
+    {
+      "metric": "link_flaps_count",
+      "value": 7.0,
+      "unit": "count",
+      "entity": "L_DEPT_ACC_01",
+      "interpretation": "High link flaps",
+      "finding_id": "F-infrastructure_agent-23",
+      "source_agent": "infrastructure_agent",
+      "hypothesis": "interface_fault"
+    },
+    {
+      "metric": "packet_loss_pct",
+      "value": 6.645,
+      "unit": "pct",
+      "entity": "DEPT_ACC_SW_01",
+      "interpretation": "High packet loss",
+      "finding_id": "F-performance_agent-23",
+      "source_agent": "performance_agent",
+      "hypothesis": "interface_fault"
+    },
+    {
+      "metric": "link_utilization_pct",
+      "value": 45.46,
+      "unit": "pct",
+      "entity": "L_DEPT_ACC_01",
+      "interpretation": "Normal link utilization (prediction P-1-1 hit)",
+      "finding_id": "F-performance_agent-10001",
+      "source_agent": "performance_agent",
+      "hypothesis": "interface_fault"
+    }
+  ],
+  "alternative_causes": [
+    "Likely device hardware failure (every resource saturated, interface errors and heavy loss) on DEPT_ACC_SW_01 (score 0.25)"
+  ],
+  "recommended_actions": [
+    "Inspect cabling, optics and port counters on L_DEPT_ACC_01"
+  ],
+  "evidence_sources": [
+    "infrastructure_agent",
+    "performance_agent"
+  ],
+  "limitations": [
+    "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
+    "Root cause requires further verification by an operator before any change",
+    "External agent wireless_agent unreachable; its signals were unavailable"
+  ],
+  "schema_version": "1.4",
+  "decision_source": "deterministic_scoring",
+  "confidence_category": "high",
+  "status_reason": null,
+  "observations": [],
+  "fault_type": "interface_fault",
+  "scoring": {
+    "support": 1.0,
+    "coverage": 1.0,
+    "contra": 0.0,
+    "quality": 1.0,
+    "score": 1.0,
+    "margin": 0.75
+  },
+  "co_candidates": [],
+  "rejected_alternatives": [
+    {
+      "fault_type": "hardware_failure",
+      "entity": "DEPT_ACC_SW_01",
+      "score": 0.25,
+      "reason": "expected cpu_pct >= critical, observed 28.24 pct (F-infrastructure_agent-10001)"
+    },
+    {
+      "fault_type": "congestion",
+      "entity": "L_DEPT_ACC_01",
+      "score": 0.0,
+      "reason": "contradicted: interface_errors_count 353 count on DEPT_ACC_SW_01 (F-infrastructure_agent-17)"
+    }
+  ],
+  "predictions": [
+    {
+      "prediction_id": "P-1-1",
+      "round": 1,
+      "hypothesis": "interface_fault",
+      "signal": "link_utilization_pct@L_DEPT_ACC_01",
+      "expected": "< high (85 pct)",
+      "outcome": "hit",
+      "observed": 45.46,
+      "evidence_finding_id": "F-performance_agent-10001"
+    },
+    {
+      "prediction_id": "P-1-2",
+      "round": 1,
+      "hypothesis": "hardware_failure",
+      "signal": "link_utilization_pct@L_DEPT_ACC_01",
+      "expected": ">= critical (95 pct)",
+      "outcome": "miss",
+      "observed": 45.46,
+      "evidence_finding_id": "F-performance_agent-10001"
+    },
+    {
+      "prediction_id": "P-1-3",
+      "round": 1,
+      "hypothesis": "hardware_failure",
+      "signal": "cpu_pct@DEPT_ACC_SW_01",
+      "expected": ">= critical (95 pct)",
+      "outcome": "miss",
+      "observed": 28.24,
+      "evidence_finding_id": "F-infrastructure_agent-10001"
+    }
+  ],
+  "blocked_actions": [
+    {
+      "action": "Move the uplink on DEPT_ACC_SW_01 to a spare port and monitor errors",
+      "action_id": "IF-2",
+      "rule_id": "R4",
+      "reason": "Move port DEPT_ACC_SW_01: blocked by R4 (End-semester examination period: no disruptive changes)"
+    },
+    {
+      "action": "Replace the transceiver/cable on L_DEPT_ACC_01 if errors persist",
+      "action_id": "IF-3",
+      "rule_id": "R4",
+      "reason": "Replace optic DEPT_ACC_SW_01: blocked by R4 (End-semester examination period: no disruptive changes)"
+    },
+    {
+      "action": "Reboot DEPT_ACC_SW_01 only if the port fails to recover",
+      "action_id": "IF-4",
+      "rule_id": "R4",
+      "reason": "Reboot DEPT_ACC_SW_01: blocked by R4 (End-semester examination period: no disruptive changes)"
+    }
+  ],
+  "action_details": [
+    {
+      "id": "IF-1",
+      "action": "inspect",
+      "target": "DEPT_ACC_SW_01",
+      "text": "Inspect cabling, optics and port counters on L_DEPT_ACC_01",
+      "allowed": true,
+      "rule_id": null
+    },
+    {
+      "id": "IF-2",
+      "action": "move_port",
+      "target": "DEPT_ACC_SW_01",
+      "text": "Move the uplink on DEPT_ACC_SW_01 to a spare port and monitor errors",
+      "allowed": false,
+      "rule_id": "R4"
+    },
+    {
+      "id": "IF-3",
+      "action": "replace_optic",
+      "target": "DEPT_ACC_SW_01",
+      "text": "Replace the transceiver/cable on L_DEPT_ACC_01 if errors persist",
+      "allowed": false,
+      "rule_id": "R4"
+    },
+    {
+      "id": "IF-4",
+      "action": "reboot",
+      "target": "DEPT_ACC_SW_01",
+      "text": "Reboot DEPT_ACC_SW_01 only if the port fails to recover",
+      "allowed": false,
+      "rule_id": "R4"
+    }
+  ],
+  "missing_signals": [],
+  "conflicts": [],
+  "agents": {
+    "connectivity_agent": "completed",
+    "correlation_agent": "completed",
+    "infrastructure_agent": "completed",
+    "performance_agent": "completed",
+    "reporting_agent": "completed",
+    "wireless_agent": "unreachable"
+  },
+  "normalization_summary": {
+    "records_in": 90,
+    "records_used": 90,
+    "records_quarantined": 0,
+    "observations_used": 420,
+    "renamed": 204,
+    "unit_converted": 0,
+    "unit_inferred": 0,
+    "entity_canonicalized": 0,
+    "coerced": 0,
+    "quarantined": 0,
+    "missing_values": 0,
+    "deduped": 0,
+    "out_of_window": 0,
+    "version_upcast": 0,
+    "extras": 0
+  },
+  "narrative": "Likely physical interface fault causing errors and packet loss on L_DEPT_ACC_01 (confidence 1.00, high). Key evidence: crc_errors_count=112 on DEPT_ACC_SW_01, interface_errors_count=353 on DEPT_ACC_SW_01, link_flaps_count=7 on L_DEPT_ACC_01. 1 of 3 logged predictions were hits.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
+}

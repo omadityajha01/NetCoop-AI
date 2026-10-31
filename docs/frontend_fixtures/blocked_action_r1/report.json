@@ -1,0 +1,258 @@
+{
+  "incident_id": "INC-LWP6J7WP1",
+  "status": "diagnosed",
+  "suspected_root_cause": "Likely link congestion causing egress queue drops on L_HOSTEL_UPLINK",
+  "confidence": 1.0,
+  "affected_devices": [
+    "HOSTEL_CORE_SW_01"
+  ],
+  "supporting_evidence": [
+    {
+      "metric": "queue_drops_count",
+      "value": 528.0,
+      "unit": "count",
+      "entity": "HOSTEL_CORE_SW_01",
+      "interpretation": "High egress queue drops",
+      "finding_id": "F-infrastructure_agent-39",
+      "source_agent": "infrastructure_agent",
+      "hypothesis": "congestion"
+    },
+    {
+      "metric": "latency_ms",
+      "value": 286.44,
+      "unit": "ms",
+      "entity": "HOSTEL_CORE_SW_01",
+      "interpretation": "High network latency",
+      "finding_id": "F-performance_agent-15",
+      "source_agent": "performance_agent",
+      "hypothesis": "congestion"
+    },
+    {
+      "metric": "link_utilization_pct",
+      "value": 98.31,
+      "unit": "pct",
+      "entity": "L_HOSTEL_UPLINK",
+      "interpretation": "Critical link utilization",
+      "finding_id": "F-performance_agent-21",
+      "source_agent": "performance_agent",
+      "hypothesis": "congestion"
+    },
+    {
+      "metric": "packet_loss_pct",
+      "value": 2.175,
+      "unit": "pct",
+      "entity": "HOSTEL_CORE_SW_01",
+      "interpretation": "Elevated packet loss",
+      "finding_id": "F-performance_agent-31",
+      "source_agent": "performance_agent",
+      "hypothesis": "congestion"
+    },
+    {
+      "metric": "interface_errors_count",
+      "value": 2.0,
+      "unit": "count",
+      "entity": "HOSTEL_CORE_SW_01",
+      "interpretation": "Normal interface error count (prediction P-1-1 hit)",
+      "finding_id": "F-infrastructure_agent-10001",
+      "source_agent": "infrastructure_agent",
+      "hypothesis": "congestion"
+    }
+  ],
+  "alternative_causes": [
+    "Likely physical interface fault causing errors and packet loss on L_HOSTEL_ACC_01 (score 0.22)",
+    "Likely device hardware failure (every resource saturated, interface errors and heavy loss) on HOSTEL_CORE_SW_01 (score 0.17)",
+    "Likely device overload (CPU exhaustion) causing drops across interfaces on HOSTEL_ACC_SW_01 (score 0.14)"
+  ],
+  "recommended_actions": [
+    "Inspect upstream and egress link utilization on L_HOSTEL_UPLINK",
+    "Review queue configuration and traffic distribution on HOSTEL_CORE_SW_01",
+    "Apply temporary rate limiting to top talkers behind HOSTEL_CORE_SW_01"
+  ],
+  "evidence_sources": [
+    "infrastructure_agent",
+    "performance_agent"
+  ],
+  "limitations": [
+    "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
+    "Root cause requires further verification by an operator before any change",
+    "External agent wireless_agent unreachable; its signals were unavailable",
+    "symptoms also consistent with hardware failure at lower severity"
+  ],
+  "schema_version": "1.4",
+  "decision_source": "deterministic_scoring",
+  "confidence_category": "high",
+  "status_reason": null,
+  "observations": [
+    {
+      "metric": "latency_ms",
+      "value": 114.16,
+      "unit": "ms",
+      "entity": "HOSTEL_ACC_SW_01",
+      "severity": "warn",
+      "interpretation": "Elevated network latency",
+      "finding_id": "F-performance_agent-13"
+    },
+    {
+      "metric": "latency_ms",
+      "value": 149.44,
+      "unit": "ms",
+      "entity": "HOSTEL_ACC_SW_02",
+      "severity": "warn",
+      "interpretation": "Elevated network latency",
+      "finding_id": "F-performance_agent-14"
+    },
+    {
+      "metric": "jitter_ms",
+      "value": 48.3,
+      "unit": "ms",
+      "entity": "HOSTEL_CORE_SW_01",
+      "severity": "high",
+      "interpretation": "High jitter",
+      "finding_id": "F-performance_agent-5"
+    }
+  ],
+  "fault_type": "congestion",
+  "scoring": {
+    "support": 1.0,
+    "coverage": 1.0,
+    "contra": 0.0,
+    "quality": 1.0,
+    "score": 1.0,
+    "margin": 0.7778
+  },
+  "co_candidates": [],
+  "rejected_alternatives": [
+    {
+      "fault_type": "interface_fault",
+      "entity": "L_HOSTEL_ACC_01",
+      "score": 0.22,
+      "reason": "expected interface_errors_count >= high, observed 2 count (F-infrastructure_agent-10001)"
+    },
+    {
+      "fault_type": "hardware_failure",
+      "entity": "HOSTEL_CORE_SW_01",
+      "score": 0.17,
+      "reason": "expected interface_errors_count >= high, observed 2 count (F-infrastructure_agent-10001)"
+    },
+    {
+      "fault_type": "device_overload",
+      "entity": "HOSTEL_ACC_SW_01",
+      "score": 0.14,
+      "reason": "insufficient support; missing cpu_pct@HOSTEL_ACC_SW_01, memory_pct@HOSTEL_ACC_SW_01, queue_drops_count@HOSTEL_ACC_SW_01"
+    },
+    {
+      "fault_type": "latency_spike",
+      "entity": "HOSTEL_CORE_SW_01",
+      "score": 0.0,
+      "reason": "contradicted: queue_drops_count 528 count on HOSTEL_CORE_SW_01 (F-infrastructure_agent-39)"
+    }
+  ],
+  "predictions": [
+    {
+      "prediction_id": "P-1-1",
+      "round": 1,
+      "hypothesis": "congestion",
+      "signal": "interface_errors_count@HOSTEL_CORE_SW_01",
+      "expected": "< high (50 count)",
+      "outcome": "hit",
+      "observed": 2.0,
+      "evidence_finding_id": "F-infrastructure_agent-10001"
+    },
+    {
+      "prediction_id": "P-1-2",
+      "round": 1,
+      "hypothesis": "interface_fault",
+      "signal": "interface_errors_count@HOSTEL_ACC_SW_01",
+      "expected": ">= high (50 count)",
+      "outcome": "miss",
+      "observed": 1.0,
+      "evidence_finding_id": "F-infrastructure_agent-10002"
+    },
+    {
+      "prediction_id": "P-1-3",
+      "round": 1,
+      "hypothesis": "interface_fault",
+      "signal": "link_utilization_pct@L_HOSTEL_ACC_01",
+      "expected": "< high (85 pct)",
+      "outcome": "hit",
+      "observed": 49.22,
+      "evidence_finding_id": "F-performance_agent-10001"
+    }
+  ],
+  "blocked_actions": [
+    {
+      "action": "Reboot HOSTEL_CORE_SW_01 if egress queues remain stuck after traffic is reduced",
+      "action_id": "CONG-4",
+      "rule_id": "R1",
+      "reason": "Reboot HOSTEL_CORE_SW_01: blocked by R1 (Class hours)"
+    }
+  ],
+  "action_details": [
+    {
+      "id": "CONG-1",
+      "action": "inspect",
+      "target": "HOSTEL_CORE_SW_01",
+      "text": "Inspect upstream and egress link utilization on L_HOSTEL_UPLINK",
+      "allowed": true,
+      "rule_id": null
+    },
+    {
+      "id": "CONG-2",
+      "action": "review_qos",
+      "target": "HOSTEL_CORE_SW_01",
+      "text": "Review queue configuration and traffic distribution on HOSTEL_CORE_SW_01",
+      "allowed": true,
+      "rule_id": null
+    },
+    {
+      "id": "CONG-3",
+      "action": "rate_limit",
+      "target": "HOSTEL_CORE_SW_01",
+      "text": "Apply temporary rate limiting to top talkers behind HOSTEL_CORE_SW_01",
+      "allowed": true,
+      "rule_id": null
+    },
+    {
+      "id": "CONG-4",
+      "action": "reboot",
+      "target": "HOSTEL_CORE_SW_01",
+      "text": "Reboot HOSTEL_CORE_SW_01 if egress queues remain stuck after traffic is reduced",
+      "allowed": false,
+      "rule_id": "R1"
+    }
+  ],
+  "missing_signals": [],
+  "conflicts": [],
+  "agents": {
+    "connectivity_agent": "completed",
+    "correlation_agent": "completed",
+    "infrastructure_agent": "completed",
+    "performance_agent": "completed",
+    "reporting_agent": "completed",
+    "wireless_agent": "unreachable"
+  },
+  "normalization_summary": {
+    "records_in": 108,
+    "records_used": 108,
+    "records_quarantined": 0,
+    "observations_used": 456,
+    "renamed": 204,
+    "unit_converted": 0,
+    "unit_inferred": 0,
+    "entity_canonicalized": 0,
+    "coerced": 0,
+    "quarantined": 0,
+    "missing_values": 0,
+    "deduped": 0,
+    "out_of_window": 0,
+    "version_upcast": 0,
+    "extras": 0
+  },
+  "narrative": "Likely link congestion causing egress queue drops on L_HOSTEL_UPLINK (confidence 1.00, high). Key evidence: queue_drops_count=528 on HOSTEL_CORE_SW_01, latency_ms=286.44 on HOSTEL_CORE_SW_01, link_utilization_pct=98.31 on L_HOSTEL_UPLINK. 2 of 3 logged predictions were hits.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
+}

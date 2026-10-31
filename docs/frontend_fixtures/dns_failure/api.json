@@ -1,0 +1,184 @@
+[
+  {
+    "method": "POST",
+    "path": "/scenarios/dns_failure/run?external=true",
+    "request": null,
+    "status": 200,
+    "response": {
+      "incident_id": "INC-FQD7PRLB",
+      "status": "diagnosed"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/incidents/INC-FQD7PRLB/report",
+    "request": null,
+    "status": 200,
+    "response": {
+      "incident_id": "INC-FQD7PRLB",
+      "status": "diagnosed",
+      "suspected_root_cause": "Likely DNS service failure causing name-resolution errors on DNS_01",
+      "confidence": 1.0,
+      "affected_devices": [
+        "DNS_01"
+      ],
+      "supporting_evidence": [
+        {
+          "metric": "dns_failure_pct",
+          "value": 50.228,
+          "unit": "pct",
+          "entity": "DNS_01",
+          "interpretation": "Critical DNS query failure rate",
+          "finding_id": "F-connectivity_agent-2",
+          "source_agent": "connectivity_agent",
+          "hypothesis": "dns_failure"
+        },
+        {
+          "metric": "latency_ms",
+          "value": 18.69,
+          "unit": "ms",
+          "entity": "DC_SW_01",
+          "interpretation": "Normal network latency (prediction P-1-1 hit)",
+          "finding_id": "F-performance_agent-10001",
+          "source_agent": "performance_agent",
+          "hypothesis": "dns_failure"
+        },
+        {
+          "metric": "packet_loss_pct",
+          "value": 0.135,
+          "unit": "pct",
+          "entity": "DC_SW_01",
+          "interpretation": "Normal packet loss (prediction P-1-2 hit)",
+          "finding_id": "F-performance_agent-10002",
+          "source_agent": "performance_agent",
+          "hypothesis": "dns_failure"
+        }
+      ],
+      "alternative_causes": [],
+      "recommended_actions": [
+        "Check resolver health, upstream forwarders and logs on DNS_01"
+      ],
+      "evidence_sources": [
+        "connectivity_agent",
+        "performance_agent"
+      ],
+      "limitations": [
+        "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
+        "Root cause requires further verification by an operator before any change",
+        "External agent wireless_agent unreachable; its signals were unavailable"
+      ],
+      "schema_version": "1.4",
+      "decision_source": "deterministic_scoring",
+      "confidence_category": "high",
+      "status_reason": null,
+      "observations": [],
+      "fault_type": "dns_failure",
+      "scoring": {
+        "support": 1.0,
+        "coverage": 1.0,
+        "contra": 0.0,
+        "quality": 1.0,
+        "score": 1.0,
+        "margin": 1.0
+      },
+      "co_candidates": [],
+      "rejected_alternatives": [],
+      "predictions": [
+        {
+          "prediction_id": "P-1-1",
+          "round": 1,
+          "hypothesis": "dns_failure",
+          "signal": "latency_ms@DC_SW_01",
+          "expected": "< high (150 ms)",
+          "outcome": "hit",
+          "observed": 18.69,
+          "evidence_finding_id": "F-performance_agent-10001"
+        },
+        {
+          "prediction_id": "P-1-2",
+          "round": 1,
+          "hypothesis": "dns_failure",
+          "signal": "packet_loss_pct@DC_SW_01",
+          "expected": "< high (3 pct)",
+          "outcome": "hit",
+          "observed": 0.135,
+          "evidence_finding_id": "F-performance_agent-10002"
+        }
+      ],
+      "blocked_actions": [
+        {
+          "action": "Point DHCP-provided resolvers to the secondary DNS while DNS_01 is investigated",
+          "action_id": "DNS-2",
+          "rule_id": "R5",
+          "reason": "Failover DNS_01: blocked by R5 (Campus services may only be restarted outside 08:00-22:00 unless the duty officer approves)"
+        },
+        {
+          "action": "Restart the DNS service on DNS_01",
+          "action_id": "DNS-3",
+          "rule_id": "R5",
+          "reason": "Restart service DNS_01: blocked by R5 (Campus services may only be restarted outside 08:00-22:00 unless the duty officer approves)"
+        }
+      ],
+      "action_details": [
+        {
+          "id": "DNS-1",
+          "action": "inspect",
+          "target": "DNS_01",
+          "text": "Check resolver health, upstream forwarders and logs on DNS_01",
+          "allowed": true,
+          "rule_id": null
+        },
+        {
+          "id": "DNS-2",
+          "action": "failover",
+          "target": "DNS_01",
+          "text": "Point DHCP-provided resolvers to the secondary DNS while DNS_01 is investigated",
+          "allowed": false,
+          "rule_id": "R5"
+        },
+        {
+          "id": "DNS-3",
+          "action": "restart_service",
+          "target": "DNS_01",
+          "text": "Restart the DNS service on DNS_01",
+          "allowed": false,
+          "rule_id": "R5"
+        }
+      ],
+      "missing_signals": [],
+      "conflicts": [],
+      "agents": {
+        "connectivity_agent": "completed",
+        "correlation_agent": "completed",
+        "infrastructure_agent": "completed",
+        "performance_agent": "completed",
+        "reporting_agent": "completed",
+        "wireless_agent": "unreachable"
+      },
+      "normalization_summary": {
+        "records_in": 150,
+        "records_used": 150,
+        "records_quarantined": 0,
+        "observations_used": 720,
+        "renamed": 354,
+        "unit_converted": 0,
+        "unit_inferred": 0,
+        "entity_canonicalized": 0,
+        "coerced": 0,
+        "quarantined": 0,
+        "missing_values": 0,
+        "deduped": 0,
+        "out_of_window": 0,
+        "version_upcast": 0,
+        "extras": 0
+      },
+      "narrative": "Likely DNS service failure causing name-resolution errors on DNS_01 (confidence 1.00, high). Key evidence: dns_failure_pct=50.228 on DNS_01, latency_ms=18.69 on DC_SW_01, packet_loss_pct=0.135 on DC_SW_01. 2 of 2 logged predictions were hits.",
+      "llm": {
+        "mode": "off",
+        "model": null,
+        "narrative_source": "template",
+        "hints": []
+      }
+    }
+  }
+]

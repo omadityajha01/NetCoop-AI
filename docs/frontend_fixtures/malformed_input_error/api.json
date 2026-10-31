@@ -1,0 +1,29 @@
+[
+  {
+    "method": "POST",
+    "path": "/incidents?external=false&filename=broken.json",
+    "request": "<incident bundle>",
+    "status": 200,
+    "response": {
+      "incident_id": "INC-LNPPZSZE",
+      "status": "failed",
+      "suspected_root_cause": "Diagnosis failed",
+      "confidence": 0.0,
+      "affected_devices": [],
+      "supporting_evidence": [],
+      "alternative_causes": [],
+      "recommended_actions": [
+        "Fix the input or agent failure listed in limitations and re-run"
+      ],
+      "evidence_sources": [],
+      "limitations": [
+        "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
+        "Input rejected (MALFORMED): invalid JSON: Expecting value at line 1"
+      ],
+      "schema_version": "1.4",
+      "confidence_category": "low",
+      "fault_type": null,
+      "narrative": null
+    }
+  }
+]
