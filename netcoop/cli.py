@@ -251,8 +251,21 @@ def cmd_mcp(a: argparse.Namespace) -> int:
 
 
 def cmd_serve(a: argparse.Namespace) -> int:
+    import os
+
     import uvicorn
 
+    from netcoop.api.dashboard import UI_ENV
+
+    if a.ui:
+        ui = Path(a.ui).resolve()
+        if not (ui / "index.html").is_file():
+            print(f"error: --ui {a.ui}: no index.html in that folder", file=sys.stderr)
+            return 2
+        os.environ[UI_ENV] = str(ui)
+        print(f"UI: {ui} (index.html at /, files at /ui/<path>; built-in dashboard still at /dashboard)")
+    else:
+        os.environ.pop(UI_ENV, None)
     uvicorn.run("netcoop.api.main:app", host="127.0.0.1", port=a.port)
     return 0
 
@@ -304,8 +317,10 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("docs", help="regenerate README tables from config").set_defaults(fn=cmd_docs)
     sub.add_parser("mcp", help="run NetCoop as an MCP server over stdio (tools: list_scenarios, list_agents, "
                                "diagnose, get_report, explain)").set_defaults(fn=cmd_mcp)
-    p = sub.add_parser("serve", help="run the read-only API")
+    p = sub.add_parser("serve", help="run the API + dashboard on 127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
+    p.add_argument("--ui", default=None, help="serve an alternative UI folder (index.html at /, files at /ui/...); "
+                                              "default: the built-in dashboard")
     p.set_defaults(fn=cmd_serve)
     a = ap.parse_args(argv)
     try:
