@@ -1,0 +1,295 @@
+<!DOCTYPE html><html lang='en'><head><meta charset='utf-8'>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+<title>NetCoop timeline INC-DEMO0002</title><style>
+*{box-sizing:border-box} body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#fcfcfb;color:#0b0b0b}
+header{padding:20px 28px;border-bottom:1px solid #e1e0d9;background:#fff} h1{font-size:20px;margin:0 0 6px} h2{font-size:16px;margin:28px 0 10px}
+main{padding:0 28px 40px} .muted{color:#52514e} .pill{display:inline-block;padding:2px 10px;border-radius:999px;font-weight:600;font-size:12px}
+.s-diagnosed{background:#d9f2d9;color:#004d00} .s-probable{background:#fff1c7;color:#5c4300} .s-insufficient_evidence{background:#f1e4f7;color:#4d1a66}
+.s-no_fault_detected{background:#dcecfb;color:#0b3d75} .s-failed{background:#fde0e0;color:#7a0b0b}
+table{border-collapse:collapse;width:100%;background:#fff} th,td{border-bottom:1px solid #e1e0d9;padding:6px 8px;text-align:left;vertical-align:top;font-size:13px}
+th{color:#52514e;font-weight:600;background:#f6f6f3} code{font:12px ui-monospace,Consolas,monospace;background:#f1f1ee;padding:1px 4px;border-radius:4px;word-break:break-all}
+.lanes{display:grid;gap:0;border:1px solid #e1e0d9;background:#fff;overflow-x:auto}
+.lh{position:sticky;top:0;background:#f6f6f3;font-weight:600;font-size:12px;padding:6px;border-bottom:1px solid #e1e0d9;border-left:1px solid #eeede8}
+.cell{border-left:1px solid #eeede8;border-bottom:1px solid #f3f2ee;padding:4px 6px;min-height:28px;font-size:12px}
+.seq{color:#52514e;font-variant-numeric:tabular-nums;border-bottom:1px solid #f3f2ee;padding:4px 6px;font-size:12px}
+.msg{border-radius:6px;padding:3px 6px;border-left:4px solid #888;background:#f6f6f3}
+.t-task{border-color:#52514e}.t-find{border-color:#2a78d6}.t-cov{border-color:#9bbbe6}.t-pred{border-color:#6250d6}
+.t-req{border-color:#eb6834}.t-resp{border-color:#1baf7a}.t-diag{border-color:#eda100}.t-rep{border-color:#008300}
+.t-err{border-color:#e34948;background:#fdecec}.t-norm{border-color:#e87ba4}
+.hit{background:#d9f2d9;color:#004d00}.miss{background:#fde0e0;color:#7a0b0b}.unknown,.pending{background:#eeede8;color:#52514e}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px} @media (max-width:1000px){.grid2{grid-template-columns:1fr}}
+.blocked{color:#7a0b0b;font-weight:600} ul{margin:6px 0;padding-left:20px}
+</style></head><body>
+<header><h1>INC-DEMO0002 <span class='pill s-insufficient_evidence'>insufficient_evidence</span></h1><div>Insufficient evidence: anomaly present, but no known fault signature matches</div><div class='muted'>confidence 0.33 (low) · 30 messages · NMP 1.1</div></header><main>
+<h2>Message timeline (one lane per agent, in seq order)</h2>
+<div class='lanes' style='grid-template-columns:44px repeat(7, minmax(150px,1fr))'>
+<div class='lh'>seq</div><div class='lh'>normalizer</div><div class='lh'>orchestrator</div><div class='lh'>performance_agent</div><div class='lh'>infrastructure_agent</div><div class='lh'>connectivity_agent</div><div class='lh'>correlation_agent</div><div class='lh'>reporting_agent</div>
+<div class='seq'>1</div>
+<div class='cell'><div class='msg t-norm'><b>normalization_summary</b> → orchestrator<br><span class='muted'>108/108 records used, 0 quarantined</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>2</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → connectivity_agent<br><span class='muted'>task: analyze</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>3</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → infrastructure_agent<br><span class='muted'>task: analyze</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>4</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → performance_agent<br><span class='muted'>task: analyze</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>5</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-find'><b>finding_report</b> → orchestrator<br><span class='muted'>0 finding(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>6</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-cov'><b>coverage_manifest</b> → orchestrator<br><span class='muted'>2 signal(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>7</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-find'><b>finding_report</b> → orchestrator<br><span class='muted'>0 finding(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>8</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-cov'><b>coverage_manifest</b> → orchestrator<br><span class='muted'>41 signal(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>9</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-find'><b>finding_report</b> → orchestrator<br><span class='muted'>2 finding(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>10</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-cov'><b>coverage_manifest</b> → orchestrator<br><span class='muted'>33 signal(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>11</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → connectivity_agent<br><span class='muted'>task: scope</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>12</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-find'><b>finding_report</b> → orchestrator<br><span class='muted'>0 finding(s) + scope</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>13</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → correlation_agent<br><span class='muted'>task: correlate</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>14</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-diag'><b>diagnosis</b> → orchestrator<br><span class='muted'>interim: insufficient_evidence (margin 0.11)</span></div></div>
+<div class='cell'></div>
+<div class='seq'>15</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-pred'><b>prediction</b> → orchestrator<br><span class='muted'>P-1-1 [congestion] interface_errors_count@HOSTEL_ACC_SW_02 &lt; high</span></div></div>
+<div class='cell'></div>
+<div class='seq'>16</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-pred'><b>prediction</b> → orchestrator<br><span class='muted'>P-1-2 [interface_fault] interface_errors_count@HOSTEL_ACC_SW_02 &gt;= high</span></div></div>
+<div class='cell'></div>
+<div class='seq'>17</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-pred'><b>prediction</b> → orchestrator<br><span class='muted'>P-1-3 [congestion] queue_drops_count@HOSTEL_ACC_SW_02 &gt;= high</span></div></div>
+<div class='cell'></div>
+<div class='seq'>18</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-req'><b>evidence_request</b> → infrastructure_agent<br><span class='muted'>interface_errors_count@HOSTEL_ACC_SW_02, queue_drops_count@HOSTEL_ACC_SW_02, crc_errors_count@HOSTEL_ACC_SW_02</span></div></div>
+<div class='cell'></div>
+<div class='seq'>19</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-resp'><b>evidence_response</b> → orchestrator<br><span class='muted'>3 finding(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>20</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → correlation_agent<br><span class='muted'>task: correlate</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>21</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-diag'><b>diagnosis</b> → orchestrator<br><span class='muted'>interim: insufficient_evidence (margin 0.11)</span></div></div>
+<div class='cell'></div>
+<div class='seq'>22</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-pred'><b>prediction</b> → orchestrator<br><span class='muted'>P-2-1 [congestion] cpu_pct@HOSTEL_ACC_SW_02 &lt; high</span></div></div>
+<div class='cell'></div>
+<div class='seq'>23</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-req'><b>evidence_request</b> → infrastructure_agent<br><span class='muted'>cpu_pct@HOSTEL_ACC_SW_02</span></div></div>
+<div class='cell'></div>
+<div class='seq'>24</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-resp'><b>evidence_response</b> → orchestrator<br><span class='muted'>1 finding(s)</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>25</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → correlation_agent<br><span class='muted'>task: correlate</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>26</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-diag'><b>diagnosis</b> → orchestrator<br><span class='muted'>interim: insufficient_evidence (margin 0.11)</span></div></div>
+<div class='cell'></div>
+<div class='seq'>27</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → correlation_agent<br><span class='muted'>task: finalize</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>28</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-diag'><b>diagnosis</b> → orchestrator<br><span class='muted'>final: insufficient_evidence (margin 0.11)</span></div></div>
+<div class='cell'></div>
+<div class='seq'>29</div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-task'><b>task_request</b> → reporting_agent<br><span class='muted'>task: report</span></div></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='seq'>30</div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'></div>
+<div class='cell'><div class='msg t-rep'><b>report</b> → orchestrator<br><span class='muted'>status insufficient_evidence</span></div></div>
+</div>
+<h2>Predictions → evidence (logged before looking)</h2><table><tr><th>prediction</th><th>hypothesis</th><th>signal</th><th>expected</th><th>seq: predicted → requested → answered</th><th>observed</th><th>outcome</th></tr>
+<tr><td><code>P-1-1</code></td><td>congestion</td><td><code>interface_errors_count@HOSTEL_ACC_SW_02</code></td><td>&lt; high (50 count)</td><td>15 → 18 → 19</td><td>2.0</td><td><span class='pill hit'>hit</span></td></tr>
+<tr><td><code>P-1-2</code></td><td>interface_fault</td><td><code>interface_errors_count@HOSTEL_ACC_SW_02</code></td><td>&gt;= high (50 count)</td><td>16 → 18 → 19</td><td>2.0</td><td><span class='pill miss'>miss</span></td></tr>
+<tr><td><code>P-1-3</code></td><td>congestion</td><td><code>queue_drops_count@HOSTEL_ACC_SW_02</code></td><td>&gt;= high (100 count)</td><td>17 → 18 → 19</td><td>5.0</td><td><span class='pill miss'>miss</span></td></tr>
+<tr><td><code>P-2-1</code></td><td>congestion</td><td><code>cpu_pct@HOSTEL_ACC_SW_02</code></td><td>&lt; high (85 pct)</td><td>22 → 23 → 24</td><td>32.7</td><td><span class='pill hit'>hit</span></td></tr>
+</table>
+<h2>Normalization</h2><div class='grid2'><div>
+<table><tr><th>counter</th><th>value</th></tr><tr><td>observations_used</td><td>456</td></tr><tr><td>records_in</td><td>108</td></tr><tr><td>records_used</td><td>108</td></tr><tr><td>renamed</td><td>204</td></tr></table>
+<h3>Transforms applied to evidence</h3><table><tr><th>step</th><th>field</th><th>example</th><th>findings</th></tr>
+<tr><td>alias</td><td><code>interface_errors</code></td><td><code>interface_errors</code> → <code>interface_errors_count</code> <span class='muted'>metrics.yaml alias</span></td><td>1</td></tr>
+<tr><td>alias</td><td><code>queue_drops</code></td><td><code>queue_drops</code> → <code>queue_drops_count</code> <span class='muted'>metrics.yaml alias</span></td><td>1</td></tr>
+<tr><td>alias</td><td><code>crc_errors</code></td><td><code>crc_errors</code> → <code>crc_errors_count</code> <span class='muted'>metrics.yaml alias</span></td><td>1</td></tr>
+<tr><td>alias</td><td><code>cpu_utilization_pct</code></td><td><code>cpu_utilization_pct</code> → <code>cpu_pct</code> <span class='muted'>metrics.yaml alias</span></td><td>1</td></tr>
+</table></div><div>
+<h3>Quarantined (never silently dropped)</h3><table><tr><th>where</th><th>code</th><th>reason</th></tr>
+<tr><td colspan='3' class='muted'>nothing quarantined</td></tr>
+</table>
+</div></div>
+<h2>Final report</h2><div class='grid2'><div>
+<table><tr><th>metric</th><th>value</th><th>entity</th><th>interpretation</th><th>finding</th></tr>
+<tr><td><code>latency_ms</code></td><td>182.56 ms</td><td>AP_H3</td><td>Elevated network latency</td><td><code>F-performance_agent-10</code></td></tr>
+<tr><td><code>packet_loss_pct</code></td><td>5.588 pct</td><td>AP_H3</td><td>High packet loss</td><td><code>F-performance_agent-26</code></td></tr>
+</table>
+<h3>Missing signals</h3><ul><li><code>link_utilization_pct@L_AP_H3</code></li><li><code>link_flaps_count@L_AP_H3</code></li><li><code>retransmission_pct@AP_H3</code></li><li><code>rssi_dbm@AP_H3</code></li><li><code>snr_db@AP_H3</code></li></ul>
+</div><div><h3>Recommended actions</h3><ul><li>Collect the missing signals listed in this report and re-run the diagnosis</li><li>Collect: link_utilization_pct@L_AP_H3, link_flaps_count@L_AP_H3, retransmission_pct@AP_H3, rssi_dbm@AP_H3, snr_db@AP_H3</li></ul>
+<h3>Alternatives</h3><ul><li>Likely link congestion causing egress queue drops on L_AP_H3 (score 0.33)</li><li>Likely physical interface fault causing errors and packet loss on L_AP_H3 (score 0.22)</li><li>Likely weak Wi-Fi signal at the access point causing retransmissions on AP_H3 (score 0.20)</li></ul>
+<h3>Limitations</h3><ul><li>Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements</li><li>Anomaly present (finding at or above `high`), but no known fault signature matches (best: congestion 0.33 &lt; 0.55)</li><li>Missing signals that would resolve this: link_utilization_pct@L_AP_H3, link_flaps_count@L_AP_H3, retransmission_pct@AP_H3, rssi_dbm@AP_H3, snr_db@AP_H3</li><li>No connected agent can provide: link_utilization_pct@L_AP_H3, link_flaps_count@L_AP_H3, retransmission_pct@AP_H3, rssi_dbm@AP_H3, snr_db@AP_H3</li><li>External agent wireless_agent unreachable; its signals were unavailable</li></ul>
+</div></div></main></body></html>

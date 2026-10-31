@@ -146,6 +146,25 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   Both stray processes were stopped by PID. This motivates T10's stale-agent cleanup, which matches on the
   `wireless_agent/server.js` command line, not just the port.
 
+## T10: live-demo hardening
+
+- `netcoop/present.py`, dispatched by `python tasks.py preflight | present | snapshots` (and the Makefile).
+- **preflight:** 12 checks. Python/Node versions, deps, LLM off, loopback-only allowlist, port free (stale agent
+  killed), agent start → conformance 7/7 → all 7 scenarios → clean stop, Wi-Fi-without-agent baseline, 8/8
+  snapshot folders. Prints red/green and exits non-zero on any failure.
+- **present:** the 8 scripted steps with Enter between, a compact colored summary, and a `timeline.html` per step
+  (`runs/present/`). The agent is always stopped in `finally`. `--port` / `NETCOOP_AGENT_PORT`; `--auto` skips the pauses.
+- **Decision: stale-agent cleanup only kills our own processes.** It matches `wireless_agent` + `server.js` + port on
+  the process command line (PowerShell CIM on Windows, `ps` elsewhere), never "all node.exe". If the port is busy
+  with anything else, present refuses and suggests `--port`.
+- **Decision:** present/preflight output is ASCII-only (a `·` bullet rendered as `�` in a cp1252 console).
+- **Decision:** step 7 (policy) reuses the step-1 congestion report (R1 blocks the HOSTEL_CORE_SW_01 reboot) instead of a new run.
+- **Decision:** the port override is applied by passing a config override in-process. The allowlist is not
+  read from the environment by the core.
+- `demo_snapshots/` (tracked): `report.json` + `timeline.html` per step, `output.txt` for agent start and conformance.
+- `docs/DEMO.md`: run of show with real seed-B numbers, the fallback plan, and judge Q&A.
+- Tests: `tests/integration/test_present.py` (auto run into a temp dir on a free port; process matcher ignores unrelated node processes).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

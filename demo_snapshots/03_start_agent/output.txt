@@ -1,0 +1,3 @@
+wireless_agent started on http://127.0.0.1:8765
+card: wifi-probe v0.9.3  skills: ['wifi-rf-telemetry']
+It speaks dialect 0.9: {"ver":"0.9","obs":[{"ap":"ap-h3","signal":-78,"noise_margin":9,"retx":0.22,...}]}

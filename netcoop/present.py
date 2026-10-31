@@ -1,0 +1,464 @@
+"""Live-demo tooling (T10): preflight, scripted presentation, fallback snapshots.
+
+    python tasks.py preflight            # red/green checks, non-zero exit on any failure
+    python tasks.py present [--port N]   # scripted 8-step run, Enter between steps
+    python tasks.py snapshots            # regenerate demo_snapshots/ (fallback if the live run fails)
+
+Fully offline: everything is on 127.0.0.1, the LLM is forced off, and no step needs Wi-Fi or internet.
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import os
+import re
+import shutil
+import socket
+import subprocess
+import sys
+import time
+import urllib.request
+from collections.abc import Callable
+from dataclasses import dataclass
+from pathlib import Path
+from typing import Any
+
+ROOT = Path(__file__).resolve().parent.parent
+SCEN = ROOT / "data" / "scenarios"
+AGENT_JS = ROOT / "external_agents" / "wireless_agent" / "server.js"
+SNAP_DIR = ROOT / "demo_snapshots"
+DEFAULT_PORT = int(os.environ.get("NETCOOP_AGENT_PORT", "8765"))
+
+if os.name == "nt":  # enable ANSI colors in Windows consoles
+    os.system("")
+TTY = sys.stdout.isatty()
+
+
+def c(s: str, code: str) -> str:
+    return f"\033[{code}m{s}\033[0m" if TTY else s
+
+
+def ok(s: str) -> str:
+    return c(s, "32;1")
+
+
+def bad(s: str) -> str:
+    return c(s, "31;1")
+
+
+def dim(s: str) -> str:
+    return c(s, "2")
+
+
+# ---------------------------------------------------------------------------- wireless_agent process control
+
+def _agent_pids(port: int) -> list[int]:
+    """PIDs of OUR wireless_agent processes serving `port` (matched on the command line, never by name alone)."""
+    pids: list[int] = []
+    try:
+        if os.name == "nt":
+            out = subprocess.run(
+                ["powershell", "-NoProfile", "-Command",
+                 "Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Select-Object ProcessId,CommandLine | ConvertTo-Json"],
+                capture_output=True, text=True, timeout=20).stdout.strip()
+            rows = json.loads(out) if out else []
+            rows = rows if isinstance(rows, list) else [rows]
+            procs = [(int(r["ProcessId"]), r.get("CommandLine") or "") for r in rows]
+        else:
+            out = subprocess.run(["ps", "-eo", "pid=,args="], capture_output=True, text=True, timeout=10).stdout
+            procs = [(int(line.split(None, 1)[0]), line.split(None, 1)[1]) for line in out.splitlines() if line.strip()]
+    except (OSError, ValueError, subprocess.SubprocessError, json.JSONDecodeError):
+        return []
+    for pid, cmd in procs:
+        if "wireless_agent" not in cmd.replace("\\", "/") or "server.js" not in cmd:
+            continue
+        m = re.search(r"--port\s+(\d+)", cmd)
+        if (int(m.group(1)) if m else 8765) == port and pid != os.getpid():
+            pids.append(pid)
+    return pids
+
+
+def port_free(port: int) -> bool:
+    with socket.socket() as s:
+        try:
+            s.bind(("127.0.0.1", port))
+            return True
+        except OSError:
+            return False
+
+
+def kill_stale_agent(port: int) -> list[int]:
+    pids = _agent_pids(port)
+    for pid in pids:
+        try:
+            if os.name == "nt":
+                subprocess.run(["taskkill", "/PID", str(pid), "/F"], capture_output=True, timeout=10)
+            else:
+                os.kill(pid, 15)
+        except OSError:
+            pass
+    for _ in range(50):
+        if port_free(port):
+            break
+        time.sleep(0.1)
+    return pids
+
+
+class Agent:
+    def __init__(self, port: int):
+        self.port = port
+        self.proc: subprocess.Popen | None = None
+
+    @property
+    def url(self) -> str:
+        return f"http://127.0.0.1:{self.port}"
+
+    def start(self) -> bool:
+        node = shutil.which("node")
+        if not node:
+            return False
+        self.proc = subprocess.Popen([node, str(AGENT_JS), "--port", str(self.port)],
+                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        for _ in range(100):
+            try:
+                urllib.request.urlopen(self.url + "/healthz", timeout=0.3)
+                return True
+            except OSError:
+                time.sleep(0.05)
+        return False
+
+    def stop(self) -> None:
+        if self.proc and self.proc.poll() is None:
+            self.proc.terminate()
+            try:
+                self.proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                self.proc.kill()
+        self.proc = None
+
+
+def config_for_port(port: int):
+    from netcoop.config import load_config, thaw
+
+    cfg = load_config()
+    agents = thaw(cfg.agents)
+    agents["external"][0]["base_url"] = f"http://127.0.0.1:{port}"
+    return cfg.with_overrides(agents=agents)
+
+
+# ---------------------------------------------------------------------------- scenario runner
+
+def run_scenario(name: str, cfg: Any, runs: Path, incident_id: str) -> tuple[dict[str, Any], Path]:
+    from netcoop.orchestrator.run import RunOptions, run_incident
+    from netcoop.timeline import write_timeline
+
+    data = (SCEN / name / "incident.json").read_bytes()
+    res = run_incident(data, cfg, RunOptions(incident_id=incident_id, runs_dir=runs, external=True, store=False))
+    tl = write_timeline(res.run_dir, res.run_dir / "timeline.html")
+    return res.report, tl
+
+
+EXPECT = {  # scenario -> (status, fault_type) expected in the scripted demo
+    "congestion": ("diagnosed", "congestion"),
+    "weak_wifi:off": ("insufficient_evidence", None),
+    "weak_wifi:on": ("diagnosed", "weak_wifi"),
+    "interop": ("diagnosed", "device_overload"),
+    "normal": ("no_fault_detected", None),
+    "interface_fault": ("diagnosed", "interface_fault"),
+    "dns_failure": ("diagnosed", "dns_failure"),
+    "dhcp_failure": ("diagnosed", "dhcp_failure"),
+}
+
+
+def summary(rep: dict[str, Any], *, predictions: bool = False, normalization: bool = False, blocked: bool = False) -> str:
+    color = {"diagnosed": "32;1", "probable": "33;1", "insufficient_evidence": "35;1", "no_fault_detected": "36;1"}.get(
+        rep["status"], "31;1")
+    lines = [f"  {c(rep['status'], color)}  {rep['suspected_root_cause']}",
+             f"  confidence {rep['confidence']:.2f} ({rep.get('confidence_category')})   "
+             f"affected: {', '.join(rep['affected_devices']) or '-'}   sources: {', '.join(rep['evidence_sources']) or '-'}"]
+    for e in rep["supporting_evidence"][:6]:
+        lines.append(dim(f"    - {e['metric']:<22} {e['value']:>9g} {e.get('unit', ''):<5} {e.get('entity', ''):<18} {e['interpretation']}"))
+    if rep.get("missing_signals"):
+        lines.append(f"  missing signals: {', '.join(rep['missing_signals'][:6])}")
+    if predictions:
+        for p in rep.get("predictions", []):
+            mark = ok("HIT ") if p["outcome"] == "hit" else (bad("MISS") if p["outcome"] == "miss" else p["outcome"])
+            lines.append(f"    {p['prediction_id']} [{p['hypothesis']}] {p['signal']} expected {p['expected']} -> {mark}"
+                         + (f" (observed {p['observed']:g})" if p.get("observed") is not None else ""))
+    if normalization:
+        ns = rep.get("normalization_summary", {})
+        lines.append("  normalization: " + ", ".join(f"{k} {v}" for k, v in ns.items() if v))
+        lines += [dim(f"    - {x}") for x in rep["limitations"] if "quarantined" in x or "converted" in x
+                  or "inferred" in x or "upcast" in x][:6]
+    if blocked:
+        for b in rep.get("blocked_actions", []):
+            lines.append("  " + bad("BLOCKED ") + b["reason"])
+        lines += [f"  recommended: {a}" for a in rep["recommended_actions"][:3]]
+    return "\n".join(lines)
+
+
+def check_expect(key: str, rep: dict[str, Any]) -> bool:
+    st, ft = EXPECT[key]
+    return rep["status"] == st and (ft is None or rep.get("fault_type") == ft)
+
+
+# ---------------------------------------------------------------------------- preflight
+
+@dataclass
+class Result:
+    name: str
+    passed: bool
+    detail: str
+
+
+def preflight(port: int) -> int:
+    os.environ["NETCOOP_LLM"] = "off"
+    results: list[Result] = []
+
+    def check(name: str, fn: Callable[[], tuple[bool, str]]) -> bool:
+        try:
+            passed, detail = fn()
+        except Exception as exc:  # noqa: BLE001
+            passed, detail = False, f"{type(exc).__name__}: {str(exc)[:160]}"
+        results.append(Result(name, passed, detail))
+        print(f"  {ok('PASS') if passed else bad('FAIL')}  {name:<38} {dim(detail)}")
+        return passed
+
+    print(c("NetCoop preflight", "1") + dim(f"  (port {port}, offline)"))
+    check("Python >= 3.11", lambda: (sys.version_info >= (3, 11), sys.version.split()[0]))
+
+    def node_ver() -> tuple[bool, str]:
+        node = shutil.which("node")
+        if not node:
+            return False, "node not on PATH"
+        v = subprocess.run([node, "--version"], capture_output=True, text=True, timeout=10).stdout.strip()
+        return int(v.lstrip("v").split(".")[0]) >= 18, v
+    check("Node >= 18", node_ver)
+
+    def deps() -> tuple[bool, str]:
+        import importlib
+        mods = ["pydantic", "yaml", "netcoop", "conformance.kit"]
+        missing = [m for m in mods if importlib.util.find_spec(m.split(".")[0]) is None]
+        for m in mods:
+            importlib.import_module(m)
+        return not missing, "pydantic, pyyaml, netcoop, conformance kit importable"
+    check("Python dependencies", deps)
+    check("LLM off (no API / model needed)", lambda: (os.environ.get("NETCOOP_LLM", "off") == "off", "NETCOOP_LLM=off"))
+
+    def offline() -> tuple[bool, str]:
+        from netcoop.config import load_config
+        urls = [s["base_url"] for s in load_config().agents.get("external", ())]
+        loop = all(re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?/?$", u) for u in urls)
+        return loop, "allowlist is loopback only: " + ", ".join(urls)
+    check("No network needed", offline)
+
+    def stale() -> tuple[bool, str]:
+        killed = kill_stale_agent(port)
+        return port_free(port), (f"killed stale agent pid(s) {killed}; " if killed else "") + f"port {port} free"
+    check(f"Port {port} free (stale agent cleared)", stale)
+
+    agent = Agent(port)
+    try:
+        def start() -> tuple[bool, str]:
+            started = agent.start()
+            return started, f"wifi-probe up on {agent.url}" if started else "agent did not start"
+        if check("wireless_agent starts", start):
+            def conf() -> tuple[bool, str]:
+                from conformance.kit import Kit
+                cs = Kit(agent.url).run()
+                return all(x.passed for x in cs), f"{sum(x.passed for x in cs)}/{len(cs)} checks"
+            check("Conformance kit vs wireless_agent", conf)
+
+            def scenarios() -> tuple[bool, str]:
+                import tempfile
+                cfg_on = config_for_port(port)
+                with tempfile.TemporaryDirectory() as tmp:
+                    bad_ones = []
+                    for i, name in enumerate(["congestion", "weak_wifi", "interface_fault", "dns_failure", "dhcp_failure",
+                                              "interop", "normal"]):
+                        rep, _ = run_scenario(name, cfg_on, Path(tmp), f"INC-PREF{i:04d}")
+                        key = "weak_wifi:on" if name == "weak_wifi" else name
+                        if not check_expect(key, rep):
+                            bad_ones.append(f"{name}={rep['status']}")
+                return not bad_ones, "all 7 scenarios as expected" if not bad_ones else "; ".join(bad_ones)
+            check("All scenarios (agent joined)", scenarios)
+    finally:
+        agent.stop()
+
+    def stopped() -> tuple[bool, str]:
+        for _ in range(50):
+            if port_free(port):
+                return True, "agent stopped, port released"
+            time.sleep(0.1)
+        return False, "port still busy after stop"
+    check("wireless_agent stops cleanly", stopped)
+
+    def offline_wifi() -> tuple[bool, str]:
+        import tempfile
+        with tempfile.TemporaryDirectory() as tmp:
+            rep, _ = run_scenario("weak_wifi", config_for_port(port), Path(tmp), "INC-PREFOFF1")
+        return check_expect("weak_wifi:off", rep), f"Wi-Fi without agent -> {rep['status']}"
+    check("Hot-plug baseline (agent absent)", offline_wifi)
+
+    def snaps() -> tuple[bool, str]:
+        have = [step for step, _ in STEPS if (SNAP_DIR / step).is_dir() and any((SNAP_DIR / step).iterdir())]
+        return len(have) == len(STEPS), f"{len(have)}/{len(STEPS)} step folders in demo_snapshots/"
+    check("Fallback snapshots present", snaps)
+    failed = [r for r in results if not r.passed]
+    print()
+    print(ok(f"PREFLIGHT OK: {len(results)}/{len(results)} checks passed") if not failed
+          else bad(f"PREFLIGHT FAILED: {len(failed)} of {len(results)} checks failed"))
+    return 0 if not failed else 1
+
+
+# ---------------------------------------------------------------------------- scripted presentation
+
+STEPS = [
+    ("01_congestion", "Congestion: agents collaborate; predictions logged BEFORE evidence is requested"),
+    ("02_wifi_insufficient", "Weak Wi-Fi without the external agent -> honest insufficient_evidence"),
+    ("03_start_agent", "Hot-plug: start the external wireless_agent (Node.js, dialect v0.9)"),
+    ("04_conformance", "Conformance kit against the newly joined agent"),
+    ("05_wifi_diagnosed", "Same Wi-Fi incident, agent joined -> diagnosed at AP_H3"),
+    ("06_chaos_input", "Chaos input: v0.9 block, renamed fields, seconds, fractions, mangled IDs, garbage"),
+    ("07_policy_blocked", "Policy: reboot of a core switch blocked by R1 (class hours)"),
+    ("08_normal", "Normal network -> no_fault_detected"),
+]
+
+
+def present(port: int, *, auto: bool = False, out: Path | None = None) -> int:
+    os.environ["NETCOOP_LLM"] = "off"
+    runs = (ROOT / "runs" / "present") if out is None else out / "_runs"
+    if runs.exists():
+        shutil.rmtree(runs, ignore_errors=True)
+    cfg = config_for_port(port)
+    killed = kill_stale_agent(port)
+    if killed:
+        print(dim(f"(stopped stale wireless_agent pid(s) {killed} on port {port})"))
+    if not port_free(port):
+        print(bad(f"port {port} is busy with something that is not our agent; use --port"))
+        return 2
+    agent = Agent(port)
+    reports: dict[str, dict[str, Any]] = {}
+    failures: list[str] = []
+
+    def pause() -> None:
+        if not auto:
+            try:
+                input(dim("\n  [Enter] next step "))
+            except EOFError:
+                pass
+
+    def save(step: str, rep: dict[str, Any] | None, tl: Path | None, extra: str | None = None) -> None:
+        if out is None:
+            return
+        d = out / step
+        d.mkdir(parents=True, exist_ok=True)
+        if rep is not None:
+            (d / "report.json").write_text(json.dumps(rep, indent=2) + "\n", encoding="utf-8")
+        if tl is not None:
+            shutil.copyfile(tl, d / "timeline.html")
+        if extra is not None:
+            (d / "output.txt").write_text(extra, encoding="utf-8")
+
+    try:
+        for i, (step, title) in enumerate(STEPS, 1):
+            print("\n" + c(f"[{i}/8] {title}", "1;34"))
+            rep = tl = None
+            text = None
+            if step == "01_congestion":
+                rep, tl = run_scenario("congestion", cfg, runs, "INC-DEMO0001")
+                print(summary(rep, predictions=True))
+                reports["congestion"] = rep
+                if not check_expect("congestion", rep):
+                    failures.append(step)
+            elif step == "02_wifi_insufficient":
+                rep, tl = run_scenario("weak_wifi", cfg, runs, "INC-DEMO0002")
+                print(summary(rep))
+                if not check_expect("weak_wifi:off", rep):
+                    failures.append(step)
+            elif step == "03_start_agent":
+                started = agent.start()
+                card = json.loads(urllib.request.urlopen(agent.url + "/.well-known/agent-card.json", timeout=2).read()) \
+                    if started else {}
+                text = (f"wireless_agent {'started' if started else 'FAILED TO START'} on {agent.url}\n"
+                        f"card: {card.get('name')} v{card.get('version')}  skills: {[s['id'] for s in card.get('skills', [])]}\n"
+                        "It speaks dialect 0.9: {\"ver\":\"0.9\",\"obs\":[{\"ap\":\"ap-h3\",\"signal\":-78,\"noise_margin\":9,\"retx\":0.22,...}]}")
+                print("  " + text.replace("\n", "\n  "))
+                if not started:
+                    failures.append(step)
+            elif step == "04_conformance":
+                from conformance.kit import Kit
+                cs = Kit(agent.url).run()
+                text = "\n".join(f"{'PASS' if x.passed else 'FAIL'}  {x.name:<42} {x.detail}" for x in cs)
+                for x in cs:
+                    print(f"  {ok('PASS') if x.passed else bad('FAIL')}  {x.name:<42} {dim(x.detail)}")
+                print(f"  conformance: {sum(x.passed for x in cs)}/{len(cs)}")
+                if not all(x.passed for x in cs):
+                    failures.append(step)
+            elif step == "05_wifi_diagnosed":
+                rep, tl = run_scenario("weak_wifi", cfg, runs, "INC-DEMO0005")
+                print(summary(rep, predictions=True))
+                if not check_expect("weak_wifi:on", rep):
+                    failures.append(step)
+            elif step == "06_chaos_input":
+                rep, tl = run_scenario("interop", cfg, runs, "INC-DEMO0006")
+                print(summary(rep, normalization=True))
+                if not check_expect("interop", rep):
+                    failures.append(step)
+            elif step == "07_policy_blocked":
+                rep = reports["congestion"]
+                tl = runs / "INC-DEMO0001" / "timeline.html"
+                print(f"  {rep['suspected_root_cause']}")
+                print(summary(rep, blocked=True).split("\n", 2)[-1])
+                if not any(b["rule_id"] == "R1" for b in rep.get("blocked_actions", [])):
+                    failures.append(step)
+            elif step == "08_normal":
+                rep, tl = run_scenario("normal", cfg, runs, "INC-DEMO0008")
+                print(summary(rep))
+                if not check_expect("normal", rep):
+                    failures.append(step)
+            if tl is not None:
+                print(dim(f"  timeline: {tl}"))
+            save(step, rep, tl, text)
+            if i < len(STEPS):
+                pause()
+    finally:
+        agent.stop()
+    print()
+    if failures:
+        print(bad(f"{len(failures)} step(s) did not match the script: {', '.join(failures)}"))
+        print(dim("  fallback: open demo_snapshots/<step>/timeline.html"))
+        return 1
+    print(ok("All 8 steps matched the script. Measured, not claimed."))
+    return 0
+
+
+def snapshots(port: int) -> int:
+    if SNAP_DIR.exists():
+        shutil.rmtree(SNAP_DIR)
+    rc = present(port, auto=True, out=SNAP_DIR)
+    shutil.rmtree(SNAP_DIR / "_runs", ignore_errors=True)
+    (SNAP_DIR / "README.md").write_text(
+        "# Demo snapshots (fallback)\n\nGenerated by `python tasks.py snapshots`. One folder per step of "
+        "`python tasks.py present`: `report.json` and a static `timeline.html` (open it in any browser, works offline). "
+        "Step 3/4 save the agent card and the conformance output as `output.txt`.\n", encoding="utf-8")
+    print(f"snapshots written to {SNAP_DIR}")
+    return rc
+
+
+def main(argv: list[str] | None = None) -> int:
+    ap = argparse.ArgumentParser(prog="tasks.py")
+    ap.add_argument("cmd", choices=["preflight", "present", "snapshots"])
+    ap.add_argument("--port", type=int, default=DEFAULT_PORT)
+    ap.add_argument("--auto", action="store_true", help="present without waiting for Enter")
+    a = ap.parse_args(argv)
+    if a.cmd == "preflight":
+        return preflight(a.port)
+    if a.cmd == "present":
+        return present(a.port, auto=a.auto)
+    return snapshots(a.port)
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

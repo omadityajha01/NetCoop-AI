@@ -32,7 +32,12 @@ make test               # unit + integration + security + property, offline
 
 `tasks.py` is the single source of truth for every target. The Makefile is a thin wrapper for Linux/macOS, and on Windows you run `python tasks.py <target>`. CI (`.github/workflows/ci.yml`) runs lint, tests, the demo and the conformance kit against the Node agent on Ubuntu and Windows (Python 3.11, Node 20).
 
-The **hot-plug demo** (the Wi-Fi scenario):
+**Live demo:** `python tasks.py preflight` (red/green, non-zero exit on any failure), then `python tasks.py present`
+(8 scripted steps, Enter between them; `--port N` if 8765 is busy). Fallback copies of every step live in
+`demo_snapshots/` (regenerate with `python tasks.py snapshots`). The run of show, numbers and judge Q&A are in
+[`docs/DEMO.md`](docs/DEMO.md).
+
+The **hot-plug demo** by hand (the Wi-Fi scenario):
 
 ```bash
 netcoop diagnose data/scenarios/weak_wifi/incident.json          # -> insufficient_evidence (no Wi-Fi signals)
@@ -593,7 +598,7 @@ These extensions are additive:
 
 | Command | What it does |
 |---|---|
-| `make test` | 92 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~25 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
+| `make test` | 104 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~40 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
 | `make demo` | All scenarios via the CLI |
 | `make eval` / `make fuzz` / sweep | Measured accuracy, confidence-vs-accuracy table, degradation curve, operating-point sweep → `eval/reports/` |
 | `make conformance AGENT_URL=…` | Conformance kit |

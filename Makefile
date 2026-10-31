@@ -6,7 +6,7 @@ SEED_B ?= 5000
 AGENT_URL ?= http://127.0.0.1:8765
 export N SEED_A SEED_B AGENT_URL
 
-TARGETS := setup test demo eval fuzz tune sweep organizer schemas docs fixtures lint agent
+TARGETS := setup test demo eval fuzz tune sweep organizer schemas docs fixtures lint agent preflight present snapshots
 
 .PHONY: $(TARGETS) conformance help
 $(TARGETS):
