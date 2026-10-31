@@ -51,7 +51,7 @@ def test_upcast_0_9_message():
     pr = parse_message({"ver": "0.9", "inc": "INC-0001", "from": "wifi-probe", "q": "evidence",
                         "obs": [{"ap": "ap-h3", "signal": -78, "ts": 1793440000}], "na": [{"ap": "ap-h3", "sig": "retx"}]})
     m = pr.message
-    assert m.message_type == "evidence_response" and m.schema_version == "1.2"  # upcast lands on the current MINOR
+    assert m.message_type == "evidence_response" and m.schema_version == "1.3"  # upcast lands on the current MINOR
     assert m.payload["observations"][0]["timestamp"].endswith("Z")
     assert m.payload["observations"][0]["units"] == {"signal": "dbm"}
     assert any(t.step == "version" for t in pr.transforms)
@@ -82,21 +82,21 @@ def test_schema_export(tmp_path, monkeypatch):
     assert Message.model_json_schema()["properties"]["message_type"]
 
 
-def test_version_1_2_current_and_older_minors_still_accepted():
+def test_version_1_3_current_and_older_minors_still_accepted():
     from netcoop.protocol.envelope import SCHEMA_VERSION
 
-    assert SCHEMA_VERSION == "1.2"
-    for v in ("1.0", "1.1", "1.2"):
+    assert SCHEMA_VERSION == "1.3"
+    for v in ("1.0", "1.1", "1.2", "1.3"):
         pr = parse_message(env(schema_version=v))
         assert pr.message is not None and pr.message.schema_version == v and not pr.limitations, v
     m = make_message("error", sender="orchestrator", recipient="orchestrator", incident_id="INC-0001",
                      payload={"code": "TIMEOUT", "detail": "x"})
-    assert m.schema_version == "1.2"
+    assert m.schema_version == "1.3"
 
 
-def test_report_declares_1_2_and_deterministic_decision_source(run):
+def test_report_declares_1_3_and_deterministic_decision_source(run):
     rep = run("congestion").report
-    assert rep["schema_version"] == "1.2" and rep["decision_source"] == "deterministic_scoring"
+    assert rep["schema_version"] == "1.3" and rep["decision_source"] == "deterministic_scoring"
 
 
 def test_hint_payload_is_bounded():

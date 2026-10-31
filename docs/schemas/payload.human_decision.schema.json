@@ -1,0 +1,43 @@
+{
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.human_decision.schema.json",
+  "additionalProperties": false,
+  "description": "Non-blocking HITL decision on a recommended action (NMP 1.3, D5). Appended to the event log AFTER the report;\nit is a record only: nothing is executed and the diagnosis is never recomputed. The free-text note stays in\nSQLite and is never put in the log or in a prompt.",
+  "properties": {
+    "action_id": {
+      "pattern": "^[A-Z]{2,6}-[0-9]{1,3}$",
+      "title": "Action Id",
+      "type": "string"
+    },
+    "decision": {
+      "enum": [
+        "approve",
+        "reject"
+      ],
+      "title": "Decision",
+      "type": "string"
+    },
+    "executed": {
+      "const": false,
+      "default": false,
+      "title": "Executed",
+      "type": "boolean"
+    },
+    "feedback_id": {
+      "minimum": 1,
+      "title": "Feedback Id",
+      "type": "integer"
+    },
+    "note_stored": {
+      "default": false,
+      "title": "Note Stored",
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "action_id",
+    "decision",
+    "feedback_id"
+  ],
+  "title": "HumanDecisionPayload",
+  "type": "object"
+}

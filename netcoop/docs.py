@@ -7,7 +7,7 @@ import re
 from pathlib import Path
 
 from netcoop.config import ROOT, load_config
-from netcoop.protocol.envelope import Message
+from netcoop.protocol.envelope import SCHEMA_VERSION, Message
 from netcoop.protocol.findings import Finding, Hypothesis, Prediction
 from netcoop.protocol.messages import PAYLOAD_MODELS
 
@@ -15,7 +15,7 @@ SCHEMA_DIR = ROOT / "docs" / "schemas"
 README = ROOT / "README.md"
 
 ENVELOPE_MEANING = {
-    "schema_version": ("\"MAJOR.MINOR\"", "Protocol version of this message (current 1.1; 1.0 accepted; 0.9 upcast)"),
+    "schema_version": ("\"MAJOR.MINOR\"", f"Protocol version of this message (current {SCHEMA_VERSION}; older 1.x accepted; 0.9 upcast)"),
     "message_id": ("uuid", "Unique; receivers are idempotent on duplicates (content-derived UUIDv4)"),
     "message_type": ("enum", ", ".join(f"`{t}`" for t in PAYLOAD_MODELS)),
     "incident_id": ("str", "Server-generated, `^INC-[0-9A-Z]{4,12}$`"),

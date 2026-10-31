@@ -23,7 +23,8 @@ class ReplayResult:
 
 
 def _strip(events: list[dict]) -> list[dict]:
-    return [{k: v for k, v in e.items() if k != "created_at"} for e in events]
+    """Drop wall-clock timestamps and post-run human_decision records (HITL never changes the run)."""
+    return [{k: v for k, v in e.items() if k != "created_at"} for e in events if e.get("message_type") != "human_decision"]
 
 
 def replay(incident_id: str, runs_dir: Path = RUNS_DIR, cfg: Config | None = None) -> ReplayResult:
