@@ -14,7 +14,7 @@ Three things we optimized for:
    diagnosis**: without it the Wi-Fi scenario is `insufficient_evidence`; with it, `diagnosed`.
 2. **Predict before you look.** Each hypothesis logs falsifiable predictions to the event log *before* the
    evidence is requested. Hits and misses are scored, and every prediction appears in the report.
-3. **Measured, not claimed.** Per-fault accuracy, a confusion matrix, a confidence-vs-accuracy table and a degradation curve under
+3. **Measured, not claimed.** Per-fault accuracy, a confusion matrix, per-source confidence-vs-accuracy tables, a severity sweep and degradation curves under
    corrupted input are all produced by `make eval` / `make fuzz` on generated incidents, never on the demo fixtures.
 
 The core is deterministic: root cause, confidence, conflicts and actions are computed by code. The LLM is
@@ -424,6 +424,68 @@ Wrong-diagnosis rate 0.0, real fault reported healthy 0.0, false positives on no
 signatures derived from the generator code (`data/generator/SCHEMA.md`). The raw generator is run with no
 preprocessing; tuning used seed range A only.
 
+<!-- BEGIN GENERATED: organizer_robustness -->
+#### Organizer data: severity sweep (answer-key check)
+
+The organizer generator is **wrapped, not edited**: each fault's injected deviation is scaled to 25/50/75/100% of what the generator injects (`value = normal_midpoint + level × (generated − normal_midpoint)`). Seed range B, 200 seeds per cell. *Detected* = not `no_fault_detected`; *committed* = diagnosed/probable; *correct* = committed to the matching fault type.
+
+| label | injected severity | detected | committed | correct | outputs |
+|---|---|---|---|---|---|
+| `latency_spike` | 25% | 0.0 | 0.0 | 0.0 | no_fault_detected 200 |
+| `latency_spike` | 50% | 0.695 | 0.21 | 0.21 | insufficient_evidence 97, no_fault_detected 61, latency_spike 42 |
+| `latency_spike` | 75% | 0.97 | 0.645 | 0.645 | latency_spike 129, insufficient_evidence 65, no_fault_detected 6 |
+| `latency_spike` | 100% | 1.0 | 1.0 | 1.0 | latency_spike 200 |
+| `hardware_failure` | 25% | 1.0 | 1.0 | 0.0 | interface_fault 150, congestion 50 |
+| `hardware_failure` | 50% | 1.0 | 1.0 | 0.7 | hardware_failure 140, interface_fault 60 |
+| `hardware_failure` | 75% | 1.0 | 1.0 | 1.0 | hardware_failure 200 |
+| `hardware_failure` | 100% | 1.0 | 1.0 | 1.0 | hardware_failure 200 |
+
+#### Organizer data: corruption curve
+
+One raw organizer record per incident (all three labels, 200 seeds each = 600 per rate) through the corruption fuzzer (`eval/mutate.py`).
+
+| corruption rate | accuracy | wrong-diagnosis | failed | crashes |
+|---|---|---|---|---|
+| 0% | 1.0 | 0.0 | 0 | 0 |
+| 10% | 0.998 | 0.0 | 0 | 0 |
+| 20% | 0.998 | 0.0 | 0 | 0 |
+| 30% | 0.998 | 0.0 | 0 | 0 |
+| 40% | 0.988 | 0.0 | 0 | 0 |
+| 50% | 0.975 | 0.0 | 0 | 0 |
+| 60% | 0.982 | 0.0 | 0 | 0 |
+
+#### Confidence vs observed accuracy, per source
+
+**Organizer generator (committed diagnoses, all severity levels)**: OVERCONFIDENT in at least one bin
+
+| stated confidence bin | n | mean stated | observed accuracy |
+|---|---|---|---|
+| [0.50, 0.75] | 600 | 0.6 | 0.567 |
+| [0.90, 1.00] | 571 | 1.0 | 1.0 |
+
+**NetCoop extended generator (seed range B)**: never overconfident
+
+| stated confidence bin | n | mean stated | observed accuracy |
+|---|---|---|---|
+| [0.50, 0.75] | 56 | 0.646 | 0.964 |
+| [0.75, 0.90] | 73 | 0.829 | 0.973 |
+| [0.90, 1.00] | 90 | 0.99 | 1.0 |
+<!-- END GENERATED: organizer_robustness -->
+
+**Reading the organizer robustness numbers honestly:**
+* At the generator's own severity (100%) every label is 100% correct, and corrupting up to 60% of records
+  costs at most ~2.5 points, with **zero wrong diagnoses**.
+* `latency_spike` fades into *abstention* as severity drops: at 50% injected severity only 21% are diagnosed, and the rest are
+  `insufficient_evidence` or `no_fault_detected`. It never becomes a wrong diagnosis.
+* **Known weakness:** `hardware_failure` at reduced severity is *confidently mislabeled*. At 25% severity every
+  record is diagnosed, but as `interface_fault` (75%) or `congestion` (25%); at 50%, 30% are `interface_fault`.
+  With CPU and utilization no longer saturated, the record looks like a single-cause fault. Scoring is frozen for
+  the demo, so this is reported, not tuned away.
+* Calibration per source: **never overconfident on our generator**. **On organizer data it is not**: the
+  [0.50, 0.75] bin states 0.6 but observes 0.567. Those are the reduced-severity
+  hardware_failure → interface_fault cases above. At native severity every organizer diagnosis is confidence 1.00
+  and correct.
+
 ### Extended generator (held-out seed range B)
 
 <!-- BEGIN GENERATED: eval -->
@@ -491,7 +553,7 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
   98.2% of the time; the wrong-diagnosis rate is 1.4%, the
   false-positive rate on normal is 0%, and a real fault is reported healthy in
   1.3% of fault incidents.
-* **Never overconfident** (seed B): in every confidence bin, observed accuracy is at or above the mean stated confidence.
+* **Never overconfident on this source** (our generator, seed B): in every confidence bin, observed accuracy is at or above the mean stated confidence. (Not true for reduced-severity organizer data; see above.)
   We do not call this "calibrated": confidence is conservative, not matched.
 
   | stated confidence bin | n | mean stated | observed accuracy |

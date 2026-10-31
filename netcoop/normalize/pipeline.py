@@ -459,6 +459,19 @@ def normalize_records(
     return res
 
 
+def single_snapshot_limitation(res: NormalizationResult) -> Limitation | None:
+    """Reporting only (V1): if every device has exactly one sample time, persistence over time is not verified.
+    It adds a limitation and nothing else: status, confidence and scoring are unchanged (tested)."""
+    times: dict[str, set] = {}
+    for o in res.observations:
+        if o.entity_type == "device":
+            times.setdefault(o.entity_id, set()).add(o.ts)
+    if times and all(len(t) == 1 for t in times.values()):
+        return Limitation(code="SINGLE_SNAPSHOT", impact="low",
+                          detail=f"single snapshot: persistence not verified ({len(times)} device(s), one sample each)")
+    return None
+
+
 def _summarize(res: NormalizationResult, cfg: Config) -> None:
     s = res.summary
     renamed = sum(1 for o in res.observations for t in o.transforms if t.step == "alias")
@@ -491,6 +504,9 @@ def _summarize(res: NormalizationResult, cfg: Config) -> None:
     for (metric, unit), n in sorted(conv.items()):
         res.limitations.append(Limitation(code="UNIT_CONVERTED", detail=f"{n} {metric} value(s) converted from {unit}",
                                           impact="low"))
+    snap = single_snapshot_limitation(res)
+    if snap is not None:
+        res.limitations.append(snap)
     if s["renamed"]:
         res.limitations.append(Limitation(code="FIELDS_RENAMED", detail=f"{s['renamed']} field(s) mapped from aliases to canonical names",
                                           impact="none"))

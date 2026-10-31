@@ -56,8 +56,27 @@ it matches the documented mapping (`data/generator/SCHEMA.md`). Talking point: "
   **1.4%**, normal false positives **0%**, and a fault is reported healthy in **1.3%** of cases.
 * Per class: normal 0.95, congestion 0.8, interface 0.975,
   overload 0.8, Wi-Fi 0.9, DNS 0.95, DHCP 0.95.
-* **Never overconfident:** in every confidence bin, observed accuracy ≥ stated confidence.
+* **Never overconfident on our generator** (every confidence bin: observed accuracy ≥ stated confidence). **Not on reduced-severity
+  organizer data:** its [0.50, 0.75] bin states 0.6 and observes 0.567. Say this before a judge finds it.
 * Robustness: 0.943 → 0.886 with **60%** of input records corrupted; without the alias/unit registry, 0.514 even on clean input.
+
+**Answer-key check on organizer data** (generator wrapped, not edited; seed range B, 200 seeds per cell):
+
+| injected severity | latency_spike correct (detected) | hardware_failure correct (committed) |
+|---|---|---|
+| 25% | 0.0 (0.0) | 0.0 (1.0) |
+| 50% | 0.21 (0.695) | 0.7 (1.0) |
+| 75% | 0.645 (0.97) | 1.0 (1.0) |
+| 100% | 1.0 (1.0) | 1.0 (1.0) |
+
+* Corruption (organizer records through the fuzzer): accuracy 1.0 at 0% → 0.982 at 60%, **0 wrong diagnoses**, 0 failed runs, 0 crashes.
+
+### Known weaknesses (say them before you're asked)
+* **device_overload 0.80** on our generator (target was 0.85). The misses are mostly weakened overloads ending as
+  `insufficient_evidence`, plus a few read as congestion.
+* **hardware_failure at reduced severity is confidently mislabeled**: at 25% severity it is called `interface_fault`/`congestion`.
+  At the generator's own severity it is 100% correct. Scoring was frozen for the demo, so this is reported, not tuned.
+* Calibration on organizer data is slightly overconfident in the 0.50–0.75 bin (from that same case).
 
 ## Fallback plan
 
@@ -107,6 +126,22 @@ One to one, derived from the generator code (table in `data/generator/SCHEMA.md`
 * `hardware_failure` → `hardware_failure`: CPU 99.9, utilization 100, loss 15–30%, latency 500–1000 ms, drops
   5,000–15,000 plus interface errors. Every resource is saturated at once, so no single-cause signature fits; the
   signature expects them all together.
+
+**"Your signatures came from reading the generator. Isn't that fitting the answer key?"**
+The generator *is* the fault specification we were given: "latency spike" and "hardware failure" mean exactly what
+its code injects, and we documented the derivation line by line (`data/generator/SCHEMA.md`). What would be overfitting
+is never being tested off that exact spec. So we test off it:
+* **Severity sweep:** the injected deviation is scaled to 25/50/75/100%. latency_spike degrades into honest abstention
+  (21% correct at 50%, no wrong answers). hardware_failure at 25% is mislabeled as
+  interface_fault/congestion, and we show that.
+* **Corruption:** with 60% of the organizer records corrupted, accuracy is 0.982, with 0 wrong diagnoses.
+* **Hold-out:** tuning used seed range A; every number shown is from seed range B, and judges can sample live (`tasks.py judge`).
+
+**"Is your own generator independent?"**
+No. Both sources are synthetic: the organizer's generator, and ours, which we wrote ourselves. Our generator adds what
+the organizer's lacks (Wi-Fi, DNS/DHCP, links, multi-sample windows) plus things that hurt us (confounders, gaps,
+corruption). Its numbers (0.90 overall on held-out seeds) measure internal consistency under realistic
+noise, not field accuracy, and the README says so.
 
 **"Why not use the A2A SDK?"**
 A2A is our transport; the meaning lives in NMP plus the metric registry. The core speaks the A2A wire shapes (agent

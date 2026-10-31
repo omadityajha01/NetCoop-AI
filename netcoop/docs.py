@@ -103,6 +103,8 @@ def tables() -> dict[str, str]:
                         f"{a_['false_positive_rate_normal']} | {a_.get('fault_to_no_fault_rate', '-')} | {mark} | {b_['accuracy']} | "
                         f"{b_['wrong_diagnosis_rate']} | {b_['false_positive_rate_normal']} | {b_['precision_when_diagnosed']} |")
         out["sweep"] = "\n".join(rows)
+    if (rep / "organizer_robustness.md").exists():
+        out["organizer_robustness"] = (rep / "organizer_robustness.md").read_text(encoding="utf-8").strip()
     if (rep / "organizer.md").exists():
         out["organizer"] = (rep / "organizer.md").read_text(encoding="utf-8").strip()
     if (rep / "fuzz.md").exists():

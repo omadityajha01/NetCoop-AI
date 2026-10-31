@@ -1,0 +1,196 @@
+{
+  "seeds": 200,
+  "seed_b": 100000,
+  "severity": [
+    {
+      "label": "latency_spike",
+      "level": 0.25,
+      "n": 200,
+      "detected": 0.0,
+      "committed": 0.0,
+      "correct": 0.0,
+      "outputs": {
+        "no_fault_detected": 200
+      }
+    },
+    {
+      "label": "latency_spike",
+      "level": 0.5,
+      "n": 200,
+      "detected": 0.695,
+      "committed": 0.21,
+      "correct": 0.21,
+      "outputs": {
+        "insufficient_evidence": 97,
+        "no_fault_detected": 61,
+        "latency_spike": 42
+      }
+    },
+    {
+      "label": "latency_spike",
+      "level": 0.75,
+      "n": 200,
+      "detected": 0.97,
+      "committed": 0.645,
+      "correct": 0.645,
+      "outputs": {
+        "latency_spike": 129,
+        "insufficient_evidence": 65,
+        "no_fault_detected": 6
+      }
+    },
+    {
+      "label": "latency_spike",
+      "level": 1.0,
+      "n": 200,
+      "detected": 1.0,
+      "committed": 1.0,
+      "correct": 1.0,
+      "outputs": {
+        "latency_spike": 200
+      }
+    },
+    {
+      "label": "hardware_failure",
+      "level": 0.25,
+      "n": 200,
+      "detected": 1.0,
+      "committed": 1.0,
+      "correct": 0.0,
+      "outputs": {
+        "interface_fault": 150,
+        "congestion": 50
+      }
+    },
+    {
+      "label": "hardware_failure",
+      "level": 0.5,
+      "n": 200,
+      "detected": 1.0,
+      "committed": 1.0,
+      "correct": 0.7,
+      "outputs": {
+        "hardware_failure": 140,
+        "interface_fault": 60
+      }
+    },
+    {
+      "label": "hardware_failure",
+      "level": 0.75,
+      "n": 200,
+      "detected": 1.0,
+      "committed": 1.0,
+      "correct": 1.0,
+      "outputs": {
+        "hardware_failure": 200
+      }
+    },
+    {
+      "label": "hardware_failure",
+      "level": 1.0,
+      "n": 200,
+      "detected": 1.0,
+      "committed": 1.0,
+      "correct": 1.0,
+      "outputs": {
+        "hardware_failure": 200
+      }
+    }
+  ],
+  "corruption": [
+    {
+      "corruption_rate": 0.0,
+      "n": 600,
+      "accuracy": 1.0,
+      "wrong_diagnosis_rate": 0.0,
+      "failed": 0,
+      "crashes": 0
+    },
+    {
+      "corruption_rate": 0.1,
+      "n": 600,
+      "accuracy": 0.998,
+      "wrong_diagnosis_rate": 0.0,
+      "failed": 0,
+      "crashes": 0
+    },
+    {
+      "corruption_rate": 0.2,
+      "n": 600,
+      "accuracy": 0.998,
+      "wrong_diagnosis_rate": 0.0,
+      "failed": 0,
+      "crashes": 0
+    },
+    {
+      "corruption_rate": 0.3,
+      "n": 600,
+      "accuracy": 0.998,
+      "wrong_diagnosis_rate": 0.0,
+      "failed": 0,
+      "crashes": 0
+    },
+    {
+      "corruption_rate": 0.4,
+      "n": 600,
+      "accuracy": 0.988,
+      "wrong_diagnosis_rate": 0.0,
+      "failed": 0,
+      "crashes": 0
+    },
+    {
+      "corruption_rate": 0.5,
+      "n": 600,
+      "accuracy": 0.975,
+      "wrong_diagnosis_rate": 0.0,
+      "failed": 0,
+      "crashes": 0
+    },
+    {
+      "corruption_rate": 0.6,
+      "n": 600,
+      "accuracy": 0.982,
+      "wrong_diagnosis_rate": 0.0,
+      "failed": 0,
+      "crashes": 0
+    }
+  ],
+  "calibration_organizer": [
+    {
+      "bin": "[0.50, 0.75]",
+      "n": 600,
+      "mean_confidence": 0.6,
+      "accuracy": 0.567
+    },
+    {
+      "bin": "[0.90, 1.00]",
+      "n": 571,
+      "mean_confidence": 1.0,
+      "accuracy": 1.0
+    }
+  ],
+  "calibration_ours": [
+    {
+      "bin": "[0.50, 0.75]",
+      "n": 56,
+      "mean_confidence": 0.646,
+      "accuracy": 0.964
+    },
+    {
+      "bin": "[0.75, 0.90]",
+      "n": 73,
+      "mean_confidence": 0.829,
+      "accuracy": 0.973
+    },
+    {
+      "bin": "[0.90, 1.00]",
+      "n": 90,
+      "mean_confidence": 0.99,
+      "accuracy": 1.0
+    }
+  ],
+  "never_overconfident": {
+    "organizer": false,
+    "ours": true
+  }
+}

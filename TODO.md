@@ -258,6 +258,23 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - Clean-clone check (fresh clone + fresh venv + `npm ci`): 115 tests pass, demo as expected, preflight 12/12 on
   port 8781 (includes conformance 7/7), judge mode matches. Tagged `demo-safe-2`.
 
+## V1: answer-key check on organizer data (measurement only; FREEZE respected)
+
+- `eval/organizer_robustness.py` (`python tasks.py robustness`). The generator is wrapped, not edited; each fault's
+  deviation is scaled to 25/50/75/100% from the midpoint of the generator's own normal range. Seed range B, 200 seeds per cell.
+- latency_spike correct: 25% 0.0, 50% 0.21, 75% 0.645, 100% 1.0. Misses are abstentions, never wrong.
+- hardware_failure correct: 25% 0.0, 50% 0.7, 75% 1.0, 100% 1.0.
+  **At 25–50% it is committed but mislabeled** (interface_fault / congestion). This is reported as a known weakness,
+  **not tuned** (scoring frozen).
+- Corruption on organizer records: 1.0 → 0.982 at 60%, 0 wrong, 0 failed, 0 crashes.
+- Calibration per source: ours never overconfident; organizer **overconfident** in the 0.50–0.75 bin (0.60 stated vs
+  0.567 observed). The README/DEMO wording was changed to per-source, and scoring was not touched.
+- Reporting only: limitation "single snapshot: persistence not verified" when every device has exactly one sample time
+  (`single_snapshot_limitation`). `tests/integration/test_single_snapshot.py` proves that status, confidence, scoring,
+  evidence and actions are identical with and without it.
+- DEMO.md: severity + corruption tables, the "answer key" and "independent generator" Q&A, and known weaknesses (overload 0.80,
+  reduced-severity hardware_failure, organizer calibration bin).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

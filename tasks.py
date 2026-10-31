@@ -38,6 +38,8 @@ def main() -> int:
         return sh(PY, "-m", "eval.run_eval", "tune", "--n", n)
     if t == "sweep":
         return sh(PY, "-m", "eval.run_eval", "sweep", "--n", n)
+    if t == "robustness":
+        return sh(PY, "-m", "eval.organizer_robustness", "--seeds", os.environ.get("SEEDS", "200"))
     if t == "organizer":
         return sh(PY, "-m", "eval.organizer_check", "--seeds", os.environ.get("SEEDS", "500"))
     if t == "conformance":
