@@ -5,6 +5,7 @@
     netcoop replay <incident_id>
     netcoop agents refresh
     netcoop report <incident_id> | events <incident_id>
+    netcoop timeline <incident_id> --html out.html
     netcoop feedback <incident_id> <action_id> approve|reject [--note ...]
     netcoop conformance <agent_url>
     netcoop schemas | docs | serve
@@ -177,6 +178,14 @@ def cmd_events(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_timeline(a: argparse.Namespace) -> int:
+    from netcoop.timeline import write_timeline
+
+    out = Path(a.html) if a.html else _run_dir(a) / "timeline.html"
+    print(f"wrote {write_timeline(_run_dir(a), out)}")
+    return 0
+
+
 def cmd_feedback(a: argparse.Namespace) -> int:
     from netcoop.storage import Store
 
@@ -242,6 +251,10 @@ def main(argv: list[str] | None = None) -> int:
         if name == "report":
             p.add_argument("--json", action="store_true")
         p.set_defaults(fn=fn)
+    p = sub.add_parser("timeline", help="static HTML timeline of a run (no JS, no network)")
+    p.add_argument("incident_id")
+    p.add_argument("--html", help="output file (default runs/<id>/timeline.html)")
+    p.set_defaults(fn=cmd_timeline)
     p = sub.add_parser("feedback", help="non-blocking approve/reject of a recommended action")
     p.add_argument("incident_id")
     p.add_argument("action_id")

@@ -45,6 +45,7 @@ Other CLI commands:
 
 ```bash
 netcoop diagnose data/scenarios/congestion/incident.json --timeline   # message timeline, predictions, blocked actions
+netcoop timeline <incident_id> --html timeline.html                    # static HTML: agent lanes, predictions, transforms, report
 netcoop replay <incident_id>                                           # byte-identical report.json re-run
 netcoop agents refresh                                                 # re-check the allowlist; new agents join the next run
 netcoop feedback <incident_id> CONG-1 approve --note "ok"              # non-blocking HITL (nothing is executed)
@@ -554,6 +555,8 @@ Every coercion sets `data_quality.coerced`, lowers quality, and appears in `limi
   * complaint text is truncated, tag-stripped and wrapped
   * outputs are allowlisted (known IDs only, no URLs or code); otherwise the deterministic template is used
 * **External output is untrusted:** same normalizer, owned metrics only, findings recomputed with *our* registry (agent-authored findings are ignored), 256 KB cap, timeout, rate limit, no tools.
+* **HTML timeline (PI8):** one static file, no JavaScript and no network. Every data value is HTML-escaped, so a
+  device named `<script>…` renders as text (tested).
 * **API:** 10 MB uploads, `.json`/`.csv` only, incident IDs validated before touching `runs/` (path traversal blocked), parameterized SQLite, CSV formula-injection guard, localhost CORS, structured errors.
 * The `tests/security/` suite (PI9) covers:
   * injection in a device name

@@ -104,6 +104,18 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   The check therefore runs in an isolated venv and is not part of `[dev]`. The accidental global install was
   rolled back: a2a-sdk and its five pulled-in packages were uninstalled, protobuf was restored to 5.29.6, and `pip check` is clean.
 
+## T6: HTML timeline
+
+- `netcoop timeline <id> [--html out]` (`netcoop/timeline.py`): a single static file (inline CSS, **no JS**, no CDN).
+  It shows one lane per agent in seq order, prediction → request → response seq triples with hit/miss, normalization
+  counters, transforms, quarantine and extras, and a final report panel with blocked actions.
+- PI8: every data value goes through `html.escape(quote=True)`. Tests: `tests/security/test_timeline_html.py`
+  (`<script>` device name and `<img onerror>` field render as text; zero `<script`/`<img` elements; no http refs).
+- **Decision:** the PI6 quarantine reason now includes the truncated raw ID (`repr`, 40 chars), so operators see what
+  was rejected. It is escaped in the HTML and scrubbed of certainty words in reports.
+- Fix: quarantine code classification is now prefix-based. An unknown ID containing the word "regex" was
+  previously misclassified as MALFORMED.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

@@ -257,7 +257,7 @@ def _process_record(ref: str, idx: int, rec: Any, cfg: Config, alias_idx: Any, r
         return
     etype, eid, eprob = canonicalize(raw_id, etype_hint, cfg.topology)
     if eprob:
-        code = "MALFORMED" if "regex" in eprob or "not a string" in eprob else "UNKNOWN_ENTITY"
+        code = "MALFORMED" if eprob.startswith(("entity id fails ID regex", "entity id is not a string")) else "UNKNOWN_ENTITY"
         probs.append(Quarantined(ref, code, eprob, ekey))
         return
     if str(raw_id) != eid:

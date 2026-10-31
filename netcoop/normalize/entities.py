@@ -15,7 +15,7 @@ def canonicalize(raw: object, expected_type: str | None, topo: Topology) -> tupl
         return None, None, "entity id is not a string"
     s = str(raw).strip()
     if not RAW_ID.match(s):
-        return None, None, "entity id fails ID regex (PI6)"
+        return None, None, f"entity id fails ID regex (PI6): {s[:40]!r}"
     eid = topo.resolve(s)
     if eid is None:
         return None, None, f"unknown entity {s!r}"
