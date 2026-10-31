@@ -29,6 +29,10 @@ optional and **off by default** (it can only add a hint and write the narrative)
 
 ---
 
+## Setup
+
+Python ≥ 3.11 (+ Node ≥ 18 for the external agent); install with `make setup` or `python tasks.py setup`. Full commands are in [Quick start](#quick-start) below.
+
 ## Quick start
 
 ```bash
@@ -138,6 +142,10 @@ coverage manifest. Normal values are available only through `evidence_request`. 
 a prediction is made before the agent shows the value.
 
 ---
+
+## Communication interfaces
+
+Agents talk only through typed NMP messages on the bus, and through A2A for external agents. See [Protocol: NMP 1.1](#protocol-netcoop-message-protocol-nmp-11) (envelope, finding, metric registry, versioning) and [A2A transport](#a2a-transport).
 
 ## Protocol: NetCoop Message Protocol (NMP) 1.1
 
@@ -273,6 +281,18 @@ Discovery is **only** from that allowlist, and a card whose `url` leaves the all
 
 ---
 
+## Workflow
+
+One incident, end to end (details in [Orchestration](#orchestration)):
+
+1. **Ingest → normalize** the bundle (aliases, units, IDs, time; quarantine, never silently drop).
+2. **Round 0:** `task_request` to all analysis agents in parallel, plus any allowlisted external agent that is reachable now.
+3. **Scope:** `connectivity_agent` finds affected entities and the nearest common upstream node.
+4. **Correlate:** `correlation_agent` builds hypotheses, detects conflicts, and logs predictions *before* requesting evidence.
+5. **Evidence rounds** (≤ 2) answer the predictions; hits and misses are scored.
+6. **Final scoring → report:** playbook actions, policy check and validator.
+7. **Persist** `report.json` + the append-only `events.jsonl` (replayable byte for byte).
+
 ## Orchestration
 
 1. **Ingest → normalize**, which emits `normalization_summary`.
@@ -303,6 +323,10 @@ exchanges, and checks that `report.json` and the event sequence are byte-identic
 * Every loop is bounded by config: rounds, requests per round, and a total bus message cap.
 
 ---
+
+## Evidence correlation
+
+How findings from different agents are combined into one diagnosis: see [Correlation and scoring (documented method)](#correlation-and-scoring-documented-method).
 
 ## Correlation and scoring (documented method)
 
@@ -484,8 +508,7 @@ One raw organizer record per incident (all three labels, 200 seeds each = 600 pe
   costs at most ~2.5 points, with **zero wrong diagnoses**.
 * `latency_spike` fades into *abstention* as severity drops: at 50% injected severity only 21% are diagnosed, and the rest are
   `insufficient_evidence` or `no_fault_detected`. It never becomes a wrong diagnosis.
-* **Known weakness:** `hardware_failure` at reduced severity is *confidently mislabeled*. At 25% severity every
-  record is diagnosed, but as `interface_fault` (75%) or `congestion` (25%); at 50%, 30% are `interface_fault`.
+* **Known weakness:** `hardware_failure` at reduced severity is *mislabeled at medium confidence*. At 25% strength, hardware failure is never the top cause: 150/200 are reported probable (top: interface fault, hardware failure named co-candidate) and 50/200 are diagnosed as congestion at medium confidence, with hardware failure listed in alternatives. At 50%, 30% are `interface_fault`.
   With CPU and utilization no longer saturated, the record looks like a single-cause fault. Scoring is frozen for
   the demo, so this is reported, not tuned away.
 * Calibration per source: **never overconfident on our generator**. **On organizer data it is not**: the
@@ -615,6 +638,10 @@ Accuracy degrades gently, from 0.943 on clean input to 0.886 at 60% corrupted re
 
 ---
 
+## Error handling
+
+Agent failures (timeouts, crashes, invalid output) are covered in [Failure handling](#failure-handling); bad or incompatible input in [Error handling and robustness](#error-handling-and-robustness-normalization-pipeline) below.
+
 ## Error handling and robustness (normalization pipeline)
 
 Runs in this order, and every step records `Transform{step, field, from, to, reason}`:
@@ -692,7 +719,7 @@ These extensions are additive:
 
 | Command | What it does |
 |---|---|
-| `make test` | 115 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~40 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
+| `make test` | 127 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~50 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
 | `make demo` | All scenarios via the CLI |
 | `make eval` / `make fuzz` / sweep | Measured accuracy, confidence-vs-accuracy table, degradation curve, operating-point sweep → `eval/reports/` |
 | `make conformance AGENT_URL=…` | Conformance kit |
