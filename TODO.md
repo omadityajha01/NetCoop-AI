@@ -206,6 +206,19 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   localization skipped, injection still quarantined, input topology places a device, a conflict keeps the config role,
   invalid topology rejected).
 
+## U3: Wi-Fi and device_overload
+
+- Seed A confusion: weak_wifi → insufficient 12, no_fault 3. device_overload → insufficient 14, congestion 6.
+  Top pair: **device_overload ↔ insufficient_evidence (no_signature_match)**. Causes: (1) CPU lands in the warn band once
+  intensity is reduced (signature wanted ≥ high); (2) a busy-but-healthy *neighbouring* link contradicted overload
+  via `link_utilization_pct ≥ high`. Wi-Fi: RF values in the warn band once intensity is reduced.
+- Fixed in signatures.yaml only: device_overload `cpu_pct ≥ warn` and contradiction only at `link_utilization ≥ critical`;
+  weak_wifi `rssi/snr/retransmissions` at `warn` (healthy APs sit well clear: RSSI −62…−45, SNR 28–40, retx 1–6%).
+- Seed A after: wrong 2.5%, normal FP 5.0% (at the guard, not over), fault→healthy 0.8%.
+  Seed B: weak_wifi 0.625 → **0.90** ✓, device_overload 0.675 → **0.80** (target 0.85 **not reached**; kept as best:
+  A's normal FP is already at the 5% limit, so a further loosening would trade a guard for accuracy).
+  Organizer A unchanged (100% / 100% / 100%).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

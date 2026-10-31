@@ -1,18 +1,18 @@
 {
   "n": 280,
-  "overall_accuracy": 0.8,
-  "macro_accuracy": 0.8,
-  "precision_when_diagnosed": 0.98,
+  "overall_accuracy": 0.857,
+  "macro_accuracy": 0.857,
+  "precision_when_diagnosed": 0.982,
   "wrong_diagnosis_rate": 0.014,
-  "fault_to_no_fault_rate": 0.013,
+  "fault_to_no_fault_rate": 0.008,
   "normal_accuracy": 0.625,
   "false_positive_rate_normal": 0.0,
-  "insufficient_evidence_rate": 0.175,
+  "insufficient_evidence_rate": 0.121,
   "localization_accuracy": 0.995,
-  "accuracy_on_mutated_inputs": 0.786,
+  "accuracy_on_mutated_inputs": 0.857,
   "mutated_share": 0.3,
   "crashes": 0,
-  "mean_ms_per_incident": 56.8,
+  "mean_ms_per_incident": 59.5,
   "per_fault": {
     "normal": {
       "n": 40,
@@ -34,14 +34,14 @@
     },
     "device_overload": {
       "n": 40,
-      "accuracy": 0.675,
-      "insufficient_rate": 0.25,
-      "probable_rate": 0.125
+      "accuracy": 0.8,
+      "insufficient_rate": 0.125,
+      "probable_rate": 0.1
     },
     "weak_wifi": {
       "n": 40,
-      "accuracy": 0.625,
-      "insufficient_rate": 0.325,
+      "accuracy": 0.9,
+      "insufficient_rate": 0.075,
       "probable_rate": 0.0
     },
     "dns_failure": {
@@ -93,10 +93,10 @@
     },
     "device_overload": {
       "congestion": 3,
-      "device_overload": 27,
+      "device_overload": 32,
       "dhcp_failure": 0,
       "dns_failure": 0,
-      "insufficient_evidence": 10,
+      "insufficient_evidence": 5,
       "interface_fault": 0,
       "latency_spike": 0,
       "no_fault_detected": 0,
@@ -107,11 +107,11 @@
       "device_overload": 0,
       "dhcp_failure": 0,
       "dns_failure": 0,
-      "insufficient_evidence": 13,
+      "insufficient_evidence": 3,
       "interface_fault": 0,
       "latency_spike": 0,
-      "no_fault_detected": 2,
-      "weak_wifi": 25
+      "no_fault_detected": 1,
+      "weak_wifi": 36
     },
     "dns_failure": {
       "congestion": 0,
@@ -139,31 +139,31 @@
   "calibration": [
     {
       "bin": "[0.50, 0.75]",
-      "n": 52,
-      "mean_confidence": 0.645,
-      "accuracy": 0.962
+      "n": 56,
+      "mean_confidence": 0.646,
+      "accuracy": 0.964
     },
     {
       "bin": "[0.75, 0.90]",
-      "n": 67,
+      "n": 73,
       "mean_confidence": 0.829,
-      "accuracy": 0.97
+      "accuracy": 0.973
     },
     {
       "bin": "[0.90, 1.00]",
-      "n": 84,
-      "mean_confidence": 0.991,
+      "n": 90,
+      "mean_confidence": 0.99,
       "accuracy": 1.0
     }
   ],
   "by_category": {
     "high": {
-      "n": 151,
-      "accuracy": 0.987
+      "n": 163,
+      "accuracy": 0.988
     },
     "medium": {
-      "n": 52,
-      "accuracy": 0.962
+      "n": 56,
+      "accuracy": 0.964
     }
   },
   "seed": 5000,

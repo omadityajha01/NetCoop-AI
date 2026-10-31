@@ -34,12 +34,12 @@ device_overload:
   label: "Likely device overload (CPU exhaustion) causing drops across interfaces"
   entity: [device]
   expects:
-    cpu_pct:           {op: ">=", ref: high, weight: 3}
+    cpu_pct:           {op: ">=", ref: warn, weight: 3}   # U3: warn (a loaded box drops before CPU is pegged)
     queue_drops_count: {op: ">=", ref: high, weight: 2}
     memory_pct:        {op: ">=", ref: warn, weight: 1}
     latency_ms:        {op: ">=", ref: warn, weight: 1}
   contradicts:
-    link_utilization_pct:   {op: ">=", ref: high, weight: 2}
+    link_utilization_pct:   {op: ">=", ref: critical, weight: 2}   # U3: only a saturated link argues against overload
     interface_errors_count: {op: ">=", ref: high, weight: 1}
   playbook: device_overload
 
@@ -47,9 +47,9 @@ weak_wifi:
   label: "Likely weak Wi-Fi signal at the access point causing retransmissions"
   entity: [ap]
   expects:
-    rssi_dbm:           {op: "<=", ref: high, weight: 3}
-    snr_db:             {op: "<=", ref: high, weight: 2}
-    retransmission_pct: {op: ">=", ref: high, weight: 3}
+    rssi_dbm:           {op: "<=", ref: warn, weight: 3}   # U3: warn (healthy APs sit well above -67 dBm)
+    snr_db:             {op: "<=", ref: warn, weight: 2}
+    retransmission_pct: {op: ">=", ref: warn, weight: 3}
     latency_ms:         {op: ">=", ref: warn, weight: 1}
     packet_loss_pct:    {op: ">=", ref: warn, weight: 1}
   contradicts:

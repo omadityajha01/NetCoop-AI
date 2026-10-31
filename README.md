@@ -182,6 +182,7 @@ Error codes: `SCHEMA_VERSION_UNSUPPORTED, MISSING_FIELD, BAD_TYPE, BAD_UNIT, UNK
 | `transforms` | list | Every normalization step applied to the underlying data |
 | `source_refs` | list | Raw record references (`records[i].field`) |
 | `source` | str | None | Originating telemetry source (snmp, probe, wifi-probe…); used for C1 conflicts |
+| `placed` | bool |  |
 <!-- END GENERATED: finding -->
 
 ### Metric registry (`config/metrics.yaml`): names, units, meanings, aliases, thresholds
@@ -305,8 +306,8 @@ Fault signatures (`config/signatures.yaml`):
 |---|---|---|---|---|
 | `congestion` | Likely link congestion causing egress queue drops | `link_utilization_pct` >= high ×3, `queue_drops_count` >= high ×3, `latency_ms` >= warn ×2, `packet_loss_pct` >= warn ×1 | `interface_errors_count` >= high ×2, `cpu_pct` >= high ×1 | link, device |
 | `interface_fault` | Likely physical interface fault causing errors and packet loss | `interface_errors_count` >= high ×3, `crc_errors_count` >= warn ×2, `link_flaps_count` >= warn ×2, `packet_loss_pct` >= warn ×2 | `link_utilization_pct` >= high ×2 | link, device |
-| `device_overload` | Likely device overload (CPU exhaustion) causing drops across interfaces | `cpu_pct` >= high ×3, `queue_drops_count` >= high ×2, `memory_pct` >= warn ×1, `latency_ms` >= warn ×1 | `link_utilization_pct` >= high ×2, `interface_errors_count` >= high ×1 | device |
-| `weak_wifi` | Likely weak Wi-Fi signal at the access point causing retransmissions | `rssi_dbm` <= high ×3, `snr_db` <= high ×2, `retransmission_pct` >= high ×3, `latency_ms` >= warn ×1, `packet_loss_pct` >= warn ×1 | `link_utilization_pct` >= high ×2, `client_count` >= high ×1 | ap |
+| `device_overload` | Likely device overload (CPU exhaustion) causing drops across interfaces | `cpu_pct` >= warn ×3, `queue_drops_count` >= high ×2, `memory_pct` >= warn ×1, `latency_ms` >= warn ×1 | `link_utilization_pct` >= critical ×2, `interface_errors_count` >= high ×1 | device |
+| `weak_wifi` | Likely weak Wi-Fi signal at the access point causing retransmissions | `rssi_dbm` <= warn ×3, `snr_db` <= warn ×2, `retransmission_pct` >= warn ×3, `latency_ms` >= warn ×1, `packet_loss_pct` >= warn ×1 | `link_utilization_pct` >= high ×2, `client_count` >= high ×1 | ap |
 | `dns_failure` | Likely DNS service failure causing name-resolution errors | `dns_failure_pct` >= high ×4 | `latency_ms` >= high ×2, `packet_loss_pct` >= high ×2 | service |
 | `dhcp_failure` | Likely DHCP service failure preventing new address leases | `dhcp_failure_pct` >= high ×4 | `latency_ms` >= high ×2, `packet_loss_pct` >= high ×2 | service |
 | `latency_spike` | Likely latency spike (high latency and jitter without congestion, interface errors or overload) | `latency_ms` >= high ×3, `jitter_ms` >= high ×3 | `queue_drops_count` > warn ×2, `link_utilization_pct` >= high ×2 | device |
@@ -425,19 +426,19 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.8 |
-| macro accuracy | 0.8 |
-| precision when diagnosed | 0.98 |
+| overall accuracy | 0.857 |
+| macro accuracy | 0.857 |
+| precision when diagnosed | 0.982 |
 | wrong diagnosis rate | 0.014 |
-| fault to no fault rate | 0.013 |
+| fault to no fault rate | 0.008 |
 | normal accuracy | 0.625 |
 | false positive rate normal | 0.0 |
-| insufficient evidence rate | 0.175 |
+| insufficient evidence rate | 0.121 |
 | localization accuracy | 0.995 |
-| accuracy on mutated inputs | 0.786 |
+| accuracy on mutated inputs | 0.857 |
 | mutated share | 0.3 |
 | crashes | 0 |
-| mean ms per incident | 56.8 |
+| mean ms per incident | 59.5 |
 
 **Per fault**
 
@@ -446,8 +447,8 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | normal | 40 | 0.625 | 0.375 | 0.0 |
 | congestion | 40 | 0.8 | 0.15 | 0.125 |
 | interface_fault | 40 | 0.975 | 0.025 | 0.0 |
-| device_overload | 40 | 0.675 | 0.25 | 0.125 |
-| weak_wifi | 40 | 0.625 | 0.325 | 0.0 |
+| device_overload | 40 | 0.8 | 0.125 | 0.1 |
+| weak_wifi | 40 | 0.9 | 0.075 | 0.0 |
 | dns_failure | 40 | 0.95 | 0.05 | 0.0 |
 | dhcp_failure | 40 | 0.95 | 0.05 | 0.0 |
 
@@ -458,8 +459,8 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | normal | 0 | 0 | 0 | 0 | 15 | 0 | 0 | 25 | 0 |
 | congestion | 32 | 0 | 0 | 0 | 6 | 0 | 1 | 1 | 0 |
 | interface_fault | 0 | 0 | 0 | 0 | 1 | 39 | 0 | 0 | 0 |
-| device_overload | 3 | 27 | 0 | 0 | 10 | 0 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 13 | 0 | 0 | 2 | 25 |
+| device_overload | 3 | 32 | 0 | 0 | 5 | 0 | 0 | 0 | 0 |
+| weak_wifi | 0 | 0 | 0 | 0 | 3 | 0 | 0 | 1 | 36 |
 | dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 | 0 |
 
@@ -467,14 +468,14 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 
 | confidence bin | n | mean confidence | observed accuracy |
 |---|---|---|---|
-| [0.50, 0.75] | 52 | 0.645 | 0.962 |
-| [0.75, 0.90] | 67 | 0.829 | 0.97 |
-| [0.90, 1.00] | 84 | 0.991 | 1.0 |
+| [0.50, 0.75] | 56 | 0.646 | 0.964 |
+| [0.75, 0.90] | 73 | 0.829 | 0.973 |
+| [0.90, 1.00] | 90 | 0.99 | 1.0 |
 
 | confidence_category | n | observed accuracy |
 |---|---|---|
-| high | 151 | 0.987 |
-| medium | 52 | 0.962 |
+| high | 163 | 0.988 |
+| medium | 56 | 0.964 |
 <!-- END GENERATED: eval -->
 
 **Reading the numbers honestly:**
