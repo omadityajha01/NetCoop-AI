@@ -423,6 +423,20 @@ Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
   - [x] approve CONG-1 → `human_operator` lane gets `#28 human_decision`; report unchanged; replay identical
   - [x] past runs picker replays a stored run
 
+## M4: pause/resume (branch m4)
+
+- A run now writes input + meta.json before any agent runs (checkpoint); every message was already appended before
+  delivery. `netcoop resume <id>`: no report.json → re-derive deterministically from the stored input (same
+  incident_id), require the surviving log to be an exact prefix (ignoring created_at; a torn final line from the crash is
+  dropped and re-derived), keep the surviving lines, append the rest, write report + meta. Divergent log → refused,
+  nothing changed. report.json present → no-op (idempotent). LLM runs → refused (not reproducible).
+- External exchanges: recorded ones are replayed; only exchanges the interrupted run never made go live (appended to
+  external.jsonl, never truncated). If the external agent is down at resume time, those later exchanges see it as
+  unreachable, exactly as a fresh run would.
+- Tests (tests/integration/test_resume.py): real `os._exit(137)` at the first correlation task (i.e. right after round 0)
+  for congestion and interop → resume → report.json byte-identical to an uninterrupted run, events identical except
+  timestamps, replay identical, second resume is a no-op; torn line; divergent log refused; bad ids; LLM runs refused.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
