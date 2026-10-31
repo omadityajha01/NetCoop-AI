@@ -56,6 +56,7 @@ def _dir(incident_id: str) -> Path:
 
 @app.post("/incidents")
 async def create_incident(request: Request, external: bool = True, filename: str = "upload.json") -> dict[str, Any]:
+    """Upload an incident bundle (JSON/CSV bytes, 10 MB max) and run a diagnosis; returns the full report."""
     cfg = load_config()
     if not filename.lower().endswith((".json", ".csv")):
         raise _err(415, "UNSUPPORTED", "only .json or .csv uploads")
@@ -76,6 +77,7 @@ def run_scenario(name: str, external: bool = True) -> dict[str, Any]:
 
 @app.get("/topology")
 def topology() -> dict[str, Any]:
+    """Configured topology as nodes (id, type, segment, role, parent) and links (id, a, b) for drawing."""
     return topology_view(load_config().topology)
 
 
@@ -87,16 +89,19 @@ def stream_events(incident_id: str, delay_ms: int = 0):  # noqa: ANN201 - Stream
 
 @app.get("/incidents")
 def list_incidents(limit: int = 50) -> list[dict[str, Any]]:
+    """Past runs, newest first (limit 1-500)."""
     return _store().list_reports(min(max(limit, 1), 500))
 
 
 @app.get("/incidents/{incident_id}/report")
 def get_report(incident_id: str) -> dict[str, Any]:
+    """The final diagnostic report of a run."""
     return json.loads((_dir(incident_id) / "report.json").read_text(encoding="utf-8"))
 
 
 @app.get("/incidents/{incident_id}/events")
 def get_events(incident_id: str) -> list[dict[str, Any]]:
+    """The run's complete event log (every NMP message, in seq order), including post-run HITL messages."""
     return EventLog.read(_dir(incident_id) / "events.jsonl")
 
 
@@ -107,6 +112,7 @@ def _csv_cell(v: Any) -> str:
 
 @app.get("/incidents/{incident_id}/report.csv", response_class=PlainTextResponse)
 def get_report_csv(incident_id: str) -> str:
+    """Supporting evidence as CSV (formula-injection safe)."""
     rep = get_report(incident_id)
     buf = io.StringIO()
     w = csv.writer(buf)
@@ -125,6 +131,7 @@ class Feedback(BaseModel):
 
 @app.post("/incidents/{incident_id}/feedback")
 def post_feedback(incident_id: str, fb: Feedback) -> dict[str, Any]:
+    """Approve/reject an action (non-blocking HITL). Approve re-runs the policy check; allowed -> dry-run plan."""
     d = _dir(incident_id)
     try:
         return record_human_decision(d, _store(), incident_id, fb.action_id, fb.decision, fb.note, cfg=load_config())
@@ -134,6 +141,7 @@ def post_feedback(incident_id: str, fb: Feedback) -> dict[str, Any]:
 
 @app.get("/agents")
 def agents() -> dict[str, Any]:
+    """External agents from the allowlist and whether each is reachable now (joined) or not."""
     from netcoop.gateway.a2a_gateway import discover
 
     disc = discover(load_config())
