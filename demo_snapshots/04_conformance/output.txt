@@ -1,5 +1,5 @@
 PASS  serves a valid agent card                  wifi-probe v0.9.3; skills ['wifi-rf-telemetry']
-PASS  answers task_request with valid NMP        finding_report from dialect 0.9 in 14 ms
+PASS  answers task_request with valid NMP        finding_report from dialect 0.9 in 0 ms
 PASS  answers evidence_request with valid NMP    evidence_response in 0 ms
 PASS  returns error on malformed input           reply: error
 PASS  idempotent on duplicate message_id         identical replies

@@ -42,7 +42,7 @@ jobs:
       - name: Tests (offline)
         run: |
           set -o pipefail
-          python -m pytest tests -q -p no:warnings -rfE 2>&1 | tee pytest.log
+          python -m pytest tests -q -p no:warnings -rfE --color=no 2>&1 | tee pytest.log
           status=${PIPESTATUS[0]}
           # surface failing tests as public annotations (job logs need auth to read)
           grep -E "^(FAILED|ERROR) " pytest.log | sed 's/^/::error title=pytest::/' || true
