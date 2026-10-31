@@ -62,7 +62,7 @@ dns_failure:
   entity: [service]
   service_kind: dns
   expects:
-    dns_failure_pct: {op: ">=", ref: high, weight: 4}
+    dns_failure_pct: {op: ">=", ref: high, weight: 4, sufficient_alone: true}   # one reading is decisive
   contradicts:
     latency_ms:      {op: ">=", ref: high, weight: 2}
     packet_loss_pct: {op: ">=", ref: high, weight: 2}
@@ -73,7 +73,7 @@ dhcp_failure:
   entity: [service]
   service_kind: dhcp
   expects:
-    dhcp_failure_pct: {op: ">=", ref: high, weight: 4}
+    dhcp_failure_pct: {op: ">=", ref: high, weight: 4, sufficient_alone: true}
   contradicts:
     latency_ms:      {op: ">=", ref: high, weight: 2}
     packet_loss_pct: {op: ">=", ref: high, weight: 2}

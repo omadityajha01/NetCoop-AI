@@ -5,29 +5,29 @@ seed 1000, 280 generated incidents (24% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.804 |
-| macro accuracy | 0.804 |
+| overall accuracy | 0.857 |
+| macro accuracy | 0.857 |
 | precision when diagnosed | 0.967 |
 | wrong diagnosis rate | 0.025 |
-| fault to no fault rate | 0.008 |
-| normal accuracy | 0.55 |
+| fault to no fault rate | 0.017 |
+| normal accuracy | 0.925 |
 | false positive rate normal | 0.05 |
-| insufficient evidence rate | 0.164 |
+| insufficient evidence rate | 0.104 |
 | localization accuracy | 1.0 |
-| accuracy on mutated inputs | 0.838 |
+| accuracy on mutated inputs | 0.897 |
 | mutated share | 0.243 |
 | crashes | 0 |
-| mean ms per incident | 59.4 |
+| mean ms per incident | 55.3 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
-| normal | 40 | 0.55 | 0.4 | 0.0 |
+| normal | 40 | 0.925 | 0.025 | 0.0 |
 | congestion | 40 | 0.825 | 0.15 | 0.025 |
 | interface_fault | 40 | 0.9 | 0.1 | 0.025 |
 | device_overload | 40 | 0.7 | 0.2 | 0.125 |
-| weak_wifi | 40 | 0.85 | 0.1 | 0.025 |
+| weak_wifi | 40 | 0.85 | 0.05 | 0.025 |
 | dns_failure | 40 | 0.9 | 0.1 | 0.0 |
 | dhcp_failure | 40 | 0.9 | 0.1 | 0.0 |
 
@@ -35,11 +35,11 @@ seed 1000, 280 generated incidents (24% with 5–30 % corrupted records), wirele
 
 | truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | latency_spike | no_fault_detected | weak_wifi |
 |---|---|---|---|---|---|---|---|---|---|
-| normal | 1 | 1 | 0 | 0 | 16 | 0 | 0 | 22 | 0 |
+| normal | 1 | 1 | 0 | 0 | 1 | 0 | 0 | 37 | 0 |
 | congestion | 33 | 0 | 0 | 0 | 6 | 0 | 1 | 0 | 0 |
 | interface_fault | 0 | 0 | 0 | 0 | 4 | 36 | 0 | 0 | 0 |
 | device_overload | 4 | 28 | 0 | 0 | 8 | 0 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 4 | 0 | 0 | 2 | 34 |
+| weak_wifi | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 4 | 34 |
 | dns_failure | 0 | 0 | 0 | 36 | 4 | 0 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 36 | 0 | 4 | 0 | 0 | 0 | 0 |
 
@@ -63,29 +63,29 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.857 |
-| macro accuracy | 0.857 |
+| overall accuracy | 0.904 |
+| macro accuracy | 0.904 |
 | precision when diagnosed | 0.982 |
 | wrong diagnosis rate | 0.014 |
-| fault to no fault rate | 0.008 |
-| normal accuracy | 0.625 |
+| fault to no fault rate | 0.013 |
+| normal accuracy | 0.95 |
 | false positive rate normal | 0.0 |
-| insufficient evidence rate | 0.121 |
+| insufficient evidence rate | 0.071 |
 | localization accuracy | 0.995 |
-| accuracy on mutated inputs | 0.857 |
+| accuracy on mutated inputs | 0.893 |
 | mutated share | 0.3 |
 | crashes | 0 |
-| mean ms per incident | 59.5 |
+| mean ms per incident | 53.0 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
-| normal | 40 | 0.625 | 0.375 | 0.0 |
+| normal | 40 | 0.95 | 0.05 | 0.0 |
 | congestion | 40 | 0.8 | 0.15 | 0.125 |
 | interface_fault | 40 | 0.975 | 0.025 | 0.0 |
 | device_overload | 40 | 0.8 | 0.125 | 0.1 |
-| weak_wifi | 40 | 0.9 | 0.075 | 0.0 |
+| weak_wifi | 40 | 0.9 | 0.05 | 0.0 |
 | dns_failure | 40 | 0.95 | 0.05 | 0.0 |
 | dhcp_failure | 40 | 0.95 | 0.05 | 0.0 |
 
@@ -93,11 +93,11 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 
 | truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | latency_spike | no_fault_detected | weak_wifi |
 |---|---|---|---|---|---|---|---|---|---|
-| normal | 0 | 0 | 0 | 0 | 15 | 0 | 0 | 25 | 0 |
+| normal | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 38 | 0 |
 | congestion | 32 | 0 | 0 | 0 | 6 | 0 | 1 | 1 | 0 |
 | interface_fault | 0 | 0 | 0 | 0 | 1 | 39 | 0 | 0 | 0 |
 | device_overload | 3 | 32 | 0 | 0 | 5 | 0 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 3 | 0 | 0 | 1 | 36 |
+| weak_wifi | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 2 | 36 |
 | dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 | 0 |
 

@@ -320,6 +320,8 @@ margin   = score(top) − score(second)
 | margin < 0.15 after prediction rounds | `probable`, top 2 reported as co-candidates |
 | otherwise | `diagnosed`; wording stays "Likely …", never "confirmed" |
 
+*Uncorroborated high (U4):* a `high` finding that is the only anomalous signal on its entity, is below 1.25× its `high` threshold (`scoring.yaml: uncorroborated_high_ratio`), and whose metric is not `sufficient_alone` in `signatures.yaml` (DNS/DHCP failure rates are) does **not** count as "a finding ≥ high" for rules (b)/(c): it is reported under `observations`.
+
 *(Revised: the former first rule, "no anomalous findings and max score < 0.20 → no_fault", turned every warn-level reading on a healthy network into `insufficient_evidence`. See TODO.md T1.)*
 
 **Confidence:**

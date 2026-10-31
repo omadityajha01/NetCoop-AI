@@ -219,6 +219,17 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   A's normal FP is already at the 5% limit, so a further loosening would trade a guard for accuracy).
   Organizer A unchanged (100% / 100% / 100%).
 
+## U4: normal
+
+- Breakdown of normal misses on seed A (18): 16 `insufficient_evidence (no_signature_match)`, 1 → device_overload, 1 → congestion.
+  13 of 18 had a **single isolated high reading** (the only anomalous signal on its entity).
+- Rule implemented (config-driven, `scoring.yaml: uncorroborated_high_ratio: 1.25`; `sufficient_alone: true` on
+  `dns_failure_pct` / `dhcp_failure_pct` in signatures.yaml). A lone high reading below 1.25× its threshold on a
+  non-sufficient-alone metric no longer counts toward rule (c); it is an `observation`. Documented in CLAUDE.md §6.3 + README.
+- **Decision:** "only anomalous signal on the entity" means one distinct metric; several sources of the same metric still count as one signal.
+- Seed A: normal 0.55 → 0.925; guards: wrong 2.5%, FP 5.0%, fault→healthy 1.7% ✓. Seed B: normal 0.625 → **0.95** ✓.
+  Organizer A unchanged (100%).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

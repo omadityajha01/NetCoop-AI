@@ -93,3 +93,16 @@ def test_category_and_caps(cfg):
     d = decide(cfg, [_h(cfg, 0.95)], high_count=3, usable_observations=9, failed_agents=[], unresolved_c2=True,
                data_coverage=1)
     assert d.category == "medium"
+
+
+def test_uncorroborated_high_is_an_observation(cfg):
+    from netcoop.scoring.confidence import uncorroborated_highs
+
+    lone = F("cpu_pct", "SW_CAMPUS_5", 88)                       # high (85), < 1.25x, alone on its entity
+    extreme = F("cpu_pct", "SW_CAMPUS_6", 99, sev="high")          # >= 1.25 * 85? no: 99/85 = 1.16 -> still lone
+    paired_a = F("cpu_pct", "SW_CAMPUS_7", 88)                     # corroborated by latency on the same entity
+    paired_b = F("latency_ms", "SW_CAMPUS_7", 60, sev="warn")
+    dns = F("dns_failure_pct", "DNS_01", 11, etype="service")      # sufficient_alone -> never downgraded
+    big = F("latency_ms", "SW_CAMPUS_8", 200)                       # 200/150 = 1.33 >= 1.25 -> stays an anomaly
+    ids = uncorroborated_highs(cfg, [lone, extreme, paired_a, paired_b, dns, big])
+    assert ids == {lone.finding_id, extreme.finding_id}

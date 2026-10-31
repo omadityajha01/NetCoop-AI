@@ -1,23 +1,23 @@
 {
   "n": 280,
-  "overall_accuracy": 0.857,
-  "macro_accuracy": 0.857,
+  "overall_accuracy": 0.904,
+  "macro_accuracy": 0.904,
   "precision_when_diagnosed": 0.982,
   "wrong_diagnosis_rate": 0.014,
-  "fault_to_no_fault_rate": 0.008,
-  "normal_accuracy": 0.625,
+  "fault_to_no_fault_rate": 0.013,
+  "normal_accuracy": 0.95,
   "false_positive_rate_normal": 0.0,
-  "insufficient_evidence_rate": 0.121,
+  "insufficient_evidence_rate": 0.071,
   "localization_accuracy": 0.995,
-  "accuracy_on_mutated_inputs": 0.857,
+  "accuracy_on_mutated_inputs": 0.893,
   "mutated_share": 0.3,
   "crashes": 0,
-  "mean_ms_per_incident": 59.5,
+  "mean_ms_per_incident": 53.0,
   "per_fault": {
     "normal": {
       "n": 40,
-      "accuracy": 0.625,
-      "insufficient_rate": 0.375,
+      "accuracy": 0.95,
+      "insufficient_rate": 0.05,
       "probable_rate": 0.0
     },
     "congestion": {
@@ -41,7 +41,7 @@
     "weak_wifi": {
       "n": 40,
       "accuracy": 0.9,
-      "insufficient_rate": 0.075,
+      "insufficient_rate": 0.05,
       "probable_rate": 0.0
     },
     "dns_failure": {
@@ -63,10 +63,10 @@
       "device_overload": 0,
       "dhcp_failure": 0,
       "dns_failure": 0,
-      "insufficient_evidence": 15,
+      "insufficient_evidence": 2,
       "interface_fault": 0,
       "latency_spike": 0,
-      "no_fault_detected": 25,
+      "no_fault_detected": 38,
       "weak_wifi": 0
     },
     "congestion": {
@@ -107,10 +107,10 @@
       "device_overload": 0,
       "dhcp_failure": 0,
       "dns_failure": 0,
-      "insufficient_evidence": 3,
+      "insufficient_evidence": 2,
       "interface_fault": 0,
       "latency_spike": 0,
-      "no_fault_detected": 1,
+      "no_fault_detected": 2,
       "weak_wifi": 36
     },
     "dns_failure": {

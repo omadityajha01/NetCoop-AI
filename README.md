@@ -334,6 +334,13 @@ Completeness is `samples / min(window / interval, cadence)`, where cadence is th
 | no usable observations, **or** coverage(top) < 0.50 | `insufficient_evidence` (`status_reason: data_missing`) + the exact missing signals |
 | coverage ok, **no** finding ≥ `high`, top score < `min_top_score` (0.55) | `no_fault_detected`; warn-level readings listed under `observations` (not evidence) |
 | coverage ok, **some** finding ≥ `high`, top score < `min_top_score` (0.55) | `insufficient_evidence` (`status_reason: no_signature_match`) |
+
+A lone `high` reading counts as an *observation*, not as "a finding ≥ high", when all of these hold:
+* it is the only anomalous signal on its entity
+* it is below 1.25× its `high` threshold
+* its metric is not marked `sufficient_alone` (DNS/DHCP failure rates are)
+
+A single busy link or CPU blip therefore does not block `no_fault_detected`. It is still listed in the report.
 | margin < 0.15 after prediction rounds | `probable`, top 2 reported as co-candidates |
 | otherwise | `diagnosed` (wording stays "Likely …") |
 
@@ -359,6 +366,7 @@ Final constants (`config/scoring.yaml`; tuned on seed range A only):
 | stale_quality | 0.5 |
 | status.min_top_score | 0.55 |
 | status.min_top_coverage | 0.5 |
+| status.uncorroborated_high_ratio | 1.25 |
 | status.min_margin | 0.15 |
 | confidence.high_min | 0.75 |
 | confidence.high_min_margin | 0.25 |
@@ -426,29 +434,29 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.857 |
-| macro accuracy | 0.857 |
+| overall accuracy | 0.904 |
+| macro accuracy | 0.904 |
 | precision when diagnosed | 0.982 |
 | wrong diagnosis rate | 0.014 |
-| fault to no fault rate | 0.008 |
-| normal accuracy | 0.625 |
+| fault to no fault rate | 0.013 |
+| normal accuracy | 0.95 |
 | false positive rate normal | 0.0 |
-| insufficient evidence rate | 0.121 |
+| insufficient evidence rate | 0.071 |
 | localization accuracy | 0.995 |
-| accuracy on mutated inputs | 0.857 |
+| accuracy on mutated inputs | 0.893 |
 | mutated share | 0.3 |
 | crashes | 0 |
-| mean ms per incident | 59.5 |
+| mean ms per incident | 53.0 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
-| normal | 40 | 0.625 | 0.375 | 0.0 |
+| normal | 40 | 0.95 | 0.05 | 0.0 |
 | congestion | 40 | 0.8 | 0.15 | 0.125 |
 | interface_fault | 40 | 0.975 | 0.025 | 0.0 |
 | device_overload | 40 | 0.8 | 0.125 | 0.1 |
-| weak_wifi | 40 | 0.9 | 0.075 | 0.0 |
+| weak_wifi | 40 | 0.9 | 0.05 | 0.0 |
 | dns_failure | 40 | 0.95 | 0.05 | 0.0 |
 | dhcp_failure | 40 | 0.95 | 0.05 | 0.0 |
 
@@ -456,11 +464,11 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 
 | truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | latency_spike | no_fault_detected | weak_wifi |
 |---|---|---|---|---|---|---|---|---|---|
-| normal | 0 | 0 | 0 | 0 | 15 | 0 | 0 | 25 | 0 |
+| normal | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 38 | 0 |
 | congestion | 32 | 0 | 0 | 0 | 6 | 0 | 1 | 1 | 0 |
 | interface_fault | 0 | 0 | 0 | 0 | 1 | 39 | 0 | 0 | 0 |
 | device_overload | 3 | 32 | 0 | 0 | 5 | 0 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 3 | 0 | 0 | 1 | 36 |
+| weak_wifi | 0 | 0 | 0 | 0 | 2 | 0 | 0 | 2 | 36 |
 | dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 | 0 |
 

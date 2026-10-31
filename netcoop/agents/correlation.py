@@ -11,7 +11,7 @@ from netcoop.agents.base import FindingsTool, ReadOnlyContext
 from netcoop.orchestrator.conflicts import ConflictSet, detect_c1, detect_c2
 from netcoop.protocol.envelope import Message, error_message, make_message
 from netcoop.protocol.findings import EntityRef, Finding, SignalRef
-from netcoop.scoring.confidence import decide
+from netcoop.scoring.confidence import decide, uncorroborated_highs
 from netcoop.scoring.hypotheses import generate_candidates, index_findings, rank_hypotheses
 from netcoop.scoring.predictions import plan_round, resolve_outcomes
 
@@ -96,7 +96,8 @@ class CorrelationAgent:
         failed = sorted(a for a in st["failed"] if a in asked)
         usable = int((norm.get("summary") or {}).get("observations_used", 0)) + len(
             [f for f in st["findings"] if st["agent_of"].get(f.finding_id) not in cfg.agents["internal"]])
-        high_count = sum(1 for f in active if f.severity in ("high", "critical"))
+        lone = uncorroborated_highs(cfg, active)
+        high_count = sum(1 for f in active if f.severity in ("high", "critical") and f.finding_id not in lone)
         # U2: a leading hypothesis that touches a device absent from topology is capped at medium
         fmap = {f.finding_id: f for f in active}
         lead = hyps[:2] if len(hyps) > 1 else hyps[:1]

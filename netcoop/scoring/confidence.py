@@ -31,6 +31,39 @@ class Decision:
     reason: str | None = None
 
 
+def uncorroborated_highs(cfg: Config, findings: list) -> set[str]:
+    """U4: finding ids of `high` readings that are the ONLY anomalous signal on their entity, are below
+    `uncorroborated_high_ratio` x their high threshold, and whose metric is not `sufficient_alone` in any signature.
+    They are treated as observations for the no-fault decision (rule b), never as evidence."""
+    from netcoop.scoring.thresholds import threshold_value
+
+    ratio_max = float(cfg.scoring["status"].get("uncorroborated_high_ratio", 0) or 0)
+    if ratio_max <= 0:
+        return set()
+    alone = {m for sig in cfg.signatures.values() for m, s in sig.get("expects", {}).items() if s.get("sufficient_alone")}
+    by_entity: dict[str, list] = {}
+    for f in findings:
+        if f.anomalous:
+            by_entity.setdefault(f.entity.id, []).append(f)
+    out: set[str] = set()
+    for fs in by_entity.values():
+        if len({f.metric for f in fs}) != 1:
+            continue  # corroborated by another signal on the same entity
+        for f in fs:
+            if f.severity != "high" or f.metric in alone:
+                continue
+            thr = threshold_value(cfg, f.metric, f.entity.id, "high")
+            if not thr:
+                continue
+            if cfg.metrics[f.metric]["direction"] == "higher_is_worse":
+                ratio = f.value / thr
+            else:
+                ratio = (f.value / thr) if thr < 0 else (thr / f.value if f.value else float("inf"))
+            if ratio < ratio_max:
+                out.add(f.finding_id)
+    return out
+
+
 def category_for(cfg: Config, confidence: float, margin: float) -> str:
     c = cfg.scoring["confidence"]
     if confidence >= float(c["high_min"]) and margin >= float(c["high_min_margin"]):

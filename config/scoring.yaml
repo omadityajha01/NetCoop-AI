@@ -8,6 +8,7 @@ stale_quality: 0.5             # completeness assigned to findings of a source m
 status:
   min_top_score: 0.55          # T3: chosen on seed A (max accuracy s.t. wrong<=3%, normal FP<=5%); below -> no_fault_detected (nothing >= high) or insufficient_evidence (something >= high)
   min_top_coverage: 0.50       # coverage(top) below -> insufficient_evidence (data missing); checked first
+  uncorroborated_high_ratio: 1.25   # U4: a lone `high` reading below 1.25x its threshold is an observation, not an anomaly
   min_margin: 0.15             # below (after prediction rounds) -> probable
 
 confidence:
