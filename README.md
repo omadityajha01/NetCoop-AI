@@ -63,6 +63,7 @@ Other CLI commands:
 netcoop diagnose data/scenarios/congestion/incident.json --timeline   # message timeline, predictions, blocked actions
 netcoop timeline <incident_id> --html timeline.html                    # static HTML: agent lanes, predictions, transforms, report
 netcoop replay <incident_id>                                           # byte-identical report.json re-run
+netcoop resume <incident_id>                                           # finish an interrupted run from its event log
 netcoop agents refresh                                                 # re-check the allowlist; new agents join the next run
 netcoop feedback <incident_id> CONG-1 approve --note "ok"              # non-blocking HITL (nothing is executed)
 netcoop serve                                                          # dashboard on http://127.0.0.1:8000/ + API (/docs)

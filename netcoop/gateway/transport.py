@@ -60,12 +60,13 @@ class HttpTransport:
 class RecordingTransport:
     """Wraps a transport and records every exchange to runs/<id>/external.jsonl (for byte-identical replay)."""
 
-    def __init__(self, inner: Transport, path: Path):
+    def __init__(self, inner: Transport, path: Path, *, append: bool = False):
         self.inner = inner
         self.path = path
         self._lock = threading.Lock()
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text("", encoding="utf-8")
+        if not append:  # `netcoop resume` appends to an interrupted run's recording instead of truncating it
+            path.write_text("", encoding="utf-8")
 
     def _record(self, kind: str, url: str, key: str, data: bytes | None, err: TransportError | None) -> None:
         line = {"kind": kind, "url": url, "key": key,

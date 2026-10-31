@@ -140,6 +140,14 @@ def cmd_replay(a: argparse.Namespace) -> int:
     return 0 if r.report_identical else 1
 
 
+def cmd_resume(a: argparse.Namespace) -> int:
+    from netcoop.orchestrator.resume import resume
+
+    r = resume(a.incident_id, Path(a.runs_dir))
+    print(f"resume {r.incident_id}: {r.state}: {r.detail}")
+    return 1 if r.state == "refused" else 0
+
+
 def cmd_agents(a: argparse.Namespace) -> int:
     from netcoop.gateway.a2a_gateway import discover
 
@@ -255,6 +263,9 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("replay", help="re-run a stored incident and compare report.json byte-for-byte")
     p.add_argument("incident_id")
     p.set_defaults(fn=cmd_replay)
+    p = sub.add_parser("resume", help="finish an interrupted run from its event log (idempotent)")
+    p.add_argument("incident_id")
+    p.set_defaults(fn=cmd_resume)
     p = sub.add_parser("agents", help="list agents; re-check the external allowlist")
     p.add_argument("action", nargs="?", default="refresh", choices=["refresh", "list"])
     p.set_defaults(fn=cmd_agents)
