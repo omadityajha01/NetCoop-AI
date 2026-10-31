@@ -313,7 +313,8 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   - `test_auto_delay_runs_hands_free` patched `time.sleep` globally, which made agent start-up polling a busy loop;
     on Linux refused connects return instantly, so the agent wasn't up yet. Fixed: only the step pause is faked.
   - CI now turns failing tests into public `::error::` annotations, so a future failure is readable without auth.
-- Awaiting the user's decision on visibility / which repo before pushing or creating anything.
+- User's decision: push to the **existing public repo** `omadityajha01/NetCoop-AI` (no new repo; gh not needed).
+  Pushed f1ac414 → CI run 41211134958: **ubuntu ✓, windows ✓**. The Linux diagnosis was confirmed.
 
 ## Open
 

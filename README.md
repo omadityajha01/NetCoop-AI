@@ -1,5 +1,7 @@
 # NetCoop AI: multi-agent network fault diagnosis
 
+[![ci](https://github.com/omadityajha01/NetCoop-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/omadityajha01/NetCoop-AI/actions/workflows/ci.yml)
+
 Specialized agents analyze synthetic campus telemetry (IIT Bhubaneswar scenario). They exchange structured
 findings over a documented protocol (**NMP 1.1**), test competing hypotheses by asking each other for
 discriminating evidence, and produce **one JSON diagnostic report**. The report contains evidence, alternative
