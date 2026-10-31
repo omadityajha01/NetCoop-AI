@@ -325,6 +325,23 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   labels, preflight 15/15 (snapshots fresh on an LF checkout). CI run 41211624806: ubuntu ✓ windows ✓.
   **Tagged `demo-final` = 41db676** and pushed. (This note was committed after the tag; docs only.)
 
+## W1: weakened hardware_failure (measurement only; branch post-final)
+
+Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
+
+| strength | status | confidence_category | status_reason | top cause | hardware_failure in `alternative_causes` | rank of true label |
+|---|---|---|---|---|---|---|
+| 25% | {'probable': 150, 'diagnosed': 50} | {'medium': 200} | {'-': 200} | {'interface_fault': 150, 'congestion': 50} | 50/200 | {'2': 150, '4': 50} |
+| 50% | {'probable': 200} | {'medium': 200} | {'-': 200} | {'hardware_failure': 140, 'interface_fault': 60} | 0/200 | {'1': 140, '2': 60} |
+
+- At 25%, 150/200 are `probable` with interface_fault on top and **hardware_failure as the co-candidate** (rank 2, named
+  in `suspected_root_cause`, so not in `alternative_causes`). 50/200 are diagnosed congestion with hardware_failure already
+  in `alternative_causes` (rank 4). At 50%, hardware_failure is top 140/200 and the co-candidate in the other 60.
+  All 400 are **medium** confidence.
+- W2 trigger ("missing from alternative_causes in > 10%"): **met literally** (75% / 100% of non-top cases), although almost
+  all of those name it as co-candidate. W2 is implemented as specified.
+- Golden baseline for W2: `eval/golden.py --write eval/reports/golden_before.json` (1,680 incidents).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
