@@ -230,6 +230,15 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - Seed A: normal 0.55 → 0.925; guards: wrong 2.5%, FP 5.0%, fault→healthy 1.7% ✓. Seed B: normal 0.625 → **0.95** ✓.
   Organizer A unchanged (100%).
 
+## U5: re-eval
+
+- Sweep re-run on seed A with all three guards in the selection rule (wrong ≤ 3%, normal FP ≤ 5%, fault→healthy ≤ 3%).
+  It still picks **0.55** (0.50 fails on A with normal FP 7.5%). No constant changed, so CLAUDE.md §6.3 constants are unchanged; the §6.3 *text*
+  was updated in U1 (completeness) and U4 (uncorroborated high).
+- Full eval: our generator (A/B), organizer (A/B, 500 per label), fuzz, `docs/operating_point.png`.
+  README tables are now generated, including the sweep table (previously static). The README prose and DEMO.md numbers
+  are rebuilt from the reports.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

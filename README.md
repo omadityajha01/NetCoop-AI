@@ -488,39 +488,43 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 
 **Reading the numbers honestly:**
 * Most errors are *abstentions*, not wrong answers. When NetCoop commits to a diagnosis it is right
-  98.5% of the time; the wrong-diagnosis rate is 1.1% and the
-  false-positive rate on normal is 0%.
-* **Never overconfident** (seed B): in every confidence bin, observed accuracy is at or above the mean stated
-  confidence. We do not call this "calibrated": confidence is conservative, not matched.
+  98.2% of the time; the wrong-diagnosis rate is 1.4%, the
+  false-positive rate on normal is 0%, and a real fault is reported healthy in
+  1.3% of fault incidents.
+* **Never overconfident** (seed B): in every confidence bin, observed accuracy is at or above the mean stated confidence.
+  We do not call this "calibrated": confidence is conservative, not matched.
 
   | stated confidence bin | n | mean stated | observed accuracy |
   |---|---|---|---|
-  | [0.50, 0.75] | 54 | 0.644 | 0.963 |
-  | [0.75, 0.90] | 66 | 0.83 | 0.985 |
-  | [0.90, 1.00] | 81 | 0.992 | 1.0 |
+  | [0.50, 0.75] | 56 | 0.646 | 0.964 |
+  | [0.75, 0.90] | 73 | 0.829 | 0.973 |
+  | [0.90, 1.00] | 90 | 0.99 | 1.0 |
 
-* `normal` is the weakest class (0.625). Confounders put readings at or above `high` on healthy
-  networks (a busy link, a CPU spike). Those runs report `insufficient_evidence (no_signature_match)`: something
-  is anomalous but matches no fault. Warn-only readings yield `no_fault_detected`, with the readings listed under `observations`.
-* A fault reported as healthy (fault → `no_fault_detected`) happens in 1.3% of fault incidents.
+* Weakest classes on B: device_overload (0.8) and congestion
+  (0.8). Their misses are mostly weakened faults ending as `insufficient_evidence`, plus a few
+  overload↔congestion swaps (see the confusion matrix).
+* `normal` is 0.95. A lone `high` reading that nothing corroborates (a busy link, a CPU
+  blip) is an observation, not an anomaly (U4).
 
 ### Operating point (`python -m eval.run_eval sweep`)
 
 `min_top_score` was swept 0.40–0.70 on **seed range A**. The rule, fixed before running: pick the highest accuracy with
-wrong-diagnosis ≤ 3% and normal false-positive ≤ 5%. Result: **0.55** (0.50 misses at 3.2% wrong on A). The chart
-and the B columns are held-out.
+wrong-diagnosis ≤ 3%, normal false-positive ≤ 5% and real-fault-reported-healthy ≤ 3%. Result: **0.55** (re-checked
+after U1–U4: 0.50 fails on A with normal FP 7.5%). The chart and the B columns are held-out.
 
 ![Operating point sweep on seed range B](docs/operating_point.png)
 
-| min_top_score | A accuracy | A wrong-diagnosis | A normal FP | eligible | B accuracy | B wrong-diagnosis | B normal FP | B committed precision |
-|---|---|---|---|---|---|---|---|---|
-| 0.40 | 0.836 | 0.079 | 0.225 | ✗ | 0.875 | 0.039 | 0.15 | 0.952 |
-| 0.45 | 0.811 | 0.054 | 0.1 | ✗ | 0.846 | 0.021 | 0.05 | 0.972 |
-| 0.50 | 0.786 | 0.032 | 0.05 | ✗ | 0.821 | 0.014 | 0.025 | 0.981 |
-| 0.55 | 0.743 | 0.025 | 0.025 | ✓ | 0.796 | 0.011 | 0.0 | 0.985 |
-| 0.60 | 0.714 | 0.007 | 0.0 | ✓ | 0.746 | 0.004 | 0.0 | 0.995 |
-| 0.65 | 0.7 | 0.007 | 0.0 | ✓ | 0.729 | 0.004 | 0.0 | 0.994 |
-| 0.70 | 0.618 | 0.007 | 0.0 | ✓ | 0.643 | 0.004 | 0.0 | 0.994 |
+<!-- BEGIN GENERATED: sweep -->
+| min_top_score | A accuracy | A wrong-diagnosis | A normal FP | A fault→healthy | eligible | B accuracy | B wrong-diagnosis | B normal FP | B committed precision |
+|---|---|---|---|---|---|---|---|---|---|
+| 0.40 | 0.921 | 0.061 | 0.25 | 0.004 | ✗ | 0.918 | 0.05 | 0.225 | 0.942 |
+| 0.45 | 0.925 | 0.043 | 0.125 | 0.004 | ✗ | 0.925 | 0.029 | 0.075 | 0.965 |
+| 0.50 | 0.907 | 0.029 | 0.075 | 0.008 | ✗ | 0.918 | 0.021 | 0.05 | 0.974 |
+| 0.55 | 0.857 | 0.025 | 0.05 | 0.017 | **chosen** | 0.904 | 0.014 | 0.0 | 0.982 |
+| 0.60 | 0.829 | 0.007 | 0.0 | 0.021 | ✓ | 0.854 | 0.007 | 0.0 | 0.99 |
+| 0.65 | 0.804 | 0.007 | 0.0 | 0.025 | ✓ | 0.836 | 0.007 | 0.0 | 0.99 |
+| 0.70 | 0.718 | 0.007 | 0.0 | 0.025 | ✓ | 0.75 | 0.007 | 0.0 | 0.989 |
+<!-- END GENERATED: sweep -->
 
 <!-- BEGIN GENERATED: fuzz -->
 #### Degradation under corrupted input
@@ -529,16 +533,16 @@ and the B columns are held-out.
 
 | corruption rate | accuracy | precision when diagnosed | insufficient_evidence | FP on normal | values recovered | records quarantined | failed | crashes | accuracy w/o registry | |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 0% | 0.814 | 0.964 | 0.143 | 0.0 | 0 | 0.0 % | 0 | 0 | 0.471 | `████████████████` |
-| 10% | 0.814 | 0.981 | 0.157 | 0.0 | 808 | 0.4 % | 0 | 0 | 0.471 | `████████████████` |
-| 20% | 0.814 | 0.964 | 0.143 | 0.0 | 1798 | 0.6 % | 0 | 0 | 0.443 | `████████████████` |
-| 30% | 0.814 | 0.981 | 0.157 | 0.0 | 2739 | 1.0 % | 0 | 0 | 0.414 | `████████████████` |
-| 40% | 0.757 | 1.0 | 0.229 | 0.0 | 3703 | 1.2 % | 0 | 0 | 0.386 | `███████████████` |
-| 50% | 0.771 | 1.0 | 0.214 | 0.0 | 5241 | 1.9 % | 0 | 0 | 0.257 | `███████████████` |
-| 60% | 0.757 | 1.0 | 0.229 | 0.0 | 6358 | 2.1 % | 0 | 0 | 0.286 | `███████████████` |
+| 0% | 0.943 | 0.983 | 0.029 | 0.0 | 0 | 0.0 % | 0 | 0 | 0.514 | `███████████████████` |
+| 10% | 0.943 | 1.0 | 0.043 | 0.0 | 808 | 0.4 % | 0 | 0 | 0.514 | `███████████████████` |
+| 20% | 0.929 | 0.982 | 0.043 | 0.0 | 1798 | 0.6 % | 0 | 0 | 0.486 | `███████████████████` |
+| 30% | 0.943 | 0.983 | 0.029 | 0.0 | 2739 | 1.0 % | 0 | 0 | 0.457 | `███████████████████` |
+| 40% | 0.886 | 1.0 | 0.1 | 0.0 | 3703 | 1.2 % | 0 | 0 | 0.457 | `██████████████████` |
+| 50% | 0.9 | 1.0 | 0.086 | 0.0 | 5241 | 1.9 % | 0 | 0 | 0.3 | `██████████████████` |
+| 60% | 0.886 | 1.0 | 0.1 | 0.0 | 6358 | 2.1 % | 0 | 0 | 0.329 | `██████████████████` |
 <!-- END GENERATED: fuzz -->
 
-Accuracy degrades gently, from 0.814 on clean input to 0.757 at 60% corrupted records, because the normalizer *recovers* what is recoverable: thousands of values are converted, inferred, canonicalized or upcast per sweep step. **Registry-off ablation:** without the metric registry's aliases and unit aliases, accuracy is 0.471 on clean input (~0.45) and falls to 0.286 at 60%. Even clean organizer-style input suffers, because the generator's own field names (`cpu_utilization_pct`, `queue_drops`, `interface_errors`) are not canonical. Corruption causes zero crashes and zero failed runs.
+Accuracy degrades gently, from 0.943 on clean input to 0.886 at 60% corrupted records, because the normalizer *recovers* what is recoverable: thousands of values are converted, inferred, canonicalized or upcast per sweep step. **Registry-off ablation:** without the metric registry's aliases and unit aliases, accuracy is 0.514 on clean input and falls to 0.329 at 60%. Even clean organizer-style input suffers, because the generator's own field names (`cpu_utilization_pct`, `queue_drops`, `interface_errors`) are not canonical. Corruption causes zero crashes and zero failed runs.
 
 ---
 

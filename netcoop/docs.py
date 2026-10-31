@@ -91,6 +91,18 @@ def tables() -> dict[str, str]:
         text = (rep / "eval.md").read_text(encoding="utf-8")
         b = text.find("## Seed range B")
         out["eval"] = (text[b:] if b >= 0 else text).replace("## Seed range B", "#### Seed range B").strip()
+    if (rep / "sweep.json").exists():
+        sw = json.loads((rep / "sweep.json").read_text(encoding="utf-8"))
+        rows = ["| min_top_score | A accuracy | A wrong-diagnosis | A normal FP | A fault→healthy | eligible | B accuracy | "
+                "B wrong-diagnosis | B normal FP | B committed precision |", "|---|---|---|---|---|---|---|---|---|---|"]
+        for a_, b_ in zip(sw["A"], sw["B"], strict=False):
+            ok = (a_["wrong_diagnosis_rate"] <= 0.03 and a_["false_positive_rate_normal"] <= 0.05
+                  and a_.get("fault_to_no_fault_rate", 0) <= 0.03)
+            mark = "**chosen**" if a_["min_top_score"] == sw["chosen"] else ("✓" if ok else "✗")
+            rows.append(f"| {a_['min_top_score']:.2f} | {a_['accuracy']} | {a_['wrong_diagnosis_rate']} | "
+                        f"{a_['false_positive_rate_normal']} | {a_.get('fault_to_no_fault_rate', '-')} | {mark} | {b_['accuracy']} | "
+                        f"{b_['wrong_diagnosis_rate']} | {b_['false_positive_rate_normal']} | {b_['precision_when_diagnosed']} |")
+        out["sweep"] = "\n".join(rows)
     if (rep / "organizer.md").exists():
         out["organizer"] = (rep / "organizer.md").read_text(encoding="utf-8").strip()
     if (rep / "fuzz.md").exists():

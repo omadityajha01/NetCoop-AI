@@ -341,12 +341,13 @@ def cmd_sweep(a: argparse.Namespace) -> None:
     base = load_config()
     REPORTS.mkdir(parents=True, exist_ok=True)
     rows_a = sweep_rows(base, make_incidents(a.n, a.seed_a))
-    ok = [r for r in rows_a if r["wrong_diagnosis_rate"] <= 0.03 and r["false_positive_rate_normal"] <= 0.05]
+    ok = [r for r in rows_a if r["wrong_diagnosis_rate"] <= 0.03 and r["false_positive_rate_normal"] <= 0.05
+          and r["fault_to_no_fault_rate"] <= 0.03]
     chosen = max(ok, key=lambda r: (r["accuracy"], -r["min_top_score"]))["min_top_score"] if ok else None
     print(f"chosen on A: min_top_score={chosen}")
     rows_b = sweep_rows(base, make_incidents(a.n, a.seed_b))
     (REPORTS / "sweep.json").write_text(json.dumps({"seed_a": a.seed_a, "seed_b": a.seed_b, "n": a.n, "chosen": chosen,
-                                                     "rule": "max accuracy on A with wrong<=0.03 and normal FP<=0.05",
+                                                     "rule": "max accuracy on A with wrong<=0.03, normal FP<=0.05, fault->healthy<=0.03",
                                                      "A": rows_a, "B": rows_b}, indent=2), encoding="utf-8")
     try:
         from eval.plot import operating_point_chart

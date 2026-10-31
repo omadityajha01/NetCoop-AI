@@ -32,7 +32,7 @@ Every step prints a compact colored summary and writes a static timeline:
 | # | Step | Expected on screen | Talking points |
 |---|---|---|---|
 | 1 | **Congestion** | `diagnosed`, *Likely link congestion … on L_HOSTEL_UPLINK*. Evidence comes from performance + infrastructure agents. Predictions `P-1-1 … HIT`, `P-1-2 … MISS`, `P-1-3 … HIT` | • Six agents exchange typed NMP messages over one bus, and every message is in an append-only event log (show the timeline lanes). • **Predict before you look:** the prediction "interface errors stay low" is logged at seq 15. The evidence request is seq 18 and the answer seq 20. A test fails if that order is ever violated. |
-| 2 | **Wi-Fi without the agent** | `insufficient_evidence`; missing signals `rssi_dbm@AP_H3, snr_db@AP_H3, retransmission_pct@AP_H3` | • High packet loss at AP_H3 is real, but no signature matches with the data we have, and no connected agent can provide RF metrics. • We say so instead of guessing: across 1,000 raw organizer fault records, NetCoop never committed to a made-up cause. |
+| 2 | **Wi-Fi without the agent** | `insufficient_evidence`; missing signals `rssi_dbm@AP_H3, snr_db@AP_H3, retransmission_pct@AP_H3` | • High packet loss at AP_H3 is real, but no signature matches with the data we have, and no connected agent can provide RF metrics. • We say so instead of guessing, and list exactly which signals would resolve it. |
 | 3 | **Start `wireless_agent`** | card `wifi-probe v0.9.3`, skill `wifi-rf-telemetry` | • A different language (Node.js) and a different protocol dialect (v0.9: `signal`, `noise_margin`, `retx` as a fraction, epoch timestamps, `ap-h3`). • It joins mid-session: discovered from the allowlist, no restart. |
 | 4 | **Conformance** | 7/7 PASS | • Valid card, valid replies, `error` on malformed input, idempotent on a duplicate `message_id`, tolerates a newer MINOR version. • The same kit runs against any agent URL, and the official `a2a-sdk` 1.3.0 client also talks to this agent. |
 | 5 | **Wi-Fi again** | `diagnosed`, *Likely weak Wi-Fi … on AP_H3*; RSSI −78 dBm, SNR 13 dB, retransmissions 28% | • Same incident file; the only change is that an agent joined. • The timeline shows the translation: `version 0.9→1.0`, `noise_margin→snr_db`, `ap-h3→AP_H3`, `retx 0.28 fraction → 28 %`. |
@@ -40,17 +40,19 @@ Every step prints a compact colored summary and writes a static timeline:
 | 7 | **Policy** | `BLOCKED Reboot HOSTEL_CORE_SW_01: blocked by R1 (Class hours)` | • Recommendations come only from the playbook and pass code-enforced rules. The reboot is shown as *blocked with a rule id*, never silently dropped. • Remediation is never executed. |
 | 8 | **Normal network** | `no_fault_detected` | • A healthy network is reported as healthy. Warn-level noise goes to `observations`, never to evidence. |
 
-### Numbers to quote (held-out seed range B, 280 generated incidents; `eval/reports/`)
+### Numbers to quote (`eval/reports/`; tuned on seed range A, reported on held-out seed range B)
 
-* When NetCoop commits to a diagnosis it is right **98.5%** of the time. The wrong-diagnosis rate is **1.1%**,
-  and the false-positive rate on healthy networks is **0%** (operating point `min_top_score = 0.55`, chosen on seed range A).
-* Overall accuracy is **0.80**. Most misses are honest `insufficient_evidence` (18%), not wrong answers.
-  Localization is right **99.5%** of the time when the fault type is right.
+**Organizer generator** (raw `data/generator/organizer_generator.py`, 500 seeds per label, seed range B):
+* `normal` → `no_fault_detected` **100%**; `latency_spike` → latency_spike **100%**; `hardware_failure` → hardware_failure **100%**.
+* Wrong diagnoses 0%, false positives 0%, faults reported healthy 0%.
+
+**NetCoop extended generator** (7 classes, 280 incidents, hardened with confounders, gaps and corruption; seed range B):
+* Overall accuracy **0.90**. When it commits it is right **98.2%** of the time; the wrong-diagnosis rate is
+  **1.4%**, normal false positives **0%**, and a fault is reported healthy in **1.3%** of cases.
+* Per class: normal 0.95, congestion 0.8, interface 0.975,
+  overload 0.8, Wi-Fi 0.9, DNS 0.95, DHCP 0.95.
 * **Never overconfident:** in every confidence bin, observed accuracy ≥ stated confidence.
-* Robustness: accuracy goes 0.81 → 0.76 with **60%** of input records corrupted. Without the alias/unit registry it
-  is 0.47 even on clean input.
-* Organizer generator (raw): 500/500 healthy records → `no_fault_detected`; 1,000/1,000 fault records detected,
-  0 fabricated root causes.
+* Robustness: 0.943 → 0.886 with **60%** of input records corrupted; without the alias/unit registry, 0.514 even on clean input.
 
 ## Fallback plan
 
