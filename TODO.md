@@ -135,6 +135,17 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - `.github/workflows/ci.yml`: ubuntu + windows, Python 3.11, Node 20 → pip install -e .[dev], npm ci, lint, tests,
   demo, conformance vs the Node agent (bash shell on both OSes).
 
+## T9: clean-clone check
+
+- `git clone` of the local repo into a temp dir → fresh venv → `pip install -e .[dev]` → `npm ci` (lockfile from T8)
+  → `tasks.py test` (all pass), `tasks.py demo` (7/7 scenarios as expected), conformance 7/7 vs a freshly started agent.
+- No absolute paths in tracked files (`git grep` for `C:\` / user paths: none).
+- Fix: `.gitattributes` (`* text=auto eol=lf`). This machine has `core.autocrlf=true`, so Windows checkouts would
+  otherwise get CRLF. Verified the clone has LF.
+- Found: an agent I had started earlier for the T5 probe was still listening on 8765 and silently joined the clone's demo.
+  Both stray processes were stopped by PID. This motivates T10's stale-agent cleanup, which matches on the
+  `wireless_agent/server.js` command line, not just the port.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
