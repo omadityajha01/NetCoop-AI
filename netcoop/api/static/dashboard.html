@@ -14,10 +14,11 @@
   <div class="controls">
     <label>Scenario <select id="scenario"></select></label>
     <label><input type="checkbox" id="external" checked> external agents</label>
-    <label>Replay speed <select id="speed">
-      <option value="0">instant</option><option value="120" selected>normal</option><option value="400">slow</option>
+    <label>Speed <select id="speed">
+      <option value="1" selected>1×</option><option value="2">2×</option><option value="0">instant</option>
     </select></label>
     <button id="run" type="button">Run scenario</button>
+    <button id="replay" type="button" class="ghost" title="replay the current run from its event log">Replay</button>
     <label>Past runs <select id="history"><option value="">(choose)</option></select></label>
   </div>
 </header>
@@ -37,6 +38,7 @@
   </section>
   <section class="panel">
     <h2>Report</h2>
+    <div id="confbar" class="confbar" aria-hidden="true"><div id="conffill" class="conffill"></div><span id="conflabel"></span></div>
     <div id="report" class="muted">Run a scenario or pick a past run.</div>
   </section>
   <section class="panel">
@@ -56,6 +58,9 @@
   <section class="panel">
     <h2>Normalization log</h2>
     <div id="normsummary"></div>
+    <h3>Raw → canonical</h3>
+    <div class="scrollbox"><table id="transforms"><thead><tr><th>step</th><th>raw → canonical</th><th>why</th></tr></thead><tbody></tbody></table></div>
+    <h3>Quarantined</h3>
     <table id="quarantine"><thead><tr><th>code</th><th>field</th><th>reason</th><th>source</th></tr></thead><tbody></tbody></table>
   </section>
   <section class="panel">
