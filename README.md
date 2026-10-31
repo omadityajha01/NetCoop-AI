@@ -7,6 +7,11 @@ causes, a documented confidence score, limitations and policy-checked recommenda
 
 > **Transport: A2A (borrowed). Semantics: NMP + metric registry (designed).**
 
+![NetCoop architecture](docs/architecture.svg)
+
+<sub>Diagram source: [`docs/architecture.mmd`](docs/architecture.mmd) (Mermaid); the SVG is hand-rendered from it, with no scripts and no external fonts.
+Video voiceover: [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md).</sub>
+
 Three things we optimized for:
 
 1. **Hot-plug external agent.** `wireless_agent` is written in **Node.js** and speaks an older dialect (**v0.9**)

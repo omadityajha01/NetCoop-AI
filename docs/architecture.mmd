@@ -1,0 +1,20 @@
+%% NetCoop AI architecture (source for docs/architecture.svg)
+flowchart LR
+    IN["Incident bundle<br/>(.json / .csv, any dialect)"] --> NORM["Normalizer<br/>aliases · units · IDs · time<br/>recover / quarantine / never drop"]
+    NORM -->|normalization_summary| BUS
+
+    subgraph BUS["In-process message bus + append-only event log (runs/&lt;id&gt;/events.jsonl)"]
+        direction TB
+        PERF["performance_agent<br/>latency · loss · jitter · util"]
+        INFRA["infrastructure_agent<br/>CPU · memory · errors · drops"]
+        CONN["connectivity_agent<br/>scope · upstream · DNS/DHCP"]
+        CORR["correlation_agent<br/>hypotheses · predictions · conflicts · scoring"]
+        REP["reporting_agent<br/>playbook · policy · report"]
+    end
+
+    BUS <-->|"NMP 1.1 in an A2A data part<br/>(JSON-RPC message/send)"| GW["A2A gateway<br/>allowlist · card check · 256 KB cap<br/>0.9 → 1.0 upcaster"]
+    GW <-->|"HTTP 127.0.0.1"| WIFI["wireless_agent (Node.js)<br/>dialect v0.9<br/>signal · noise_margin · retx"]
+    REP --> OUT["report.json<br/>root cause · evidence · confidence<br/>alternatives · limitations · blocked actions"]
+    CONF[("config/*.yaml<br/>metrics · signatures · playbook<br/>policies · topology")] -.-> NORM
+    CONF -.-> CORR
+    CONF -.-> REP
