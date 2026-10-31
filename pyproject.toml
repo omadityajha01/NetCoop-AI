@@ -27,13 +27,16 @@ eval = [
   "matplotlib>=3.8",     # operating-point chart only (docs/operating_point.png)
 ]
 
+a2a = [
+  "a2a-sdk==1.3.0",      # OPTIONAL interop check only (tests/a2a_sdk). Pulls protobuf>=6: install it in its own
+]                        # venv if your environment pins protobuf<6 (e.g. TensorFlow).
+
 [project.scripts]
 netcoop = "netcoop.cli:main"
 
-# A2A: we implement the A2A wire shapes (Agent Card at /.well-known/agent-card.json,
-# JSON-RPC 2.0 `message/send`, Message.parts[kind=data]) over stdlib HTTP. This is the
-# documented cut-line fallback (CLAUDE.md §8). We take no a2a-sdk dependency, so there is
-# nothing to pin yet; see TODO.md.
+# A2A: the core implements the A2A wire shapes (Agent Card at /.well-known/agent-card.json,
+# JSON-RPC 2.0 `message/send`, Message.parts[kind=data]) over stdlib HTTP (CLAUDE.md §8 fallback).
+# Compatibility is verified with the official a2a-sdk, pinned in the optional [a2a] extra.
 
 [tool.setuptools.packages.find]
 include = ["netcoop*"]
@@ -44,6 +47,7 @@ addopts = "-q"
 markers = [
   "external: needs node to run the wireless_agent",
   "conformance: conformance kit against AGENT_URL",
+  "a2a_sdk: official a2a-sdk client interop check (skipped unless a2a-sdk is installed)",
 ]
 
 [tool.ruff]

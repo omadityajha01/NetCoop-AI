@@ -93,10 +93,20 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - `wireless_agent` untouched (still 0.9). Conformance kit now sends 1.1 envelopes: 7/7 pass.
 - docs/schemas regenerated (`$id` …/nmp-1.1/…); README tables regenerated.
 
+## T5: A2A verification
+
+- `tests/a2a_sdk/test_a2a_sdk.py` (marker `a2a_sdk`) is skipped unless `a2a-sdk` is installed. It uses the official
+  SDK client (`A2ACardResolver` → `create_client` → `send_message`) against the real Node agent.
+  **Result: PASS with a2a-sdk 1.3.0.** The card resolves through the SDK's 0.3 compatibility path, the reply is a
+  ROLE_AGENT message with a data part (dialect 0.9), and our parser accepts it.
+- Pinned as the optional extra `[a2a] = a2a-sdk==1.3.0`. **No refactor to the SDK.**
+- **Decision:** a2a-sdk 1.3.0 requires protobuf ≥ 6, which conflicts with TensorFlow on this machine (it needs < 6).
+  The check therefore runs in an isolated venv and is not part of `[dev]`. The accidental global install was
+  rolled back: a2a-sdk and its five pulled-in packages were uninstalled, protobuf was restored to 5.29.6, and `pip check` is clean.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
-- [ ] Pin `a2a-sdk` (optional; see above).
 - [ ] Dashboard (cut line #1, not started; the API is ready: `/incidents`, `/incidents/{id}/report|events|report.csv`).
 - [ ] Congestion remediation *simulation* (stretch, G2).
 - [ ] MCP server exposing `diagnose` / `get_report` (stretch, D6).

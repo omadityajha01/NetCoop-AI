@@ -236,7 +236,12 @@ Current version: **1.1**. It is a MINOR bump over 1.0 and purely additive:
 
 ### A2A transport
 
-The gateway (`netcoop/gateway/`) uses A2A wire shapes over stdlib HTTP:
+**A2A-compatible (verified with a2a-sdk v1.3.0).** The official `a2a-sdk` client resolves the Node
+`wireless_agent`'s card and completes a `message/send` round trip; NetCoop's parser then accepts the reply
+(`tests/a2a_sdk`, optional: `pip install -e .[a2a]`). Note: SDK 1.3 targets the A2A 1.0 spec and reads our
+0.3-style card (`url` + `protocolVersion`) through its backward-compatibility path.
+
+The gateway (`netcoop/gateway/`) uses A2A wire shapes over stdlib HTTP, so the offline core needs no SDK:
 * the Agent Card at `<base>/.well-known/agent-card.json`
 * JSON-RPC 2.0 `message/send`
 * the NMP envelope in `Message.parts[{kind:"data"}]`
@@ -606,5 +611,6 @@ runs/<id>/         events.jsonl, report.json, input, meta.json, external.jsonl (
 * All telemetry is synthetic. The topology in `config/topology.yaml` is a NetCoop-defined model of the campus,
   and thresholds and weights are tuned on generated data.
 * The eval generator is ours, so accuracy measures internal consistency under realistic noise, not field performance.
-* A2A is implemented as wire shapes over stdlib HTTP (the documented fallback), not via `a2a-sdk`; see `TODO.md`.
+* The core speaks A2A wire shapes over stdlib HTTP rather than embedding `a2a-sdk`. Compatibility is verified
+  against the official SDK v1.3.0 in an optional test (it pulls protobuf ≥ 6, so it is kept out of the default install).
 * The optional LLM paths (Ollama / Anthropic API) are implemented but not exercised in CI beyond mocked tests.
