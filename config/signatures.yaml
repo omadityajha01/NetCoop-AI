@@ -78,3 +78,31 @@ dhcp_failure:
     latency_ms:      {op: ">=", ref: high, weight: 2}
     packet_loss_pct: {op: ">=", ref: high, weight: 2}
   playbook: dhcp_failure
+
+# --- Organizer generator labels (data/generator/organizer_generator.py). Derivation: data/generator/SCHEMA.md ---
+latency_spike:
+  label: "Likely latency spike (high latency and jitter without congestion, interface errors or overload)"
+  entity: [device]
+  expects:
+    latency_ms: {op: ">=", ref: high, weight: 3}   # generator: uniform(150, 400) ms; high threshold = 150
+    jitter_ms:  {op: ">=", ref: high, weight: 3}   # generator: uniform(30, 80) ms;   high threshold = 30
+  contradicts:
+    # Only the two signals that separate a spike from congestion. The generator's latency_spike has drops 0-50
+    # (never > warn 50) and utilization 60-85 (below high 85). Interface errors / CPU are not needed: hardware
+    # failure and overload never emit the high jitter this signature requires.
+    queue_drops_count:    {op: ">", ref: warn, weight: 2}
+    link_utilization_pct: {op: ">=", ref: high, weight: 2}
+  playbook: latency_spike
+
+hardware_failure:
+  label: "Likely device hardware failure (every resource saturated, interface errors and heavy loss)"
+  entity: [device]
+  expects:
+    interface_errors_count: {op: ">=", ref: high,     weight: 3}   # generator: 100-500 (high 50)
+    cpu_pct:                {op: ">=", ref: critical, weight: 2}   # generator: 99.9 (critical 95)
+    link_utilization_pct:   {op: ">=", ref: critical, weight: 2}   # generator: 100.0 (critical 95)
+    packet_loss_pct:        {op: ">=", ref: critical, weight: 2}   # generator: 15-30 (critical 10)
+    queue_drops_count:      {op: ">=", ref: critical, weight: 2}   # generator: 5000-15000 (critical 1000)
+    latency_ms:             {op: ">=", ref: critical, weight: 1}   # generator: 500-1000 (critical 500)
+  contradicts: {}
+  playbook: hardware_failure

@@ -146,7 +146,8 @@ class RemoteAgent:
         findings: list[Finding] = []
         for (metric, eid), group in sorted(groups.items()):
             fs = findings_for(cfg, agent_id=self.agent_id, start_n=n, metric=metric, entity_id=eid,
-                              obs=tuple(sorted(group, key=lambda o: (o.ts, o.source_ref))), window=ctx.window)
+                              obs=tuple(sorted(group, key=lambda o: (o.ts, o.source_ref))), window=ctx.window,
+                              cadence=max((len(g) for g in groups.values()), default=None))
             n += len(fs)
             findings.extend(f.model_copy(update={"transforms": (vt + list(f.transforms))[:25]}) for f in fs)
         limitations = [lim for lim in lims if lim.impact != "none"]

@@ -309,6 +309,8 @@ Fault signatures (`config/signatures.yaml`):
 | `weak_wifi` | Likely weak Wi-Fi signal at the access point causing retransmissions | `rssi_dbm` <= high ×3, `snr_db` <= high ×2, `retransmission_pct` >= high ×3, `latency_ms` >= warn ×1, `packet_loss_pct` >= warn ×1 | `link_utilization_pct` >= high ×2, `client_count` >= high ×1 | ap |
 | `dns_failure` | Likely DNS service failure causing name-resolution errors | `dns_failure_pct` >= high ×4 | `latency_ms` >= high ×2, `packet_loss_pct` >= high ×2 | service |
 | `dhcp_failure` | Likely DHCP service failure preventing new address leases | `dhcp_failure_pct` >= high ×4 | `latency_ms` >= high ×2, `packet_loss_pct` >= high ×2 | service |
+| `latency_spike` | Likely latency spike (high latency and jitter without congestion, interface errors or overload) | `latency_ms` >= high ×3, `jitter_ms` >= high ×3 | `queue_drops_count` > warn ×2, `link_utilization_pct` >= high ×2 | device |
+| `hardware_failure` | Likely device hardware failure (every resource saturated, interface errors and heavy loss) | `interface_errors_count` >= high ×3, `cpu_pct` >= critical ×2, `link_utilization_pct` >= critical ×2, `packet_loss_pct` >= critical ×2, `queue_drops_count` >= critical ×2, `latency_ms` >= critical ×1 |  | device |
 <!-- END GENERATED: signatures -->
 
 Signals are matched on the hypothesis entity and its topology neighbours (link ↔ endpoints, AP ↔ uplink,
@@ -324,7 +326,7 @@ score    = clamp(support − contra_penalty × contra, 0, 1) × quality
 margin   = score(top) − score(second)
 ```
 
-Completeness is `samples / (window / interval)`, capped at 0.5 for stale data (older than 900 s).
+Completeness is `samples / min(window / interval, cadence)`, where cadence is the most samples any signal has in this input, so a one-record snapshot counts as complete. It is capped at 0.5 for stale data (older than 900 s).
 
 | Condition (in order) | Status |
 |---|---|
@@ -384,30 +386,34 @@ Two data sources are evaluated separately:
 
 | Source | Fault types it produces | Ground truth |
 |---|---|---|
-| **Organizer generator** (`data/generator/`, raw, unmodified) | `normal`, `latency_spike`, `hardware_failure` (one record per call, `SW_CAMPUS_1..10`) | `normal` only; the two faults have no mapping to a NetCoop signature |
+| **Organizer generator** (`data/generator/`, raw, unmodified) | `normal`, `latency_spike`, `hardware_failure` (one record per call, `SW_CAMPUS_1..10`) | 1:1 label → outcome (`normal` → `no_fault_detected`; the two faults → signatures derived from the generator code, see `data/generator/SCHEMA.md`) |
 | **NetCoop extended generator** (`eval/generate.py` + `harden()`) | `normal`, `congestion`, `interface_fault`, `device_overload`, `weak_wifi`, `dns_failure`, `dhcp_failure` | exact fault type + location |
 
 <!-- BEGIN GENERATED: organizer -->
 #### Organizer generator (raw, unmodified)
 
-`data/generator/organizer_generator.py`, 500 seeds per fault type, one record per call, full pipeline, no preprocessing. The organizer faults have no mapping to NetCoop signatures, so `latency_spike` / `hardware_failure` are scored on detection (not `no_fault_detected`).
+`data/generator/organizer_generator.py`, 500 seeds per label, one record per call, full pipeline, no preprocessing. Seed range A (from seed 0) was used for tuning; the numbers below are **seed range B** (from seed 100000). Label → expected outcome: `normal` → `no_fault_detected`, `latency_spike` → `latency_spike`, `hardware_failure` → `hardware_failure` (derivation in `data/generator/SCHEMA.md`).
 
-| organizer fault | n | score | committed (diagnosed/probable) | status distribution | label distribution | records quarantined |
-|---|---|---|---|---|---|---|
-| `normal` | 500 | accuracy 1.0 | 0.0 | no_fault_detected 500 | no_fault_detected 500 | 0 |
-| `latency_spike` | 500 | detection 1.0 | 0.0 | insufficient_evidence 500 | insufficient_evidence (no_signature_match) 500 | 0 |
-| `hardware_failure` | 500 | detection 1.0 | 0.0 | insufficient_evidence 500 | insufficient_evidence (no_signature_match) 500 | 0 |
+| organizer label | n | correct | committed | records quarantined |
+|---|---|---|---|---|
+| `normal` | 500 | 1.0 | 0.0 | 0 |
+| `latency_spike` | 500 | 1.0 | 1.0 | 0 |
+| `hardware_failure` | 500 | 1.0 | 1.0 | 0 |
+
+Wrong-diagnosis rate 0.0, real fault reported healthy 0.0, false positives on normal 0.0.
+
+**Confusion (seed range B; rows = organizer label, columns = NetCoop output)**
+
+| label \ output | hardware_failure | latency_spike | no_fault_detected |
+|---|---|---|---|
+| `normal` | 0 | 0 | 500 |
+| `latency_spike` | 0 | 500 | 0 |
+| `hardware_failure` | 500 | 0 | 0 |
 <!-- END GENERATED: organizer -->
 
-**What this shows:**
-* On raw organizer data NetCoop **detects** every fault (never `no_fault_detected`) but **does not commit** to a
-  root cause: all 1,000 fault records end as `insufficient_evidence (no_signature_match)`. Healthy records are
-  100% `no_fault_detected`.
-* This is the intended behavior on that data. `hardware_failure` maxes *every* signal (CPU 99.9, utilization 100,
-  interface errors, drops), so each signature is contradicted by another's symptom. `latency_spike` has high
-  latency, but utilization stays below `high` and queue drops are normal, so no signature matches.
-* A single sample per window also caps data quality at 0.5. NetCoop reports the anomaly and the missing
-  discriminating signals instead of guessing.
+**What this shows:** every organizer label maps 1:1 to a NetCoop outcome, and the two fault labels have
+signatures derived from the generator code (`data/generator/SCHEMA.md`). The raw generator is run with no
+preprocessing; tuning used seed range A only.
 
 ### Extended generator (held-out seed range B)
 
@@ -419,56 +425,56 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.796 |
-| macro accuracy | 0.796 |
-| precision when diagnosed | 0.985 |
-| wrong diagnosis rate | 0.011 |
+| overall accuracy | 0.8 |
+| macro accuracy | 0.8 |
+| precision when diagnosed | 0.98 |
+| wrong diagnosis rate | 0.014 |
 | fault to no fault rate | 0.013 |
 | normal accuracy | 0.625 |
 | false positive rate normal | 0.0 |
-| insufficient evidence rate | 0.182 |
+| insufficient evidence rate | 0.175 |
 | localization accuracy | 0.995 |
-| accuracy on mutated inputs | 0.774 |
+| accuracy on mutated inputs | 0.786 |
 | mutated share | 0.3 |
 | crashes | 0 |
-| mean ms per incident | 45.9 |
+| mean ms per incident | 56.8 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
 | normal | 40 | 0.625 | 0.375 | 0.0 |
-| congestion | 40 | 0.8 | 0.175 | 0.05 |
+| congestion | 40 | 0.8 | 0.15 | 0.125 |
 | interface_fault | 40 | 0.975 | 0.025 | 0.0 |
 | device_overload | 40 | 0.675 | 0.25 | 0.125 |
-| weak_wifi | 40 | 0.6 | 0.35 | 0.0 |
+| weak_wifi | 40 | 0.625 | 0.325 | 0.0 |
 | dns_failure | 40 | 0.95 | 0.05 | 0.0 |
 | dhcp_failure | 40 | 0.95 | 0.05 | 0.0 |
 
 **Confusion matrix** (rows = truth, columns = predicted)
 
-| truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | no_fault_detected | weak_wifi |
-|---|---|---|---|---|---|---|---|---|
-| normal | 0 | 0 | 0 | 0 | 15 | 0 | 25 | 0 |
-| congestion | 32 | 0 | 0 | 0 | 7 | 0 | 1 | 0 |
-| interface_fault | 0 | 0 | 0 | 0 | 1 | 39 | 0 | 0 |
-| device_overload | 3 | 27 | 0 | 0 | 10 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 14 | 0 | 2 | 24 |
-| dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 |
-| dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 |
+| truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | latency_spike | no_fault_detected | weak_wifi |
+|---|---|---|---|---|---|---|---|---|---|
+| normal | 0 | 0 | 0 | 0 | 15 | 0 | 0 | 25 | 0 |
+| congestion | 32 | 0 | 0 | 0 | 6 | 0 | 1 | 1 | 0 |
+| interface_fault | 0 | 0 | 0 | 0 | 1 | 39 | 0 | 0 | 0 |
+| device_overload | 3 | 27 | 0 | 0 | 10 | 0 | 0 | 0 | 0 |
+| weak_wifi | 0 | 0 | 0 | 0 | 13 | 0 | 0 | 2 | 25 |
+| dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 | 0 |
+| dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 | 0 |
 
 **Confidence vs observed accuracy** (diagnosed/probable only)
 
 | confidence bin | n | mean confidence | observed accuracy |
 |---|---|---|---|
-| [0.50, 0.75] | 54 | 0.644 | 0.963 |
-| [0.75, 0.90] | 66 | 0.83 | 0.985 |
-| [0.90, 1.00] | 81 | 0.992 | 1.0 |
+| [0.50, 0.75] | 52 | 0.645 | 0.962 |
+| [0.75, 0.90] | 67 | 0.829 | 0.97 |
+| [0.90, 1.00] | 84 | 0.991 | 1.0 |
 
 | confidence_category | n | observed accuracy |
 |---|---|---|
-| high | 147 | 0.993 |
-| medium | 54 | 0.963 |
+| high | 151 | 0.987 |
+| medium | 52 | 0.962 |
 <!-- END GENERATED: eval -->
 
 **Reading the numbers honestly:**

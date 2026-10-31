@@ -1,38 +1,78 @@
 {
-  "normal": {
-    "n": 500,
-    "statuses": {
-      "no_fault_detected": 500
+  "A": {
+    "seed_start": 0,
+    "per_label": {
+      "normal": {
+        "n": 500,
+        "accuracy": 1.0,
+        "committed_rate": 0.0,
+        "records_quarantined": 0
+      },
+      "latency_spike": {
+        "n": 500,
+        "accuracy": 1.0,
+        "committed_rate": 1.0,
+        "records_quarantined": 0
+      },
+      "hardware_failure": {
+        "n": 500,
+        "accuracy": 1.0,
+        "committed_rate": 1.0,
+        "records_quarantined": 0
+      }
     },
-    "labels": {
-      "no_fault_detected": 500
+    "confusion": {
+      "normal": {
+        "no_fault_detected": 500
+      },
+      "latency_spike": {
+        "latency_spike": 500
+      },
+      "hardware_failure": {
+        "hardware_failure": 500
+      }
     },
-    "records_quarantined": 0,
-    "accuracy": 1.0,
-    "committed_rate": 0.0
+    "wrong_diagnosis_rate": 0.0,
+    "fault_to_no_fault_rate": 0.0,
+    "false_positive_rate_normal": 0.0,
+    "overall_accuracy": 1.0
   },
-  "latency_spike": {
-    "n": 500,
-    "statuses": {
-      "insufficient_evidence": 500
+  "B": {
+    "seed_start": 100000,
+    "per_label": {
+      "normal": {
+        "n": 500,
+        "accuracy": 1.0,
+        "committed_rate": 0.0,
+        "records_quarantined": 0
+      },
+      "latency_spike": {
+        "n": 500,
+        "accuracy": 1.0,
+        "committed_rate": 1.0,
+        "records_quarantined": 0
+      },
+      "hardware_failure": {
+        "n": 500,
+        "accuracy": 1.0,
+        "committed_rate": 1.0,
+        "records_quarantined": 0
+      }
     },
-    "labels": {
-      "insufficient_evidence (no_signature_match)": 500
+    "confusion": {
+      "normal": {
+        "no_fault_detected": 500
+      },
+      "latency_spike": {
+        "latency_spike": 500
+      },
+      "hardware_failure": {
+        "hardware_failure": 500
+      }
     },
-    "records_quarantined": 0,
-    "detection_rate": 1.0,
-    "committed_rate": 0.0
-  },
-  "hardware_failure": {
-    "n": 500,
-    "statuses": {
-      "insufficient_evidence": 500
-    },
-    "labels": {
-      "insufficient_evidence (no_signature_match)": 500
-    },
-    "records_quarantined": 0,
-    "detection_rate": 1.0,
-    "committed_rate": 0.0
+    "wrong_diagnosis_rate": 0.0,
+    "fault_to_no_fault_rate": 0.0,
+    "false_positive_rate_normal": 0.0,
+    "overall_accuracy": 1.0
   }
 }

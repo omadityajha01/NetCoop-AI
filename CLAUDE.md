@@ -265,6 +265,8 @@ Every coercion sets `data_quality.coerced = true`, lowers confidence (§6.3) and
 | `weak_wifi` | low RSSI/SNR, high retransmissions | only clients of one AP; wired paths fine |
 | `dns_failure` | `dns_failure_pct` high | L3 latency/loss normal |
 | `dhcp_failure` | `dhcp_failure_pct` high | existing clients fine, new leases fail |
+| `latency_spike` | latency + jitter ≥ high | drops ≤ warn, utilization < high (organizer label) |
+| `hardware_failure` | CPU, utilization, loss, drops all critical + interface errors | everything saturated at once (organizer label) |
 | *(none)* | no anomalous findings | → `no_fault_detected` |
 
 Shape:
@@ -302,6 +304,8 @@ support  = Σ w_s [s ∈ E observed & matches]  / Σ w_s [s ∈ E]
 coverage = Σ w_s [s ∈ E observed]            / Σ w_s [s ∈ E]
 contra   = Σ w_c [c ∈ C observed & present]  / max(Σ w_c [c ∈ C], 1)
 quality  = max(0.5, mean(completeness of used findings) − 0.05 × n_coerced_used)
+             completeness = samples / min(window / interval, cadence)   (cadence = most samples any signal has
+             in this input: a one-record snapshot is complete; a signal with fewer samples than its peers is not)
 score    = clamp(support − 0.5 × contra, 0, 1) × quality
 margin   = score(top) − score(second)
 ```

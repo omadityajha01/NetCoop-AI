@@ -35,10 +35,16 @@ def test_organizer_normal_is_no_fault(run):
         assert run(json.dumps(_rec("normal", seed)).encode()).report["status"] == "no_fault_detected"
 
 
-def test_organizer_faults_are_detected_but_not_fabricated(run):
-    for fault in ("latency_spike", "hardware_failure"):
+def test_organizer_labels_map_one_to_one(run):
+    """U1: every organizer label maps to exactly one NetCoop outcome (derivation in data/generator/SCHEMA.md)."""
+    for label, fault in (("latency_spike", "latency_spike"), ("hardware_failure", "hardware_failure")):
         for seed in range(15):
-            rep = run(json.dumps(_rec(fault, seed)).encode()).report
-            assert rep["status"] == "insufficient_evidence", (fault, seed)
-            assert rep["status_reason"] == "no_signature_match"
-            assert rep["supporting_evidence"]  # the anomaly is reported
+            rep = run(json.dumps(_rec(label, seed)).encode()).report
+            assert rep["status"] == "diagnosed" and rep["fault_type"] == fault, (label, seed, rep["status"])
+            assert rep["affected_devices"] == [_rec(label, seed)["device_id"]]
+
+
+def test_single_record_snapshot_is_complete(run):
+    """A one-record input is complete relative to its own cadence (quality is not floored to 0.5)."""
+    rep = run(json.dumps(_rec("hardware_failure", 3)).encode()).report
+    assert rep["scoring"]["quality"] == 1.0

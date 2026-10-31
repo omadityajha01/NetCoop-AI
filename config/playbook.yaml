@@ -60,3 +60,20 @@ _insufficient_evidence:
 _no_fault:
   actions:
     - {id: GEN-2, action: monitor, target: none, text: "No action required; continue monitoring"}
+
+latency_spike:
+  checks:
+    - "Compare latency and jitter on {device} with its upstream path"
+  actions:
+    - {id: LAT-1, action: inspect,       target: device, text: "Inspect the forwarding path and recent routing changes for {device}"}
+    - {id: LAT-2, action: review_qos,    target: device, text: "Review QoS/priority queuing for latency-sensitive traffic on {device}"}
+    - {id: LAT-3, action: inspect,       target: device, text: "Check upstream provider/WAN latency reports for the {segment} segment"}
+
+hardware_failure:
+  checks:
+    - "Check hardware health (power, fans, line cards, optics) on {device}"
+  actions:
+    - {id: HW-1, action: inspect,          target: device, text: "Inspect hardware logs, power and line-card status on {device}"}
+    - {id: HW-2, action: failover,         target: device, text: "Fail traffic over from {device} to a redundant path"}
+    - {id: HW-3, action: replace_hardware, target: device, text: "Open an RMA / replace the faulty hardware in {device}"}
+    - {id: HW-4, action: reboot,           target: device, text: "Reboot {device} only if hardware diagnostics pass"}

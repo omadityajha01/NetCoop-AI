@@ -165,6 +165,30 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - `docs/DEMO.md`: run of show with real seed-B numbers, the fallback plan, and judge Q&A.
 - Tests: `tests/integration/test_present.py` (auto run into a temp dir on a free port; process matcher ignores unrelated node processes).
 
+## U1: organizer fault types (P0)
+
+- SCHEMA.md now lists exactly what each organizer label does to each field, plus the 1:1 label → outcome mapping
+  and its derivation.
+- Two signatures + playbook entries were derived from the generator code: `latency_spike` (latency + jitter ≥ high; contradicted
+  by drops > warn or utilization ≥ high) and `hardware_failure` (everything critical + interface errors).
+- **Signatures alone were not enough. The blocker was not scoring discrimination but data quality:** a one-record
+  input had completeness 1/6, so quality was floored at 0.5 and the score capped at 0.50 < min_top_score 0.55
+  (support 1.0, coverage 1.0, contra 0, margin ≥ 0.39).
+- **Decision: the "explains" term was NOT added** (it would not change a quality-capped score). Instead,
+  completeness is measured against the cadence the input delivers:
+  `expected = min(window/interval, max samples of any signal in this input)`. Documented in CLAUDE.md §6.3,
+  README and SCHEMA.md.
+- Our-generator regression found on A: weakened congestion became latency_spike (wrong 3.2% > guard). It was fixed in
+  signatures.yaml only: the latency_spike contradictions were narrowed to drops > warn and utilization ≥ high (the redundant ones diluted contra).
+- Organizer seed B (500/label): normal 1.0, latency_spike
+  1.0, hardware_failure 1.0
+  (targets ≥ 0.90 / ≥ 0.95 ✓). Wrong 0.0, FP 0.0,
+  fault→healthy 0.0.
+- Our generator seed B: overall 0.796 → 0.8, committed precision
+  0.985 → 0.98, wrong 0.011 →
+  0.014, normal FP 0.0 → 0.0
+  (no metric dropped more than 2 points ✓).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

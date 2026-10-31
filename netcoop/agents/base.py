@@ -54,6 +54,10 @@ class TelemetryTool:
             return obs
         return tuple(o for o in obs if window.start <= o.ts <= window.end)
 
+    def cadence(self, window: Window) -> int:
+        """Most samples any (metric, entity) has inside `window`: the collection cadence this input delivers."""
+        return max((sum(1 for o in obs if window.start <= o.ts <= window.end) for obs in self._idx.values()), default=0)
+
     def entities_with(self, metric: str) -> list[str]:
         return sorted(e for (m, e) in self._idx if m == metric)
 
@@ -115,14 +119,19 @@ def aggregate(kind: str, values: list[float], window_s: float) -> float:
 
 
 def build_finding(cfg: Config, *, agent_id: str, n: int, metric: str, entity_type: str, entity_id: str,
-                  obs: tuple[Observation, ...] | list[Observation], window: Window, source: str | None = None) -> Finding:
+                  obs: tuple[Observation, ...] | list[Observation], window: Window, source: str | None = None,
+                  cadence: int | None = None) -> Finding:
     spec = cfg.metrics[metric]
     data_cfg = cfg.agents["data"]
     window_s = (window.end - window.start).total_seconds()
     vals = [o.value for o in obs]
     value = round(aggregate(spec["aggregation"], vals, window_s), 3)
     sev, ref = severity(cfg, metric, entity_id, value)
+    # completeness is measured against the cadence the input actually delivers (a one-record snapshot is complete;
+    # a signal with 2 samples while its peers have 6 is not), capped by the configured window/interval
     expected = max(1.0, window_s / float(data_cfg["expected_sample_interval_s"]))
+    if cadence:
+        expected = max(1.0, min(expected, float(cadence)))
     completeness = min(1.0, len(obs) / expected)
     last = max(o.ts for o in obs)
     staleness = max(0.0, (window.end - last).total_seconds())
@@ -157,7 +166,7 @@ def build_finding(cfg: Config, *, agent_id: str, n: int, metric: str, entity_typ
 
 
 def findings_for(cfg: Config, *, agent_id: str, start_n: int, metric: str, entity_id: str,
-                 obs: tuple[Observation, ...], window: Window) -> list[Finding]:
+                 obs: tuple[Observation, ...], window: Window, cadence: int | None = None) -> list[Finding]:
     """One finding per source (multiple sources -> C1 conflict detection downstream)."""
     if not obs:
         return []
@@ -168,7 +177,7 @@ def findings_for(cfg: Config, *, agent_id: str, start_n: int, metric: str, entit
     out = []
     for i, src in enumerate(sorted(by_src)):
         out.append(build_finding(cfg, agent_id=agent_id, n=start_n + i, metric=metric, entity_type=etype,
-                                 entity_id=entity_id, obs=by_src[src], window=window, source=src))
+                                 entity_id=entity_id, obs=by_src[src], window=window, source=src, cadence=cadence))
     return out
 
 
@@ -214,7 +223,7 @@ class AnalysisAgent:
                 etype = cfg.topology.type_of(eid) or obs[0].entity_type
                 coverage.append({"metric": metric, "entity": {"type": etype, "id": eid}})
                 fs = findings_for(cfg, agent_id=self.agent_id, start_n=n, metric=metric, entity_id=eid, obs=obs,
-                                  window=ctx.window)
+                                  window=ctx.window, cadence=tel.cadence(ctx.window))
                 n += len(fs)
                 # Round-0 rule: publish only anomalous signals. If any source of a signal is anomalous, all of
                 # its sources are published so value conflicts (C1) stay visible.
@@ -248,7 +257,7 @@ class AnalysisAgent:
                 unavailable.append(sig.model_dump(mode="json"))
                 continue
             fs = findings_for(cfg, agent_id=self.agent_id, start_n=n, metric=sig.metric, entity_id=sig.entity.id,
-                              obs=obs, window=window)
+                              obs=obs, window=window, cadence=tel.cadence(window))
             n += len(fs)
             found.extend(fs)
         found.sort(key=lambda f: f.finding_id)
