@@ -33,10 +33,16 @@ DEFAULT_PORT = int(os.environ.get("NETCOOP_AGENT_PORT", "8765"))
 if os.name == "nt":  # enable ANSI colors in Windows consoles
     os.system("")
 TTY = sys.stdout.isatty()
+COLOR = TTY and os.environ.get("NO_COLOR") is None
+
+
+def set_color(on: bool) -> None:
+    global COLOR
+    COLOR = on
 
 
 def c(s: str, code: str) -> str:
-    return f"\033[{code}m{s}\033[0m" if TTY else s
+    return f"\033[{code}m{s}\033[0m" if COLOR else s
 
 
 def ok(s: str) -> str:
@@ -212,20 +218,90 @@ class Result:
     detail: str
 
 
+def in_venv() -> bool:
+    return sys.prefix != getattr(sys, "base_prefix", sys.prefix)
+
+
+def lan_ip() -> str | None:
+    """This machine's non-loopback IPv4 address, if any (a UDP connect sends no packets)."""
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as s:
+            s.connect(("192.0.2.1", 9))  # TEST-NET-1, never routed
+            ip = s.getsockname()[0]
+        return None if ip.startswith("127.") or ip == "0.0.0.0" else ip
+    except OSError:
+        return None
+
+
+def loopback_only(port: int) -> tuple[bool, str]:
+    """True if `port` is NOT reachable on the LAN address (the listener is bound to 127.0.0.1 only)."""
+    ip = lan_ip()
+    if ip is None:
+        return True, "no LAN interface (offline): loopback only by construction"
+    with socket.socket() as s:
+        s.settimeout(0.5)
+        try:
+            s.connect((ip, port))
+        except OSError:
+            return True, f"listens on 127.0.0.1 only (not reachable on {ip})"
+    return False, f"REACHABLE on LAN address {ip}:{port}"
+
+
+FINGERPRINT_DIRS = ("netcoop", "config", "data/scenarios", "external_agents/wireless_agent")
+
+
+def _tracked_files(dirs: tuple[str, ...]) -> list[Path]:
+    try:
+        out = subprocess.run(["git", "ls-files", *dirs], cwd=ROOT, capture_output=True, text=True, timeout=20).stdout
+        files = [ROOT / f for f in out.splitlines() if f.strip()]
+    except (OSError, subprocess.SubprocessError):
+        files = []
+    if not files:
+        files = [p for d in dirs for p in (ROOT / d).rglob("*") if p.is_file() and "__pycache__" not in p.parts]
+    return sorted(f for f in files if f.is_file())
+
+
+def content_hash(dirs: tuple[str, ...]) -> str:
+    """sha256 over tracked file contents, line endings normalized (same hash on Windows and Linux checkouts)."""
+    import hashlib
+
+    h = hashlib.sha256()
+    for f in _tracked_files(dirs):
+        h.update(f.relative_to(ROOT).as_posix().encode() + b"\0")
+        h.update(f.read_bytes().replace(b"\r\n", b"\n") + b"\0")
+    return h.hexdigest()
+
+
+def fingerprint() -> dict[str, str]:
+    try:
+        commit = subprocess.run(["git", "rev-parse", "--short", "HEAD"], cwd=ROOT, capture_output=True, text=True,
+                                timeout=10).stdout.strip()
+    except (OSError, subprocess.SubprocessError):
+        commit = "unknown"
+    return {"generated_from_commit": commit or "unknown", "source_hash": content_hash(FINGERPRINT_DIRS),
+            "config_hash": content_hash(("config",))}
+
+
 def preflight(port: int) -> int:
     os.environ["NETCOOP_LLM"] = "off"
     results: list[Result] = []
 
-    def check(name: str, fn: Callable[[], tuple[bool, str]]) -> bool:
+    def check(name: str, fn: Callable[[], tuple[bool, str]], warn_only: bool = False) -> bool:
         try:
             passed, detail = fn()
         except Exception as exc:  # noqa: BLE001
             passed, detail = False, f"{type(exc).__name__}: {str(exc)[:160]}"
+        if warn_only and not passed:
+            print(f"  {c('WARN', '33;1')}  {name:<38} {dim(detail)}")
+            return passed
         results.append(Result(name, passed, detail))
         print(f"  {ok('PASS') if passed else bad('FAIL')}  {name:<38} {dim(detail)}")
         return passed
 
     print(c("NetCoop preflight", "1") + dim(f"  (port {port}, offline)"))
+    check("Running inside the project .venv", lambda: (in_venv(), sys.prefix))
+    cols = shutil.get_terminal_size((80, 24)).columns
+    check("Terminal width >= 100 columns", lambda: (cols >= 100, f"{cols} columns (widen the window)"), warn_only=True)
     check("Python >= 3.11", lambda: (sys.version_info >= (3, 11), sys.version.split()[0]))
 
     def node_ver() -> tuple[bool, str]:
@@ -269,6 +345,7 @@ def preflight(port: int) -> int:
                 cs = Kit(agent.url).run()
                 return all(x.passed for x in cs), f"{sum(x.passed for x in cs)}/{len(cs)} checks"
             check("Conformance kit vs wireless_agent", conf)
+            check("wireless_agent bound to 127.0.0.1 only", lambda: loopback_only(port))
 
             def scenarios() -> tuple[bool, str]:
                 import tempfile
@@ -305,6 +382,18 @@ def preflight(port: int) -> int:
         have = [step for step, _ in STEPS if (SNAP_DIR / step).is_dir() and any((SNAP_DIR / step).iterdir())]
         return len(have) == len(STEPS), f"{len(have)}/{len(STEPS)} step folders in demo_snapshots/"
     check("Fallback snapshots present", snaps)
+
+    def fresh() -> tuple[bool, str]:
+        meta = SNAP_DIR / "meta.json"
+        if not meta.exists():
+            return False, "demo_snapshots/meta.json missing: run `python tasks.py snapshots`"
+        m = json.loads(meta.read_text(encoding="utf-8"))
+        cur = fingerprint()
+        stale = [k for k in ("source_hash", "config_hash") if m.get(k) != cur[k]]
+        if stale:
+            return False, f"{', '.join(stale)} changed since the snapshots: run `python tasks.py snapshots`"
+        return True, f"match current code + config (generated from {m.get('generated_from_commit')})"
+    check("Snapshots fresh (code + config hash)", fresh)
     failed = [r for r in results if not r.passed]
     print()
     print(ok(f"PREFLIGHT OK: {len(results)}/{len(results)} checks passed") if not failed
@@ -326,7 +415,8 @@ STEPS = [
 ]
 
 
-def present(port: int, *, auto: bool = False, out: Path | None = None, with_judge: bool = False) -> int:
+def present(port: int, *, auto: bool = False, out: Path | None = None, with_judge: bool = False, delay: float = 0.0,
+            open_browser: bool = False) -> int:
     os.environ["NETCOOP_LLM"] = "off"
     runs = (ROOT / "runs" / "present") if out is None else out / "_runs"
     if runs.exists():
@@ -343,6 +433,10 @@ def present(port: int, *, auto: bool = False, out: Path | None = None, with_judg
     failures: list[str] = []
 
     def pause() -> None:
+        if auto:
+            if delay > 0:
+                time.sleep(delay)
+            return
         if not auto:
             try:
                 input(dim("\n  [Enter] next step "))
@@ -420,6 +514,12 @@ def present(port: int, *, auto: bool = False, out: Path | None = None, with_judg
                     failures.append(step)
             if tl is not None:
                 print(dim(f"  timeline: {tl}"))
+                if open_browser and out is None:
+                    import webbrowser
+                    try:
+                        webbrowser.open(Path(tl).resolve().as_uri())
+                    except Exception:  # noqa: BLE001 - optional; never break the demo
+                        print(dim("  (could not open a browser; the file path is above)"))
             save(step, rep, tl, text)
             if i < len(STEPS):
                 pause()
@@ -497,6 +597,7 @@ def snapshots(port: int) -> int:
     if SNAP_DIR.exists():
         shutil.rmtree(SNAP_DIR)
     rc = present(port, auto=True, out=SNAP_DIR)
+    (SNAP_DIR / "meta.json").write_text(json.dumps(fingerprint(), indent=2) + "\n", encoding="utf-8")
     shutil.rmtree(SNAP_DIR / "_runs", ignore_errors=True)
     (SNAP_DIR / "README.md").write_text(
         "# Demo snapshots (fallback)\n\nGenerated by `python tasks.py snapshots`. One folder per step of "
@@ -514,11 +615,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--judge", action="store_true", help="present: add optional step 9 (judge mode)")
     ap.add_argument("--fault", default="random", help="judge: organizer label or random")
     ap.add_argument("--seed", default="random", help="judge: integer seed or random")
+    ap.add_argument("--delay", type=float, default=0.0, help="present --auto: seconds to wait between steps")
+    ap.add_argument("--no-color", action="store_true", help="plain text output (projectors)")
+    ap.add_argument("--open", action="store_true", help="present: open each step's timeline in the browser")
     a = ap.parse_args(argv)
+    if a.no_color:
+        set_color(False)
     if a.cmd == "preflight":
         return preflight(a.port)
     if a.cmd == "present":
-        return present(a.port, auto=a.auto, with_judge=a.judge)
+        return present(a.port, auto=a.auto, with_judge=a.judge, delay=a.delay, open_browser=a.open)
     if a.cmd == "judge":
         return judge(a.fault, a.seed)
     return snapshots(a.port)

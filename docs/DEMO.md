@@ -5,18 +5,19 @@ Everything runs on `127.0.0.1` with the LLM off. **No Wi-Fi or internet is neede
 ## Before going on stage (5 min)
 
 ```bash
-python tasks.py preflight          # 12 red/green checks; must end "PREFLIGHT OK"
+python tasks.py preflight          # 15 red/green checks (+ terminal-width warning); must end "PREFLIGHT OK"
 ```
 
 Preflight checks, in order:
+* running inside the project `.venv`; terminal ≥ 100 columns (warning only)
 * Python 3.11+ and Node 18+
 * dependencies importable
 * LLM off, and an allowlist that is loopback-only
 * the agent port is free (a stale `wireless_agent` is killed automatically)
-* the agent starts, passes conformance 7/7, and stops cleanly
+* the agent starts, passes conformance 7/7, is bound to 127.0.0.1 only (no firewall prompt), and stops cleanly
 * all 7 scenarios produce their expected outcome with the agent joined
 * Wi-Fi without the agent → `insufficient_evidence`
-* all 8 fallback snapshots exist
+* all 8 fallback snapshots exist and are fresh (code + config hash in `demo_snapshots/meta.json` match the current files)
 
 If port 8765 is taken by something else: `python tasks.py present --port 8790`, or set `NETCOOP_AGENT_PORT`.
 
@@ -25,6 +26,12 @@ If port 8765 is taken by something else: `python tasks.py present --port 8790`, 
 ```bash
 python tasks.py present            # press Enter between steps; Ctrl-C at any time stops the agent cleanly
 ```
+
+Presentation flags:
+* `--auto --delay 6`: hands-free (screen recording)
+* `--no-color`: plain text for projectors
+* `--open`: opens each step's timeline in the browser
+* `--port N`: use a different port
 
 Every step prints a compact colored summary and writes a static timeline:
 `runs/present/INC-DEMO000N/timeline.html` (open it in the browser; no network needed).

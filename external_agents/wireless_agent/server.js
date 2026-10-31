@@ -21,7 +21,12 @@ function arg(name, dflt) {
   return i > 0 && process.argv[i + 1] ? process.argv[i + 1] : dflt;
 }
 
+// Loopback only: never listen on a LAN interface (no firewall prompt on stage, nothing exposed to the network).
 const HOST = arg("host", "127.0.0.1");
+if (!["127.0.0.1", "localhost", "::1"].includes(HOST)) {
+  console.error(`[wifi-probe] refusing to bind ${HOST}: loopback only (127.0.0.1)`);
+  process.exit(2);
+}
 const PORT = parseInt(arg("port", "8765"), 10);
 const DATA = path.resolve(arg("data", path.join(__dirname, "data", "demo.json")));
 const MAX_BODY = 256 * 1024;

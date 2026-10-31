@@ -33,7 +33,7 @@ make test               # unit + integration + security + property, offline
 `tasks.py` is the single source of truth for every target. The Makefile is a thin wrapper for Linux/macOS, and on Windows you run `python tasks.py <target>`. CI (`.github/workflows/ci.yml`) runs lint, tests, the demo and the conformance kit against the Node agent on Ubuntu and Windows (Python 3.11, Node 20).
 
 **Live demo:** `python tasks.py preflight` (red/green, non-zero exit on any failure), then `python tasks.py present`
-(8 scripted steps, Enter between them; `--port N` if 8765 is busy). Fallback copies of every step live in
+(8 scripted steps, Enter between them; `--port N` if 8765 is busy; `--auto --delay N` hands-free for recording; `--no-color` for projectors; `--open` to open each timeline in the browser). Fallback copies of every step live in
 `demo_snapshots/` (regenerate with `python tasks.py snapshots`). The run of show, numbers and judge Q&A are in
 [`docs/DEMO.md`](docs/DEMO.md).
 

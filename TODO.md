@@ -275,6 +275,21 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - DEMO.md: severity + corruption tables, the "answer key" and "independent generator" Q&A, and known weaknesses (overload 0.80,
   reduced-severity hardware_failure, organizer calibration bin).
 
+## V2: Windows demo safety
+
+- `wireless_agent` now refuses any non-loopback `--host` (exit 2), so it binds 127.0.0.1 only and never triggers a
+  firewall prompt. `netcoop serve` was already 127.0.0.1. Tests: the refusal, and that the running agent is not reachable on
+  the machine's LAN address.
+- Preflight additions: running inside `.venv`, agent bound to 127.0.0.1 only (connect to the LAN IP must fail), port free
+  (existing), terminal ≥ 100 cols (WARN, not a failure), snapshots fresh. Now 15 checks.
+- **Decision (snapshot freshness):** "commit must equal HEAD" can never hold once the snapshots themselves are
+  committed (committing changes HEAD). So `demo_snapshots/meta.json` stores the generating commit (informational) plus
+  **content hashes** of the tracked files in netcoop/, config/, data/scenarios/ and external_agents/wireless_agent/, and of
+  config/ alone, with line endings normalized. Preflight fails if either hash differs from the current files. A test
+  (`test_committed_snapshots_are_fresh`) also fails if code changes without re-running `tasks.py snapshots`.
+- present: `--auto --delay N` (hands-free), `--no-color` (also honors `NO_COLOR`), `--open` (opens each timeline;
+  failure to open never breaks the run).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
