@@ -321,7 +321,9 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - Snapshots regenerated; preflight 15/15; `present --judge` all 9 steps matched.
 - `docs/RUNBOOK.md`: one page with stage commands, fallbacks (snapshots / `demo-final` / a fresh clone), and what to do
   if the port is busy, the agent won't start, or the browser won't open.
-- Clean clone FROM GITHUB in a fresh venv (test, demo, judge) is run after this commit is pushed; then tag `demo-final`.
+- Clean clone FROM GITHUB (41db676) in a fresh venv + `npm ci`: tests pass, demo as expected, judge matches for all 3
+  labels, preflight 15/15 (snapshots fresh on an LF checkout). CI run 41211624806: ubuntu ✓ windows ✓.
+  **Tagged `demo-final` = 41db676** and pushed. (This note was committed after the tag; docs only.)
 
 ## Open
 
