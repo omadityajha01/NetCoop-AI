@@ -14,7 +14,7 @@ Three things we optimized for:
    diagnosis**: without it the Wi-Fi scenario is `insufficient_evidence`; with it, `diagnosed`.
 2. **Predict before you look.** Each hypothesis logs falsifiable predictions to the event log *before* the
    evidence is requested. Hits and misses are scored, and every prediction appears in the report.
-3. **Measured, not claimed.** Per-fault accuracy, a confusion matrix, calibration and a degradation curve under
+3. **Measured, not claimed.** Per-fault accuracy, a confusion matrix, a confidence-vs-accuracy table and a degradation curve under
    corrupted input are all produced by `make eval` / `make fuzz` on generated incidents, never on the demo fixtures.
 
 The core is deterministic: root cause, confidence, conflicts and actions are computed by code. The LLM is
@@ -324,8 +324,8 @@ Completeness is `samples / (window / interval)`, capped at 0.5 for stale data (o
 | Condition (in order) | Status |
 |---|---|
 | no usable observations, **or** coverage(top) < 0.50 | `insufficient_evidence` (`status_reason: data_missing`) + the exact missing signals |
-| coverage ok, **no** finding ≥ `high`, top score < 0.45 | `no_fault_detected`; warn-level readings listed under `observations` (not evidence) |
-| coverage ok, **some** finding ≥ `high`, top score < 0.45 | `insufficient_evidence` (`status_reason: no_signature_match`) |
+| coverage ok, **no** finding ≥ `high`, top score < `min_top_score` (0.55) | `no_fault_detected`; warn-level readings listed under `observations` (not evidence) |
+| coverage ok, **some** finding ≥ `high`, top score < `min_top_score` (0.55) | `insufficient_evidence` (`status_reason: no_signature_match`) |
 | margin < 0.15 after prediction rounds | `probable`, top 2 reported as co-candidates |
 | otherwise | `diagnosed` (wording stays "Likely …") |
 
@@ -452,7 +452,7 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 |
 
-**Calibration** (diagnosed/probable only)
+**Confidence vs observed accuracy** (diagnosed/probable only)
 
 | confidence bin | n | mean confidence | observed accuracy |
 |---|---|---|---|
@@ -467,12 +467,22 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 <!-- END GENERATED: eval -->
 
 **Reading the numbers honestly:**
-* Most errors are *abstentions*, not wrong answers: when NetCoop does commit to a diagnosis it is right
-  ~97% of the time, and the wrong-diagnosis rate is ~2%.
-* `normal` accuracy is the weakest class: confounders put readings at or above `high` on healthy networks (a busy
-  link, a CPU spike). Those runs correctly report `insufficient_evidence (no_signature_match)`: something is
-  anomalous but matches no fault. Warn-only readings yield `no_fault_detected`, with the readings under `observations`.
-* Confidence is **under-confident**: in every bin, observed accuracy ≥ mean stated confidence.
+* Most errors are *abstentions*, not wrong answers. When NetCoop commits to a diagnosis it is right
+  98.5% of the time; the wrong-diagnosis rate is 1.1% and the
+  false-positive rate on normal is 0%.
+* **Never overconfident** (seed B): in every confidence bin, observed accuracy is at or above the mean stated
+  confidence. We do not call this "calibrated": confidence is conservative, not matched.
+
+  | stated confidence bin | n | mean stated | observed accuracy |
+  |---|---|---|---|
+  | [0.50, 0.75] | 54 | 0.644 | 0.963 |
+  | [0.75, 0.90] | 66 | 0.83 | 0.985 |
+  | [0.90, 1.00] | 81 | 0.992 | 1.0 |
+
+* `normal` is the weakest class (0.625). Confounders put readings at or above `high` on healthy
+  networks (a busy link, a CPU spike). Those runs report `insufficient_evidence (no_signature_match)`: something
+  is anomalous but matches no fault. Warn-only readings yield `no_fault_detected`, with the readings listed under `observations`.
+* A fault reported as healthy (fault → `no_fault_detected`) happens in 1.3% of fault incidents.
 
 ### Operating point (`python -m eval.run_eval sweep`)
 
@@ -508,10 +518,7 @@ and the B columns are held-out.
 | 60% | 0.757 | 1.0 | 0.229 | 0.0 | 6358 | 2.1 % | 0 | 0 | 0.286 | `███████████████` |
 <!-- END GENERATED: fuzz -->
 
-Accuracy stays flat because the normalizer *recovers* what is recoverable: thousands of values are converted,
-inferred, canonicalized or upcast per sweep step. Without the registry's aliases and unit aliases, accuracy drops to ~0.45
-even on clean input, because the organizer generator's own field names (`cpu_utilization_pct`, `queue_drops`,
-`interface_errors`) are not canonical. Corruption causes zero crashes and zero failed runs.
+Accuracy degrades gently, from 0.814 on clean input to 0.757 at 60% corrupted records, because the normalizer *recovers* what is recoverable: thousands of values are converted, inferred, canonicalized or upcast per sweep step. **Registry-off ablation:** without the metric registry's aliases and unit aliases, accuracy is 0.471 on clean input (~0.45) and falls to 0.286 at 60%. Even clean organizer-style input suffers, because the generator's own field names (`cpu_utilization_pct`, `queue_drops`, `interface_errors`) are not canonical. Corruption causes zero crashes and zero failed runs.
 
 ---
 
@@ -588,7 +595,7 @@ These extensions are additive:
 |---|---|
 | `make test` | 92 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~25 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
 | `make demo` | All scenarios via the CLI |
-| `make eval` / `make fuzz` | Measured accuracy, calibration, degradation curve → `eval/reports/` |
+| `make eval` / `make fuzz` / sweep | Measured accuracy, confidence-vs-accuracy table, degradation curve, operating-point sweep → `eval/reports/` |
 | `make conformance AGENT_URL=…` | Conformance kit |
 | `make schemas` / `make docs` | JSON Schemas; README tables from config |
 

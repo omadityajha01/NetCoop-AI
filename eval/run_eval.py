@@ -197,7 +197,7 @@ def to_markdown(title: str, s: dict[str, Any], note: str) -> str:
           "| truth \\ pred | " + " | ".join(labels) + " |", "|---|" + "---|" * len(labels)]
     for t, row in s["confusion"].items():
         L.append(f"| {t} | " + " | ".join(str(row[p]) for p in labels) + " |")
-    L += ["", "**Calibration** (diagnosed/probable only)", "", "| confidence bin | n | mean confidence | observed accuracy |",
+    L += ["", "**Confidence vs observed accuracy** (diagnosed/probable only)", "", "| confidence bin | n | mean confidence | observed accuracy |",
           "|---|---|---|---|"]
     for c in s["calibration"]:
         L.append(f"| {c['bin']} | {c['n']} | {c['mean_confidence']} | {c['accuracy']} |")

@@ -43,7 +43,7 @@ seed 1000, 280 generated incidents (24% with 5–30 % corrupted records), wirele
 | dns_failure | 0 | 0 | 0 | 36 | 4 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 36 | 0 | 4 | 0 | 0 | 0 |
 
-**Calibration** (diagnosed/probable only)
+**Confidence vs observed accuracy** (diagnosed/probable only)
 
 | confidence bin | n | mean confidence | observed accuracy |
 |---|---|---|---|
@@ -101,7 +101,7 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 |
 
-**Calibration** (diagnosed/probable only)
+**Confidence vs observed accuracy** (diagnosed/probable only)
 
 | confidence bin | n | mean confidence | observed accuracy |
 |---|---|---|---|

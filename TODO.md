@@ -116,6 +116,15 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - Fix: quarantine code classification is now prefix-based. An unknown ID containing the word "regex" was
   previously misclassified as MALFORMED.
 
+## T7: README wording
+
+- "Calibrated" removed everywhere. The README now says **never overconfident**, with the seed-B bin table (observed
+  accuracy ≥ mean stated confidence in every bin), and explicitly "not calibrated: conservative, not matched".
+- Eval section order: per-source accuracy (organizer raw vs extended generator), seed-B tables, operating-point
+  sweep + chart, degradation curve + registry-off ablation (0.47 clean → 0.29 at 60%).
+- Numbers refreshed for min_top_score = 0.55 (committed precision 98.5%, wrong 1.1%, normal FP 0%). The status
+  table now references `min_top_score` (0.55) instead of the stale 0.45. CLAUDE.md keeps 0.45 as the documented *initial* value.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
