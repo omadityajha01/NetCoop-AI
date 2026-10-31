@@ -162,6 +162,7 @@ def build_finding(cfg: Config, *, agent_id: str, n: int, metric: str, entity_typ
         transforms=transforms[:25],
         source_refs=sorted({o.source_ref for o in obs})[:50],
         source=source,
+        placed=bool(getattr(cfg.topology.get(entity_id), "placed", True)),
     )
 
 

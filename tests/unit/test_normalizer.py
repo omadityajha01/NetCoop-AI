@@ -118,9 +118,14 @@ def test_plausibility_quarantines_record(cfg):
 
 def test_entity_canonicalization_and_unknown_entity(cfg):
     recs = [rec("cpu_pct", 10, device=d) for d in ("hostel-core-sw-01", "Hostel_Core_SW_01", "10.10.0.1", "hcs1")]
-    res = normalize_bundle(bundle(recs + [rec("cpu_pct", 10, device="SW_GHOST_9")]), cfg)
-    assert {o.entity_id for o in res.observations} == {"HOSTEL_CORE_SW_01"}
-    assert any(q.code == "UNKNOWN_ENTITY" for q in res.quarantined)
+    res = normalize_bundle(bundle(recs + [rec("cpu_pct", 10, device="SW_GHOST_9"),
+                                          {"timestamp": T, "link_id": "L_GHOST", "metrics": {"link_utilization_pct": 5}}]), cfg)
+    # U2: an unknown DEVICE is kept unplaced (never quarantined just for being unknown) ...
+    assert {o.entity_id for o in res.observations} == {"HOSTEL_CORE_SW_01", "SW_GHOST_9"}
+    assert res.unplaced == {"SW_GHOST_9": "device"}
+    assert any(lim.code == "UNPLACED_DEVICE" for lim in res.limitations)
+    # ... while unknown links are still quarantined (C2: never invent topology)
+    assert any(q.code == "UNKNOWN_ENTITY" and q.field == "link_id" for q in res.quarantined)
 
 
 def test_injection_in_entity_id_quarantined(cfg):

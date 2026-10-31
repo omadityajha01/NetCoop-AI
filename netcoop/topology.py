@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import copy
 import re
 from dataclasses import dataclass, field
 from typing import Any
@@ -33,6 +34,7 @@ class Entity:
     attached_to: str | None = None
     ip: str | None = None
     endpoints: tuple[str, ...] = ()
+    placed: bool = True  # False = seen in telemetry but absent from topology (no links, no upstream, no localization)
 
 
 @dataclass
@@ -40,11 +42,12 @@ class Topology:
     entities: dict[str, Entity] = field(default_factory=dict)
     aliases: dict[str, str] = field(default_factory=dict)
     segments: tuple[str, ...] = ()
+    raw: dict[str, Any] = field(default_factory=dict)
 
     # ---------- construction ----------
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> Topology:
-        topo = cls(segments=tuple(data.get("segments", ())))
+        topo = cls(segments=tuple(data.get("segments", ())), raw=copy.deepcopy(data))
         for did, spec in (data.get("devices") or {}).items():
             topo._add(Entity(id=did, type="device", segment=spec.get("segment"), role=spec.get("role"),
                              upstream=spec.get("upstream"), uplink=spec.get("uplink"), ip=spec.get("ip")),
@@ -86,6 +89,68 @@ class Topology:
             for ref in (e.upstream, e.attached_to, *e.endpoints):
                 if ref and ref not in self.entities:
                     raise ValueError(f"topology: {e.id} references unknown {ref}")
+
+    # ---------- per-run extensions ----------
+    def with_unplaced(self, ids: dict[str, str]) -> Topology:
+        """Copy with devices seen in telemetry but absent from topology (placed=False). Never adds links."""
+        if not ids:
+            return self
+        t = Topology(entities=dict(self.entities), aliases=dict(self.aliases), segments=self.segments, raw=self.raw)
+        for eid, etype in sorted(ids.items()):
+            if eid not in t.entities:
+                t.entities[eid] = Entity(id=eid, type=etype, placed=False)
+                t.aliases.setdefault(alias_key(eid), eid)
+        return t
+
+    def merge_input(self, data: Any) -> tuple[Topology, list[str], list[str], str | None]:
+        """Merge an input-supplied topology additively over this one.
+
+        Returns (topology, added_ids, conflicts, error). New entities and aliases are added; an attribute that
+        conflicts with config keeps the CONFIG value (roles drive policy, so incident data cannot override them).
+        Any validation error rejects the whole input topology (config unchanged)."""
+        if not isinstance(data, dict):
+            return self, [], [], "input topology is not an object"
+        merged = copy.deepcopy(self.raw)
+        added: list[str] = []
+        conflicts: list[str] = []
+        id_re = re.compile(r"^[A-Za-z0-9_.:\-]{1,64}$")
+        for section in ("devices", "aps", "services"):
+            sec = data.get(section)
+            if sec is None:
+                continue
+            if not isinstance(sec, dict):
+                return self, [], [], f"input topology `{section}` is not an object"
+            base = merged.setdefault(section, {}) or {}
+            merged[section] = base
+            for eid, spec in sec.items():
+                if not isinstance(eid, str) or not id_re.match(eid) or not isinstance(spec, dict):
+                    return self, [], [], f"input topology entry {str(eid)[:40]!r} is invalid"
+                clean = {k: v for k, v in spec.items() if k in ("role", "segment", "upstream", "uplink", "ip", "kind",
+                                                                "attached_to", "aliases")}
+                for k, v in clean.items():
+                    if k == "aliases":
+                        if not isinstance(v, list) or not all(isinstance(a, str) and id_re.match(a) for a in v):
+                            return self, [], [], f"input topology aliases for {eid} are invalid"
+                    elif not isinstance(v, str) or not id_re.match(v):
+                        return self, [], [], f"input topology {eid}.{k} is invalid"
+                existing = self.get(eid)
+                if eid in base or existing is not None:
+                    cur = base.setdefault(eid, {})
+                    for k, v in clean.items():
+                        if k == "aliases":
+                            cur["aliases"] = sorted(set(cur.get("aliases", [])) | set(v))
+                        elif k in cur and cur[k] != v:
+                            conflicts.append(f"{eid}.{k}: config {cur[k]!r} kept, input {v!r} ignored")
+                        elif k not in cur:
+                            cur[k] = v
+                else:
+                    base[eid] = clean
+                    added.append(eid)
+        try:
+            topo = Topology.from_dict(merged)
+        except (ValueError, KeyError, TypeError, AttributeError) as exc:
+            return self, [], [], f"input topology rejected: {str(exc)[:160]}"
+        return topo, sorted(added), conflicts, None
 
     # ---------- lookups ----------
     def resolve(self, raw: str) -> str | None:

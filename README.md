@@ -543,7 +543,13 @@ Runs in this order, and every step records `Transform{step, field, from, to, rea
 4. **Units:** explicit unit → `unit_aliases`; missing → batch inference only; otherwise quarantine.
 5. **Coercion:** `"280ms"` → 280 ms. `"N/A"`, `""`, `null` and `NaN` → **missing, never 0**.
 6. **Plausibility:** an out-of-range value (negative latency, utilization > 100, RSSI > 0) quarantines the record.
-7. **Entities:** PI6 regex, then topology aliases (case- and separator-insensitive, IPs too). An unknown entity → quarantine + `UNKNOWN_ENTITY`.
+7. **Entities:** PI6 regex, then topology aliases (case- and separator-insensitive, IPs too).
+   * An unknown **device** is kept *unplaced*. Its findings carry `placed=false`, no links or upstream are invented,
+     localization is skipped, and the "device not in topology" limitation is added. The confidence category is capped at medium if the diagnosis involves it.
+   * Unknown links, APs and services → quarantine + `UNKNOWN_ENTITY`.
+   * A `topology` object in the input bundle (same shape as `config/topology.yaml`) is validated and merged
+     additively. On a conflicting attribute, config wins and the conflict is listed in limitations, so incident data
+     cannot, for example, demote a core switch to dodge a policy rule. An invalid topology is rejected with a limitation.
 8. **Time:** everything to UTC (epoch s/ms, offsets, naive → UTC + logged). More than 5 min in the future → quarantine. Older than the window → counted. Staleness is computed relative to the incident time.
 9. **Dedupe** on (entity, metric, timestamp, source).
 10. **Validate** against the Pydantic models.

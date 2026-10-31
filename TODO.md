@@ -189,6 +189,23 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   0.014, normal FP 0.0 → 0.0
   (no metric dropped more than 2 points ✓).
 
+## U2: unknown devices + input topology
+
+- An unknown **device** ID (passes PI6) is no longer quarantined. It is normalized to a stable id (upper-case,
+  separators → `_`), so `sw-campus-11`, `Sw.Campus.11` and `SW_CAMPUS_11` are one device. It is registered for this
+  run as `Entity(placed=False)`: no links, no upstream, so localization is a no-op. `Finding.placed=false`, plus a
+  "device not in topology" limitation. The confidence category is capped at medium when the leading hypothesis (or its evidence) involves it.
+- **Decision:** only devices are kept unplaced. Unknown links, APs and services stay quarantined (CLAUDE.md C2:
+  "metrics for links absent from topology" is unchanged). PI6 regex failures (injection strings) stay quarantined as MALFORMED.
+- **Decision:** input topology is merged **additively**, and on a conflicting attribute **config wins** (+ a limitation),
+  rather than input-overrides-config. Reason: roles drive policy (R1 blocks rebooting a core switch), so untrusted
+  incident data must not be able to demote a device to dodge a rule (tested). New entities and aliases are added. Any
+  validation error rejects the whole input topology with a limitation; the run continues.
+- `Finding.placed` added to NMP 1.1 (additive; 1.1 has not been released yet).
+- Tests: `tests/integration/test_unplaced_topology.py` (SW_CAMPUS_11, random ID, case/separator variants,
+  localization skipped, injection still quarantined, input topology places a device, a conflict keeps the config role,
+  invalid topology rejected).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

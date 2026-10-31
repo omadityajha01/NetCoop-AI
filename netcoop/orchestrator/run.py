@@ -23,7 +23,7 @@ from netcoop.config import ROOT, Config, load_config
 from netcoop.gateway.a2a_gateway import discover
 from netcoop.gateway.transport import HttpTransport, RecordingTransport, Transport
 from netcoop.llm import router as llm
-from netcoop.normalize.pipeline import NormalizationError, normalize_bundle
+from netcoop.normalize.pipeline import NormalizationError, input_topology, normalize_bundle
 from netcoop.normalize.timefix import rfc3339
 from netcoop.orchestrator.rounds import max_rounds, needs_more_rounds
 from netcoop.policy.validator import scrub, validate_report
@@ -34,6 +34,7 @@ from netcoop.protocol.envelope import (
     error_message,
     make_message,
 )
+from netcoop.protocol.findings import Limitation
 from netcoop.storage import Store
 
 RUNS_DIR = ROOT / "runs"
@@ -130,6 +131,20 @@ class Orchestrator:
     def _run(self, raw: bytes, sha: str, incident_id: str, log: EventLog, bus: Bus, run_dir: Path | None
              ) -> tuple[dict[str, Any], dict[str, str]]:
         cfg, opts = self.cfg, self.opts
+        # 0. input-supplied topology: validated, merged additively (config wins on conflicts)
+        topo_lims: list[Limitation] = []
+        in_topo = input_topology(raw, cfg, opts.filename)
+        if in_topo is not None:
+            merged, added, conflicts, err = cfg.topology.merge_input(in_topo)
+            if err:
+                topo_lims.append(Limitation(code="INPUT_TOPOLOGY_REJECTED", detail=err[:280], impact="low"))
+            else:
+                cfg = cfg.with_overrides(topology=merged)
+                topo_lims.append(Limitation(code="INPUT_TOPOLOGY_MERGED", impact="low",
+                                            detail=f"input topology merged: {len(added)} entity(ies) added"
+                                                   + (f" ({', '.join(added[:6])})" if added else "")))
+                for c in conflicts[:10]:
+                    topo_lims.append(Limitation(code="INPUT_TOPOLOGY_CONFLICT", detail=c[:280], impact="medium"))
         # 1. ingest -> normalize
         try:
             norm = normalize_bundle(raw, cfg, filename=opts.filename)
@@ -137,6 +152,9 @@ class Orchestrator:
             bus.publish(error_message(sender="normalizer", recipient="orchestrator", incident_id=incident_id,
                                       code=exc.code, detail=exc.detail))
             return self._failed_report(incident_id, f"Input rejected ({exc.code}): {exc.detail}"), {}
+        norm.limitations[:0] = topo_lims
+        if norm.unplaced:  # devices seen in telemetry but not in topology: registered placed=False for this run
+            cfg = cfg.with_overrides(topology=cfg.topology.with_unplaced(norm.unplaced))
         hints, _llm_log = llm.classify_complaint(norm.complaint, cfg)
         window = norm.window
         assert window is not None and norm.incident_time is not None

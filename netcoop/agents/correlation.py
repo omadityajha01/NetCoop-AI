@@ -97,8 +97,15 @@ class CorrelationAgent:
         usable = int((norm.get("summary") or {}).get("observations_used", 0)) + len(
             [f for f in st["findings"] if st["agent_of"].get(f.finding_id) not in cfg.agents["internal"]])
         high_count = sum(1 for f in active if f.severity in ("high", "critical"))
+        # U2: a leading hypothesis that touches a device absent from topology is capped at medium
+        fmap = {f.finding_id: f for f in active}
+        lead = hyps[:2] if len(hyps) > 1 else hyps[:1]
+        unplaced = sorted({h.entity.id for h in lead if not getattr(cfg.topology.get(h.entity.id), "placed", True)}
+                          | {fmap[i].entity.id for h in lead for i in h.supporting_finding_ids
+                             if i in fmap and not fmap[i].placed})
+        extra = [f"device not in topology: {', '.join(unplaced)}"] if unplaced else []
         dec = decide(cfg, hyps, high_count=high_count, usable_observations=usable, failed_agents=failed,
-                     unresolved_c2=cs.unresolved_c2, data_coverage=coverage_share)
+                     unresolved_c2=cs.unresolved_c2, data_coverage=coverage_share, extra_caps=extra)
 
         conflicts = list(cs.conflicts)
         if len(hyps) > 1 and dec.margin < float(cfg.scoring["status"]["min_margin"]) and dec.status not in (

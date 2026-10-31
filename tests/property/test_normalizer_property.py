@@ -47,7 +47,8 @@ def test_normalizer_never_crashes(cfg, data):
         lo, hi = spec["range"]
         assert lo <= o.value <= hi
         assert o.unit == spec["unit"]
-        assert cfg.topology.exists(o.entity_id)
+        # every entity is either in topology or an explicitly unplaced device (U2), never silently invented
+        assert cfg.topology.exists(o.entity_id) or res.unplaced.get(o.entity_id) == "device"
 
 
 @settings(max_examples=200, deadline=None)

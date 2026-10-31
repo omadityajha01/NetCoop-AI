@@ -77,7 +77,8 @@ class Finding(_Model):
     data_quality: DataQuality
     transforms: list[Transform] = Field(default_factory=list)
     source_refs: list[str] = Field(default_factory=list)
-    source: str | None = None  # NMP 1.0 additive: originating telemetry source (for C1)
+    source: str | None = None  # NMP 1.1 additive: originating telemetry source (for C1)
+    placed: bool = True  # NMP 1.1 additive: False = entity absent from topology (kept, not localized)
 
     @property
     def anomalous(self) -> bool:

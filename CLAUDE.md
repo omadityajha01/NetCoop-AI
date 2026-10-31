@@ -236,7 +236,7 @@ Run in this order. **Every step records a `Transform{step, field, from, to, reas
    - Otherwise, quarantine the field.
 5. **Type coercion:** `"280ms"` → 280 with unit `ms`. `"N/A"`, `""` and `null` → **missing, never 0**.
 6. **Plausibility:** out-of-range values (negative latency, utilization > 100, RSSI > 0) → quarantine the record and add a limitation.
-7. **Entity canonicalization:** map names/IPs to topology IDs using the topology aliases (case- and separator-insensitive). Unknown entity → quarantine + `UNKNOWN_ENTITY` limitation. **Never invent topology.**
+7. **Entity canonicalization:** map names/IPs to topology IDs using the topology aliases (case- and separator-insensitive). An unknown **device** (passes the PI6 ID regex) is kept *unplaced*: findings carry `placed=false`, it gets no links/upstream, topology localization is skipped, a "device not in topology" limitation is added and the confidence category is capped at medium if the diagnosis involves it. Never quarantine a device solely for being unknown. Unknown links/APs/services → quarantine + `UNKNOWN_ENTITY`. An input-supplied `topology` is validated and merged additively over `config/topology.yaml` (config wins on conflicting attributes; conflicts → limitation). **Never invent topology.**
 8. **Time:**
    - Parse everything to UTC.
    - Reject timestamps more than 5 minutes in the future.

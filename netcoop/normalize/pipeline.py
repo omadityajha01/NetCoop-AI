@@ -87,6 +87,7 @@ class NormalizationResult:
     records_used: int = 0
     records_quarantined: int = 0
     title: str | None = None
+    unplaced: dict[str, str] = field(default_factory=dict)  # device ids seen in telemetry but absent from topology
 
 
 @dataclass
@@ -189,10 +190,6 @@ def _unwrap(parsed: Any, res: NormalizationResult) -> list[tuple[str, Any]]:
                 if prob:
                     raise NormalizationError("BAD_TYPE", f"incident.time: {prob}")
                 res.incident_time = ts
-            if "topology" in parsed:
-                res.limitations.append(Limitation(code="TOPOLOGY_IGNORED",
-                                                  detail="input-supplied topology ignored; topology comes from config only",
-                                                  impact="none"))
             recs = parsed.get("records")
             if not isinstance(recs, list):
                 raise NormalizationError("MISSING_FIELD", "bundle has no `records` list")
@@ -256,11 +253,19 @@ def _process_record(ref: str, idx: int, rec: Any, cfg: Config, alias_idx: Any, r
         probs.append(Quarantined(ref, "MISSING_FIELD", "no entity identifier", "device_id"))
         return
     etype, eid, eprob = canonicalize(raw_id, etype_hint, cfg.topology)
+    if eprob and eprob.startswith("unknown entity") and etype_hint in ("device", None):
+        # U2: an unknown DEVICE is never quarantined just for being unknown; it is kept unplaced (no localization)
+        uid = unplaced_id(str(raw_id))
+        if not cfg.topology.exists(uid) or uid in res.unplaced:
+            res.unplaced[uid] = "device"
+            etype, eid, eprob = "device", uid, None
+            base_t.append(Transform(step="entity", field=ekey or "entity", from_=str(raw_id), to=uid,
+                                    reason="device not in topology: kept unplaced"))
     if eprob:
         code = "MALFORMED" if eprob.startswith(("entity id fails ID regex", "entity id is not a string")) else "UNKNOWN_ENTITY"
         probs.append(Quarantined(ref, code, eprob, ekey))
         return
-    if str(raw_id) != eid:
+    if str(raw_id) != eid and eid not in res.unplaced:
         base_t.append(Transform(step="entity", field=ekey or "entity", from_=str(raw_id), to=eid,
                                 reason="topology alias (case/separator-insensitive)"))
     src_raw = rec.get("source")
@@ -315,6 +320,23 @@ def _process_record(ref: str, idx: int, rec: Any, cfg: Config, alias_idx: Any, r
 
 
 # ---------------------------------------------------------------------------- driver
+
+def unplaced_id(raw: str) -> str:
+    """Stable id for a device absent from topology: upper-case, separators -> '_' (IPv4 kept dotted)."""
+    s = raw.strip()
+    if re.fullmatch(r"\d{1,3}(\.\d{1,3}){3}", s):
+        return s
+    return re.sub(r"[\s\-.:/]+", "_", s.upper()).strip("_")[:64] or "UNKNOWN"
+
+
+def input_topology(data: bytes | str | dict | list, cfg: Config, filename: str | None = None) -> Any:
+    """The bundle's `topology` object, if any (None on parse problems: normalize_bundle reports those)."""
+    try:
+        parsed, _ = parse_input(data, cfg, filename)
+    except NormalizationError:
+        return None
+    return parsed.get("topology") if isinstance(parsed, dict) else None
+
 
 def _infer_pending(cands: list[_Cand], cfg: Config, res: NormalizationResult) -> list[_Cand]:
     groups: dict[tuple[str, str], list[_Cand]] = defaultdict(list)
@@ -476,6 +498,13 @@ def _summarize(res: NormalizationResult, cfg: Config) -> None:
         res.limitations.append(Limitation(code="ENTITY_CANONICALIZED",
                                           detail=f"{s['entity_canonicalized']} observation(s) had entity IDs canonicalized via topology aliases",
                                           impact="none"))
+    if res.unplaced:
+        ids = sorted(res.unplaced)
+        res.limitations.append(Limitation(
+            code="UNPLACED_DEVICE",
+            detail=(f"device not in topology: {', '.join(ids[:6])}{' …' if len(ids) > 6 else ''} (findings kept with "
+                    "placed=false; topology localization skipped; confidence capped at medium if the diagnosis involves it)"),
+            impact="medium"))
     if s["version_upcast"]:
         res.limitations.append(Limitation(code="VERSION_UPCAST", detail=f"{s['version_upcast']} legacy v0.9 block(s) upcast to 1.0",
                                           impact="low"))

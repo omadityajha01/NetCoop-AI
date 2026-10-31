@@ -41,7 +41,8 @@ def category_for(cfg: Config, confidence: float, margin: float) -> str:
 
 
 def decide(cfg: Config, hyps: list[Hypothesis], *, high_count: int, usable_observations: int,
-           failed_agents: list[str], unresolved_c2: bool, data_coverage: float) -> Decision:
+           failed_agents: list[str], unresolved_c2: bool, data_coverage: float,
+           extra_caps: list[str] | None = None) -> Decision:
     """`high_count` = number of active findings with severity >= high."""
     st = cfg.scoring["status"]
     top = hyps[0] if hyps else None
@@ -73,6 +74,8 @@ def decide(cfg: Config, hyps: list[Hypothesis], *, high_count: int, usable_obser
         caps.append(f"agent(s) failed: {', '.join(sorted(failed_agents))}")
     if unresolved_c2:
         caps.append("unresolved C2 state conflict")
+    if status in ("diagnosed", "probable"):
+        caps.extend(extra_caps or [])
     if caps and cat == "high":
         cat = "medium"
     co = [h.hypothesis_id for h in hyps[:2]] if status == "probable" else []
