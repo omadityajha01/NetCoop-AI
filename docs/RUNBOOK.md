@@ -19,7 +19,7 @@ Useful flags (combine freely):
 | `--port 8790` | the default port 8765 is busy |
 | `--no-color` | projector washes out colors |
 | `--open` | open each step's timeline in the browser |
-| `--auto --delay 25` | hands-free (screen recording, see `docs/VIDEO_SCRIPT.md`) |
+| `--auto` | hands-free: 34 s between steps by default, the run lasts ~4:05 (screen recording, see `docs/VIDEO_SCRIPT.md`); `--delay N` overrides |
 
 A judge can also run the organizer's raw generator directly: `python tasks.py judge --fault hardware_failure --seed 42`.
 

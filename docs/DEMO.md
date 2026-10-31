@@ -28,7 +28,7 @@ python tasks.py present            # press Enter between steps; Ctrl-C at any ti
 ```
 
 Presentation flags:
-* `--auto --delay 6`: hands-free (screen recording)
+* `--auto`: hands-free, 34 s between steps by default (~4:05 run, matches `docs/VIDEO_SCRIPT.md`); `--delay N` overrides
 * `--no-color`: plain text for projectors
 * `--open`: opens each step's timeline in the browser
 * `--port N`: use a different port

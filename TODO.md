@@ -365,6 +365,16 @@ Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
   "consistent with hardware failure at lower severity" line, which appears on stage step 1 (congestion).
 - Q&A added: "Why not tune it away?"
 
+## W4: timing check
+
+- Measured with `python -m eval.time_present` (`tasks.py timing`). At delay 0 the whole run is 6.9 s (1.6 s start-up), so
+  runtime ≈ 7 s + 7 × delay.
+- **Decision:** the `--auto` default delay (only when `--delay` is not given) is now **34 s**. Measured run: **244.7 s (4:05)**,
+  inside 4:00–4:45, all 8 steps matched. The function default stays 0 (snapshots/tests unaffected).
+- A 4:00+ run cannot also sit after a 40 s intro inside a 4:30 video, so VIDEO_SCRIPT.md was regenerated from the
+  *measured* step starts: the video starts with the run (step 1 carries the title + architecture cutaway), step 8 at
+  4:04, and the close plays over the held final frame to 4:30.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

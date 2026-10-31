@@ -29,6 +29,7 @@ SCEN = ROOT / "data" / "scenarios"
 AGENT_JS = ROOT / "external_agents" / "wireless_agent" / "server.js"
 SNAP_DIR = ROOT / "demo_snapshots"
 DEFAULT_PORT = int(os.environ.get("NETCOOP_AGENT_PORT", "8765"))
+AUTO_DELAY_S = 34.0  # W4: `present --auto` lasts ~245 s (4:05) -> fits 4:00-4:45 and docs/VIDEO_SCRIPT.md
 
 if os.name == "nt":  # enable ANSI colors in Windows consoles
     os.system("")
@@ -622,7 +623,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--judge", action="store_true", help="present: add optional step 9 (judge mode)")
     ap.add_argument("--fault", default="random", help="judge: organizer label or random")
     ap.add_argument("--seed", default="random", help="judge: integer seed or random")
-    ap.add_argument("--delay", type=float, default=0.0, help="present --auto: seconds to wait between steps")
+    ap.add_argument("--delay", type=float, default=None,
+                    help=f"present --auto: seconds between steps (default {AUTO_DELAY_S:g}: the run lasts ~4:05, "
+                         "matching docs/VIDEO_SCRIPT.md)")
     ap.add_argument("--no-color", action="store_true", help="plain text output (projectors)")
     ap.add_argument("--open", action="store_true", help="present: open each step's timeline in the browser")
     a = ap.parse_args(argv)
@@ -631,7 +634,8 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "preflight":
         return preflight(a.port)
     if a.cmd == "present":
-        return present(a.port, auto=a.auto, with_judge=a.judge, delay=a.delay, open_browser=a.open)
+        delay = a.delay if a.delay is not None else (AUTO_DELAY_S if a.auto else 0.0)
+        return present(a.port, auto=a.auto, with_judge=a.judge, delay=delay, open_browser=a.open)
     if a.cmd == "judge":
         return judge(a.fault, a.seed)
     return snapshots(a.port)
