@@ -102,7 +102,7 @@
     "C1 conflict: latency_ms@DEPT_CORE_SW_01: 155 (snmp) vs 24.6 (probe) -> kept fresher value (then higher sample_count, then source_priority)",
     "C2 conflict: 1 record(s) carry metrics for links absent from topology (e.g. records[40]) -> records quarantined; topology is never invented"
   ],
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "decision_source": "deterministic_scoring",
   "confidence_category": "high",
   "status_reason": null,

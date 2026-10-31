@@ -187,11 +187,17 @@ def cmd_timeline(a: argparse.Namespace) -> int:
 
 
 def cmd_feedback(a: argparse.Namespace) -> int:
+    from netcoop.hitl import UnknownAction, record_human_decision
     from netcoop.storage import Store
 
-    _run_dir(a)
-    fid = Store(Path(a.runs_dir) / "netcoop.db").add_feedback(a.incident_id, a.action_id, a.decision, a.note)
-    print(f"recorded feedback #{fid}: {a.decision} {a.action_id} for {a.incident_id} (non-blocking; nothing is executed)")
+    d = _run_dir(a)
+    try:
+        r = record_human_decision(d, Store(Path(a.runs_dir) / "netcoop.db"), a.incident_id, a.action_id, a.decision, a.note)
+    except UnknownAction as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return 2
+    print(f"recorded feedback #{r['id']}: {a.decision} {a.action_id} for {a.incident_id} as event #{r['event_seq']} "
+          "(non-blocking; nothing is executed; the diagnosis is unchanged)")
     return 0
 
 

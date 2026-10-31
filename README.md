@@ -65,9 +65,16 @@ netcoop timeline <incident_id> --html timeline.html                    # static 
 netcoop replay <incident_id>                                           # byte-identical report.json re-run
 netcoop agents refresh                                                 # re-check the allowlist; new agents join the next run
 netcoop feedback <incident_id> CONG-1 approve --note "ok"              # non-blocking HITL (nothing is executed)
-netcoop serve                                                          # read-only API on :8000 (/docs)
+netcoop serve                                                          # dashboard on http://127.0.0.1:8000/ + API (/docs)
 netcoop mcp                                                            # MCP server over stdio (see docs/MCP.md)
 ```
+
+**Dashboard:** `netcoop serve`, then open http://127.0.0.1:8000/. Pick a scenario and press Run: messages stream into
+one lane per agent, replayed from the event log in `seq` order. Alongside them you get the topology with affected and
+evidence entities, the report, evidence linked to the message that carried each `finding_id`, predictions with the
+`seq` at which they were logged, the normalization log and policy-blocked actions. Approve/reject is non-blocking: it
+is recorded as a `human_decision` event and never executed, and the diagnosis does not change. The page is static
+vanilla JS (no build, no CDN). It renders text only and is served with a strict Content-Security-Policy.
 
 **Chat with NetCoop via MCP:** `netcoop mcp` exposes `list_scenarios`, `list_agents`, `diagnose`, `get_report` and
 `explain` to an MCP client such as Claude Desktop. The client's LLM can ask and explain, but the code decides. Setup,
@@ -152,7 +159,11 @@ a prediction is made before the agent shows the value.
 
 Agents talk only through typed NMP messages on the bus, and through A2A for external agents. See [Protocol: NMP 1.1](#protocol-netcoop-message-protocol-nmp-11) (envelope, finding, metric registry, versioning) and [A2A transport](#a2a-transport).
 
-## Protocol: NetCoop Message Protocol (NMP) 1.1
+## Protocol: NetCoop Message Protocol (NMP) 1.3
+
+Minor versions are additive: 1.1 added `normalization_summary`, 1.2 the advisory LLM `hint`, and 1.3
+`human_decision`, a non-blocking HITL record appended after the report that is never executed and never changes the
+diagnosis.
 
 Pydantic v2 models (`netcoop/protocol/`) are the source of truth. `make schemas` exports JSON Schemas to
 `docs/schemas/`, and external agents should be pointed at those, not at the Python. The tables below are
@@ -163,9 +174,9 @@ generated from config by `make docs`.
 <!-- BEGIN GENERATED: envelope -->
 | Field | Type | Meaning |
 |---|---|---|
-| `schema_version` | "MAJOR.MINOR" | Protocol version of this message (current 1.1; 1.0 accepted; 0.9 upcast) |
+| `schema_version` | "MAJOR.MINOR" | Protocol version of this message (current 1.3; older 1.x accepted; 0.9 upcast) |
 | `message_id` | uuid | Unique; receivers are idempotent on duplicates (content-derived UUIDv4) |
-| `message_type` | enum | `task_request`, `finding_report`, `coverage_manifest`, `prediction`, `evidence_request`, `evidence_response`, `diagnosis`, `report`, `error`, `normalization_summary`, `hint` |
+| `message_type` | enum | `task_request`, `finding_report`, `coverage_manifest`, `prediction`, `evidence_request`, `evidence_response`, `diagnosis`, `report`, `error`, `normalization_summary`, `hint`, `human_decision` |
 | `incident_id` | str | Server-generated, `^INC-[0-9A-Z]{4,12}$` |
 | `sender / recipient` | agent_id | `recipient` may be `orchestrator` |
 | `in_reply_to` | uuid | null | `message_id` this responds to |

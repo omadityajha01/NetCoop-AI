@@ -15,7 +15,8 @@ from netcoop.protocol.messages import PAYLOAD_MODELS
 # 1.1 (MINOR, additive): Finding.source, report `observations` + `status_reason`, `normalization_summary` message type.
 # 1.0 messages are still accepted unchanged; 0.9 is upcast via upcasters.py.
 # 1.2 (MINOR, additive): `hint` message type (LLM triage agent; hints only ADD hypotheses).
-SCHEMA_VERSION = "1.2"
+# 1.3 (MINOR, additive): `human_decision` message type (non-blocking HITL record, appended after the report).
+SCHEMA_VERSION = "1.3"
 INCIDENT_ID_PATTERN = r"^INC-[0-9A-Z]{4,12}$"
 AGENT_ID_PATTERN = r"^[a-z][a-z0-9_]{1,40}$"
 
@@ -31,6 +32,7 @@ MessageType = Literal[
     "error",
     "normalization_summary",
     "hint",
+    "human_decision",
 ]
 Status = Literal["completed", "partial", "failed", "insufficient_data"]
 

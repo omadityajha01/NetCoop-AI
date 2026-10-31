@@ -396,9 +396,36 @@ Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
 - **Golden gate:** 1,680 incidents vs a demo-final-2 worktree baseline, LLM off: 0 differences in status / confidence /
   root cause / affected devices / alternatives.
 
+## M2: NetCoop MCP server (branch m2, tag m2-ok)
+
+- `netcoop mcp` (netcoop/mcp_server.py, FastMCP over stdio; `mcp` in the [mcp] and [dev] extras). Tools: list_scenarios,
+  list_agents, diagnose(scenario | telemetry_path), get_report, explain. Docs + Claude Desktop config: docs/MCP.md.
+- Guardrails: scenario / path / incident_id regexes; paths resolve inside data/ or runs/ only; 10 MB cap; quoted raw
+  input redacted from returned limitations. 27 tests in tests/security/test_mcp_server.py.
+- Golden gate: 0 differences / 1,680.
+
+## M3: dashboard (branch m3)
+
+- `netcoop serve` → http://127.0.0.1:8000/ : one static vanilla-JS page (netcoop/api/static/, no build, no CDN), strict
+  CSP (no inline script, no remote origins, no framing). Panels: scenario picker + Run, past runs, SSE message lanes
+  per agent (replayed from events.jsonl in seq order), SVG topology (affected / evidence entities), report, evidence →
+  finding_id links to the carrying message, predictions with logged seq, actions + approve/reject, blocked actions,
+  normalization log, limitations.
+- HITL: approve/reject → SQLite + NMP **1.3** `human_decision` appended to the event log after the report. Never
+  executed, report.json untouched, `netcoop replay` ignores it (still byte-identical). Note text stays in SQLite.
+- Tests: tests/security/test_dashboard.py (PI8 static scan, CSP, asset + scenario allowlists, SSE framing injection,
+  SSE order, human_decision changes nothing, unknown action rejected).
+- Playwright: not installed (its browser download lives outside .venv). Manual checklist, verified in Chrome
+  on 2026-11-01:
+  - [x] page loads with no console errors; topology draws
+  - [x] Run congestion → lanes fill in seq order; report, evidence, predictions (hit/miss + seq), actions, blocked R1
+  - [x] evidence finding link → scrolls to the lanes, outlines the message, shows the finding JSON
+  - [x] approve CONG-1 → `human_operator` lane gets `#28 human_decision`; report unchanged; replay identical
+  - [x] past runs picker replays a stored run
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
-- [ ] Dashboard (cut line #1, not started; the API is ready: `/incidents`, `/incidents/{id}/report|events|report.csv`).
+- [x] Dashboard (M3).
 - [ ] Congestion remediation *simulation* (stretch, G2).
-- [ ] MCP server exposing `diagnose` / `get_report` (stretch, D6).
+- [x] MCP server (M2): `netcoop mcp`.

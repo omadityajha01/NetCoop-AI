@@ -1,4 +1,4 @@
-"""Read-only-ish FastAPI over runs/ (D7). `netcoop serve` -> http://127.0.0.1:8000/docs
+"""Read-only-ish FastAPI over runs/ (D7). `netcoop serve` -> http://127.0.0.1:8000/ (dashboard), /docs (OpenAPI)
 
 Uploads: 10 MB cap, .json/.csv only, stdlib parsers. Incident IDs are server-generated and path params
 are validated against the incident_id regex before touching runs/. Structured errors, no stack traces.
@@ -17,15 +17,19 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 
+from netcoop.api.dashboard import router as dashboard_router
+from netcoop.api.dashboard import scenario_path, sse_response, topology_view
 from netcoop.bus.eventlog import EventLog
 from netcoop.config import load_config
+from netcoop.hitl import UnknownAction, record_human_decision
 from netcoop.orchestrator.run import RUNS_DIR, RunOptions, run_incident, safe_run_dir
 from netcoop.storage import Store, valid_incident_id
 
-app = FastAPI(title="NetCoop AI", version="1.0.0", description="Multi-agent network fault diagnosis (NMP 1.0)")
+app = FastAPI(title="NetCoop AI", version="1.0.0", description="Multi-agent network fault diagnosis (NMP)")
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
                    allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 RUNS: Path = RUNS_DIR
+app.include_router(dashboard_router)
 
 
 def _store() -> Store:
@@ -60,6 +64,25 @@ async def create_incident(request: Request, external: bool = True, filename: str
         raise _err(413, "TOO_LARGE", "upload exceeds 10 MB")
     res = run_incident(body, cfg, RunOptions(runs_dir=RUNS, external=external, filename=Path(filename).name))
     return res.report
+
+
+@app.post("/scenarios/{name}/run")
+def run_scenario(name: str, external: bool = True) -> dict[str, Any]:
+    """Run one built-in scenario (the dashboard's only write action). Same pipeline as the CLI; LLM per env."""
+    path = scenario_path(name)
+    res = run_incident(path.read_bytes(), load_config(), RunOptions(runs_dir=RUNS, external=external, filename=path.name))
+    return {"incident_id": res.report["incident_id"], "status": res.report["status"]}
+
+
+@app.get("/topology")
+def topology() -> dict[str, Any]:
+    return topology_view(load_config().topology)
+
+
+@app.get("/incidents/{incident_id}/stream")
+def stream_events(incident_id: str, delay_ms: int = 0):  # noqa: ANN201 - StreamingResponse
+    """Server-sent events: the run's event log in `seq` order, then `event: end`."""
+    return sse_response(_dir(incident_id) / "events.jsonl", delay_ms)
 
 
 @app.get("/incidents")
@@ -102,9 +125,11 @@ class Feedback(BaseModel):
 
 @app.post("/incidents/{incident_id}/feedback")
 def post_feedback(incident_id: str, fb: Feedback) -> dict[str, Any]:
-    _dir(incident_id)
-    fid = _store().add_feedback(incident_id, fb.action_id, fb.decision, fb.note)
-    return {"id": fid, "executed": False}
+    d = _dir(incident_id)
+    try:
+        return record_human_decision(d, _store(), incident_id, fb.action_id, fb.decision, fb.note)
+    except UnknownAction as exc:
+        raise _err(404, "UNKNOWN_ACTION", "action_id is not an action of this incident") from exc
 
 
 @app.get("/agents")

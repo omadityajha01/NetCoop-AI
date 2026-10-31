@@ -152,6 +152,18 @@ class HintPayload(_P):
     model: str | None = Field(default=None, max_length=60)
 
 
+class HumanDecisionPayload(_P):
+    """Non-blocking HITL decision on a recommended action (NMP 1.3, D5). Appended to the event log AFTER the report;
+    it is a record only: nothing is executed and the diagnosis is never recomputed. The free-text note stays in
+    SQLite and is never put in the log or in a prompt."""
+
+    action_id: str = Field(pattern=r"^[A-Z]{2,6}-[0-9]{1,3}$")
+    decision: Literal["approve", "reject"]
+    feedback_id: int = Field(ge=1)
+    executed: Literal[False] = False
+    note_stored: bool = False
+
+
 PAYLOAD_MODELS: dict[str, type[BaseModel]] = {
     "task_request": TaskRequestPayload,
     "finding_report": FindingReportPayload,
@@ -164,4 +176,5 @@ PAYLOAD_MODELS: dict[str, type[BaseModel]] = {
     "error": ErrorPayload,
     "normalization_summary": NormalizationSummaryPayload,
     "hint": HintPayload,
+    "human_decision": HumanDecisionPayload,
 }
