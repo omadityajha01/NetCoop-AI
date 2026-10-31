@@ -78,7 +78,7 @@
     "External agent wireless_agent unreachable; its signals were unavailable",
     "symptoms also consistent with hardware failure at lower severity"
   ],
-  "schema_version": "1.2",
+  "schema_version": "1.3",
   "decision_source": "deterministic_scoring",
   "confidence_category": "high",
   "status_reason": null,
