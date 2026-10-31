@@ -12,11 +12,17 @@ import os
 import re
 import time
 import urllib.request
+from dataclasses import dataclass
 from typing import Any
 
 from netcoop.config import Config
-from netcoop.llm.guards import sanitize_complaint, validate_classification, validate_narrative
-from netcoop.llm.prompts import classify_messages, narrative_messages
+from netcoop.llm.guards import (
+    sanitize_complaint,
+    validate_classification,
+    validate_narrative,
+    validate_rationale,
+)
+from netcoop.llm.prompts import classify_messages, narrative_messages, rationale_messages
 
 TIMEOUT_S = 20
 MAX_TOKENS = 300
@@ -34,14 +40,27 @@ def _post(url: str, body: dict[str, Any], headers: dict[str, str]) -> dict[str, 
         return json.loads(resp.read(1_000_000).decode())
 
 
+_THINK = re.compile(r"<think>.*?</think>", re.S | re.I)
+
+
+def model_name() -> str:
+    if mode() == "local":
+        return os.environ.get("NETCOOP_LOCAL_MODEL", "llama3.2:3b")
+    if mode() == "cloud":
+        return os.environ.get("NETCOOP_CLOUD_MODEL", "claude-haiku-5-5")
+    return "off"
+
+
 def _call(system: str, user: str) -> str:
     m = mode()
     if m == "local":
+        # Ollama NATIVE chat API: stream false, temperature 0, no format:"json" (bare enum label / plain text)
         base = os.environ.get("NETCOOP_OLLAMA_URL", "http://127.0.0.1:11434")
-        out = _post(f"{base}/api/generate", {"model": os.environ.get("NETCOOP_LOCAL_MODEL", "llama3.1:8b"),
-                                             "system": system, "prompt": user, "stream": False,
-                                             "options": {"temperature": 0, "num_predict": MAX_TOKENS}}, {})
-        return str(out.get("response", ""))
+        out = _post(f"{base}/api/chat", {"model": model_name(), "stream": False,
+                                          "messages": [{"role": "system", "content": system},
+                                                       {"role": "user", "content": user}],
+                                          "options": {"temperature": 0, "num_predict": MAX_TOKENS}}, {})
+        return _THINK.sub("", str((out.get("message") or {}).get("content", ""))).strip()
     if m == "cloud":
         key = os.environ.get("ANTHROPIC_API_KEY", "")
         if not key:
@@ -50,7 +69,8 @@ def _call(system: str, user: str) -> str:
                     {"model": os.environ.get("NETCOOP_CLOUD_MODEL", "claude-haiku-5-5"), "max_tokens": MAX_TOKENS,
                      "temperature": 0, "system": system, "messages": [{"role": "user", "content": user}]},
                     {"x-api-key": key, "anthropic-version": "2023-06-01"})
-        return "".join(b.get("text", "") for b in out.get("content", []) if b.get("type") == "text")
+        text = "".join(b.get("text", "") for b in out.get("content", []) if b.get("type") == "text")
+        return _THINK.sub("", text).strip()
     raise RuntimeError("LLM off")
 
 
@@ -83,6 +103,43 @@ def classify_complaint(complaint: str | None, cfg: Config) -> tuple[list[str], d
             log["fallback"] = False
             return ([label] if label != "unknown" else []), log
     return [], log
+
+
+@dataclass(frozen=True)
+class Triage:
+    label: str | None
+    rationale: str
+    model: str
+    log: dict[str, Any]
+
+
+def triage(complaint: str | None, cfg: Config) -> Triage:
+    """Classify the complaint (PI1 sanitized) + a short rationale. Returns label None when off / unknown / invalid."""
+    hints, log = classify_complaint(complaint, cfg)
+    label = hints[0] if hints else None
+    if label is None:
+        return Triage(None, "", model_name(), log)
+    fallback = f"complaint text classified as {label.replace('_', ' ')} (advisory hint; it can only add a hypothesis)"
+    rationale = fallback
+    try:
+        s, u = rationale_messages(sanitize_complaint(complaint), label)
+        text = _call(s, u).strip()
+        if not validate_rationale(text, cfg):
+            rationale = text
+    except Exception:  # noqa: BLE001 - any failure -> deterministic rationale
+        pass
+    log["rationale_fallback"] = rationale == fallback
+    return Triage(label, rationale[:200], model_name(), log)
+
+
+class LlmTool:
+    """The only door to the LLM for agents (granted to triage_agent in agents.yaml). No other tools, no side effects."""
+
+    def __init__(self, cfg: Config):
+        self._cfg = cfg
+
+    def triage(self, complaint: str | None) -> Triage:
+        return triage(complaint, self._cfg)
 
 
 def template_narrative(report: dict[str, Any]) -> str:

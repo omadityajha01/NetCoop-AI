@@ -14,11 +14,11 @@ from typing import Any
 
 from netcoop.bus.eventlog import EventLog
 
-LANE_ORDER = ["normalizer", "orchestrator", "performance_agent", "infrastructure_agent", "connectivity_agent",
+LANE_ORDER = ["normalizer", "orchestrator", "triage_agent", "performance_agent", "infrastructure_agent", "connectivity_agent",
               "wireless_agent", "correlation_agent", "reporting_agent"]
 TYPE_CLASS = {"task_request": "t-task", "finding_report": "t-find", "coverage_manifest": "t-cov", "prediction": "t-pred",
               "evidence_request": "t-req", "evidence_response": "t-resp", "diagnosis": "t-diag", "report": "t-rep",
-              "error": "t-err", "normalization_summary": "t-norm"}
+              "error": "t-err", "normalization_summary": "t-norm", "hint": "t-hint"}
 
 CSS = """
 *{box-sizing:border-box} body{font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;margin:0;background:#fcfcfb;color:#0b0b0b}
@@ -35,7 +35,7 @@ th{color:#52514e;font-weight:600;background:#f6f6f3} code{font:12px ui-monospace
 .msg{border-radius:6px;padding:3px 6px;border-left:4px solid #888;background:#f6f6f3}
 .t-task{border-color:#52514e}.t-find{border-color:#2a78d6}.t-cov{border-color:#9bbbe6}.t-pred{border-color:#6250d6}
 .t-req{border-color:#eb6834}.t-resp{border-color:#1baf7a}.t-diag{border-color:#eda100}.t-rep{border-color:#008300}
-.t-err{border-color:#e34948;background:#fdecec}.t-norm{border-color:#e87ba4}
+.t-err{border-color:#e34948;background:#fdecec}.t-norm{border-color:#e87ba4}.t-hint{border-color:#6250d6;border-left-style:dashed}
 .hit{background:#d9f2d9;color:#004d00}.miss{background:#fde0e0;color:#7a0b0b}.unknown,.pending{background:#eeede8;color:#52514e}
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:24px} @media (max-width:1000px){.grid2{grid-template-columns:1fr}}
 .blocked{color:#7a0b0b;font-weight:600} ul{margin:6px 0;padding-left:20px}
@@ -74,6 +74,8 @@ def _info(m: dict[str, Any]) -> str:
         return f"{s.get('records_used', 0)}/{s.get('records_in', 0)} records used, {s.get('records_quarantined', 0)} quarantined"
     if t == "report":
         return f"status {p['report'].get('status')}"
+    if t == "hint":
+        return f"LLM hint (advisory): {p.get('fault_type')}: {p.get('rationale', '')}"
     return ""
 
 

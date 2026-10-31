@@ -17,7 +17,8 @@
   "limitations": [
     "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements"
   ],
-  "schema_version": "1.1",
+  "schema_version": "1.2",
+  "decision_source": "deterministic_scoring",
   "confidence_category": "high",
   "status_reason": null,
   "observations": [],
@@ -71,5 +72,11 @@
     "version_upcast": 0,
     "extras": 0
   },
-  "narrative": "All analysed measurements are within expected ranges; no fault was detected."
+  "narrative": "All analysed measurements are within expected ranges; no fault was detected.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
 }

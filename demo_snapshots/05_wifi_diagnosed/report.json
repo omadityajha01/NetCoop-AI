@@ -85,7 +85,8 @@
     "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
     "Root cause requires further verification by an operator before any change"
   ],
-  "schema_version": "1.1",
+  "schema_version": "1.2",
+  "decision_source": "deterministic_scoring",
   "confidence_category": "high",
   "status_reason": null,
   "observations": [],
@@ -199,5 +200,11 @@
     "version_upcast": 0,
     "extras": 0
   },
-  "narrative": "Likely weak Wi-Fi signal at the access point causing retransmissions on AP_H3 (confidence 1.00, high). Key evidence: latency_ms=182.56 on AP_H3, packet_loss_pct=5.588 on AP_H3, snr_db=13 on AP_H3. 2 of 3 logged predictions were hits."
+  "narrative": "Likely weak Wi-Fi signal at the access point causing retransmissions on AP_H3 (confidence 1.00, high). Key evidence: latency_ms=182.56 on AP_H3, packet_loss_pct=5.588 on AP_H3, snr_db=13 on AP_H3. 2 of 3 logged predictions were hits.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
 }

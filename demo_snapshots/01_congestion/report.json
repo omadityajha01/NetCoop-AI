@@ -78,7 +78,8 @@
     "External agent wireless_agent unreachable; its signals were unavailable",
     "symptoms also consistent with hardware failure at lower severity"
   ],
-  "schema_version": "1.1",
+  "schema_version": "1.2",
+  "decision_source": "deterministic_scoring",
   "confidence_category": "high",
   "status_reason": null,
   "observations": [
@@ -247,5 +248,11 @@
     "version_upcast": 0,
     "extras": 0
   },
-  "narrative": "Likely link congestion causing egress queue drops on L_HOSTEL_UPLINK (confidence 1.00, high). Key evidence: queue_drops_count=528 on HOSTEL_CORE_SW_01, latency_ms=286.44 on HOSTEL_CORE_SW_01, link_utilization_pct=98.31 on L_HOSTEL_UPLINK. 2 of 3 logged predictions were hits."
+  "narrative": "Likely link congestion causing egress queue drops on L_HOSTEL_UPLINK (confidence 1.00, high). Key evidence: queue_drops_count=528 on HOSTEL_CORE_SW_01, latency_ms=286.44 on HOSTEL_CORE_SW_01, link_utilization_pct=98.31 on L_HOSTEL_UPLINK. 2 of 3 logged predictions were hits.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
 }

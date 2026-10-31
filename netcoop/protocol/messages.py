@@ -35,7 +35,7 @@ class _P(BaseModel):
 
 
 class TaskRequestPayload(_P):
-    task: Literal["analyze", "scope", "correlate", "finalize", "report"]
+    task: Literal["analyze", "scope", "correlate", "finalize", "report", "triage"]
     window: Window
     round: int = 0
     params: dict[str, Any] = Field(default_factory=dict)
@@ -144,6 +144,14 @@ class NormalizationSummaryPayload(_P):
     hints: list[str] = Field(default_factory=list)
 
 
+class HintPayload(_P):
+    """LLM triage hint (NMP 1.2). Advisory only: it can ADD a hypothesis for the agents to test (PI5), never decide."""
+
+    fault_type: str = Field(min_length=1, max_length=40)
+    rationale: str = Field(max_length=200)
+    model: str | None = Field(default=None, max_length=60)
+
+
 PAYLOAD_MODELS: dict[str, type[BaseModel]] = {
     "task_request": TaskRequestPayload,
     "finding_report": FindingReportPayload,
@@ -155,4 +163,5 @@ PAYLOAD_MODELS: dict[str, type[BaseModel]] = {
     "report": ReportPayload,
     "error": ErrorPayload,
     "normalization_summary": NormalizationSummaryPayload,
+    "hint": HintPayload,
 }

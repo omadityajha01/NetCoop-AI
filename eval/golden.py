@@ -68,12 +68,23 @@ def main() -> int:
     g = ap.add_mutually_exclusive_group(required=True)
     g.add_argument("--write")
     g.add_argument("--compare")
+    g.add_argument("--gate", help="milestone GOLDEN GATE: fail on ANY change to decision fields or alternative_causes")
     a = ap.parse_args()
     cur = collect()
     if a.write:
         Path(a.write).write_text(json.dumps(cur, indent=1, sort_keys=True), encoding="utf-8")
         print(f"wrote {len(cur)} incident fingerprints to {a.write}")
         return 0
+    if a.gate:
+        base = json.loads(Path(a.gate).read_text(encoding="utf-8"))
+        assert set(base) == set(cur), "incident sets differ"
+        fields = DECISION + ("alternative_causes",)
+        diffs = [(k, f) for k in sorted(base) for f in fields if base[k][f] != cur[k][f]]
+        print(f"GOLDEN GATE: {len(base)} incidents; fields {', '.join(fields)}; differences: {len(diffs)}")
+        for k, f in diffs[:10]:
+            print(f"  {k} {f}: {base[k][f]!r} -> {cur[k][f]!r}")
+        print("GOLDEN GATE:", "PASS" if not diffs else "FAIL")
+        return 1 if diffs else 0
     base = json.loads(Path(a.compare).read_text(encoding="utf-8"))
     assert set(base) == set(cur), "incident sets differ"
     decision_diffs = [k for k in base if any(base[k][f] != cur[k][f] for f in DECISION)]

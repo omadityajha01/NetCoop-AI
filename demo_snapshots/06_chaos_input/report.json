@@ -102,7 +102,8 @@
     "C1 conflict: latency_ms@DEPT_CORE_SW_01: 155 (snmp) vs 24.6 (probe) -> kept fresher value (then higher sample_count, then source_priority)",
     "C2 conflict: 1 record(s) carry metrics for links absent from topology (e.g. records[40]) -> records quarantined; topology is never invented"
   ],
-  "schema_version": "1.1",
+  "schema_version": "1.2",
+  "decision_source": "deterministic_scoring",
   "confidence_category": "high",
   "status_reason": null,
   "observations": [
@@ -277,5 +278,11 @@
     "version_upcast": 1,
     "extras": 14
   },
-  "narrative": "Likely device overload (CPU exhaustion) causing drops across interfaces on DEPT_CORE_SW_01 (confidence 0.85, high). Key evidence: cpu_pct=98.3 on DEPT_CORE_SW_01, memory_pct=92.2 on DEPT_CORE_SW_01, queue_drops_count=279 on DEPT_CORE_SW_01. 2 of 2 logged predictions were hits."
+  "narrative": "Likely device overload (CPU exhaustion) causing drops across interfaces on DEPT_CORE_SW_01 (confidence 0.85, high). Key evidence: cpu_pct=98.3 on DEPT_CORE_SW_01, memory_pct=92.2 on DEPT_CORE_SW_01, queue_drops_count=279 on DEPT_CORE_SW_01. 2 of 2 logged predictions were hits.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
 }

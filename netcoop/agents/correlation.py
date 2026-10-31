@@ -19,7 +19,7 @@ from netcoop.scoring.predictions import plan_round, resolve_outcomes
 def derive_state(msgs: list[Message]) -> dict[str, Any]:
     st: dict[str, Any] = {
         "asked": [], "failed": set(), "coverage": {}, "findings": [], "agent_of": {}, "scope": None,
-        "norm": None, "refetched": set(), "predicted": set(), "covering_agents": set(),
+        "norm": None, "refetched": set(), "predicted": set(), "covering_agents": set(), "hints": [],
     }
     for m in msgs:
         t = m.message_type
@@ -42,6 +42,8 @@ def derive_state(msgs: list[Message]) -> dict[str, Any]:
                 st["scope"] = m.payload["scope"]
         elif t == "normalization_summary":
             st["norm"] = m.payload
+        elif t == "hint" and m.sender == "triage_agent":
+            st["hints"].append(m.payload["fault_type"])
         elif t == "evidence_request" and m.payload.get("reason") == "c2_refetch":
             for r in m.payload.get("requests", []):
                 st["refetched"].add((r["metric"], r["entity"]["id"]))
@@ -86,7 +88,7 @@ class CorrelationAgent:
         anomalous = [f for f in active if f.anomalous]
         scope = st["scope"] or {}
         ncu = scope.get("nearest_common_upstream")
-        cands = generate_candidates(cfg, anomalous, ncu, scope.get("affected_entities", []), norm.get("hints", []))
+        cands = generate_candidates(cfg, anomalous, ncu, scope.get("affected_entities", []), norm.get("hints", []) + st["hints"])
         hyps = rank_hypotheses(cfg, cands, idx, quality_of)
         predictions, pnotes = resolve_outcomes(cfg, view.all())
 

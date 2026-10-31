@@ -26,6 +26,11 @@ internal:
     tools: [findings, topology]
     timeout_s: 5
     owns: []
+  triage_agent:                  # LLM-backed; runs only when NETCOOP_LLM != off and there is a complaint
+    module: netcoop.agents.triage
+    tools: [llm]
+    timeout_s: 45
+    owns: []
 
 analysis_agents: [performance_agent, infrastructure_agent, connectivity_agent]
 

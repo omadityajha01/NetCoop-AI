@@ -355,6 +355,7 @@ def _assemble(ctx: ReadOnlyContext, *, status: str, root: str, confidence: float
         "evidence_sources": sources,
         "limitations": limitations,
         "schema_version": SCHEMA_VERSION,
+        "decision_source": "deterministic_scoring",
         "confidence_category": category,
         **{k: v for k, v in extras.items()},
         "normalization_summary": {k: summary.get(k, 0) for k in (

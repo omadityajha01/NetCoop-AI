@@ -17,6 +17,7 @@ from netcoop.agents.correlation import CorrelationAgent
 from netcoop.agents.infrastructure import InfrastructureAgent
 from netcoop.agents.performance import PerformanceAgent
 from netcoop.agents.reporting import SYNTHETIC, ReportingAgent
+from netcoop.agents.triage import TriageAgent
 from netcoop.bus.bus import Bus, BusBoundExceeded
 from netcoop.bus.eventlog import EventLog
 from netcoop.config import ROOT, Config, load_config
@@ -155,7 +156,8 @@ class Orchestrator:
         norm.limitations[:0] = topo_lims
         if norm.unplaced:  # devices seen in telemetry but not in topology: registered placed=False for this run
             cfg = cfg.with_overrides(topology=cfg.topology.with_unplaced(norm.unplaced))
-        hints, _llm_log = llm.classify_complaint(norm.complaint, cfg)
+        # LLM hints now come from triage_agent as NMP `hint` messages (round 0); none when NETCOOP_LLM=off
+        hints: list[str] = []
         window = norm.window
         assert window is not None and norm.incident_time is not None
         bus.publish(make_message(
@@ -166,7 +168,8 @@ class Orchestrator:
                      "summary": norm.summary, "quarantined": [q.as_dict() for q in norm.quarantined][:500],
                      "extras": norm.extras[:200], "complaint_present": bool(norm.complaint), "hints": hints}))
 
-        tools = {"telemetry": TelemetryTool(norm.observations), "topology": cfg.topology, "findings": FindingsTool(log)}
+        tools = {"telemetry": TelemetryTool(norm.observations), "topology": cfg.topology, "findings": FindingsTool(log),
+                 "llm": llm.LlmTool(cfg)}
         handlers: dict[str, tuple[Any, float]] = {}
         for aid in cfg.analysis_agents:
             handlers[aid] = (INTERNAL_AGENTS[aid](cfg).handle, float(cfg.agents["internal"][aid]["timeout_s"]))
@@ -204,8 +207,13 @@ class Orchestrator:
 
         # 3. round 0: all analysis agents in parallel (D9: nothing can skip an agent)
         analysis = sorted(handlers)
-        bus.deliver_many([(aid, handlers[aid][0], task(aid, "analyze", 0), ctx_any(aid, 0), handlers[aid][1])
-                          for aid in analysis])
+        round0 = [(aid, handlers[aid][0], task(aid, "analyze", 0), ctx_any(aid, 0), handlers[aid][1]) for aid in analysis]
+        if llm.mode() != "off" and norm.complaint:  # D9: triage never replaces or skips an analysis agent
+            triage_agent = TriageAgent(cfg)
+            round0.append(("triage_agent", triage_agent.handle,
+                           task("triage_agent", "triage", 0, {"complaint": norm.complaint[:1000]}),
+                           ctx_for("triage_agent", 0), float(cfg.agents["internal"]["triage_agent"]["timeout_s"])))
+        bus.deliver_many(round0)
         anomalous_entities = sorted({f["entity"]["id"] for m in log.by_type("finding_report")
                                      for f in m.payload.get("findings", []) if f["severity"] != "normal"})
         bus.deliver("connectivity_agent", handlers["connectivity_agent"][0],
@@ -249,6 +257,10 @@ class Orchestrator:
         report = dict(rep_msg.payload["report"])
         narrative, _nlog = llm.write_narrative(report, cfg)
         report["narrative"] = scrub(narrative)
+        report["llm"] = {"mode": llm.mode(), "model": llm.model_name() if llm.mode() != "off" else None,
+                         "narrative_source": "template" if _nlog.get("fallback", True) else "llm",
+                         "hints": [{"fault_type": m.payload["fault_type"], "rationale": scrub(m.payload["rationale"])}
+                                   for m in log.by_type("hint")]}
         known = {f["finding_id"] for m in log.by_type("finding_report", "evidence_response") for f in m.payload.get("findings", [])}
         errors = validate_report(report, cfg, known)
         if errors:

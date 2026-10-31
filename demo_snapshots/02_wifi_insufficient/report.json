@@ -47,7 +47,8 @@
     "No connected agent can provide: link_utilization_pct@L_AP_H3, link_flaps_count@L_AP_H3, retransmission_pct@AP_H3, rssi_dbm@AP_H3, snr_db@AP_H3",
     "External agent wireless_agent unreachable; its signals were unavailable"
   ],
-  "schema_version": "1.1",
+  "schema_version": "1.2",
+  "decision_source": "deterministic_scoring",
   "confidence_category": "low",
   "status_reason": "no_signature_match",
   "observations": [],
@@ -175,5 +176,11 @@
     "version_upcast": 0,
     "extras": 0
   },
-  "narrative": "The evidence is not sufficient for a reliable diagnosis. Signals that would resolve it: link_utilization_pct@L_AP_H3, link_flaps_count@L_AP_H3, retransmission_pct@AP_H3, rssi_dbm@AP_H3."
+  "narrative": "The evidence is not sufficient for a reliable diagnosis. Signals that would resolve it: link_utilization_pct@L_AP_H3, link_flaps_count@L_AP_H3, retransmission_pct@AP_H3, rssi_dbm@AP_H3.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
 }

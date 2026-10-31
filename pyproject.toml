@@ -48,6 +48,7 @@ markers = [
   "external: needs node to run the wireless_agent",
   "conformance: conformance kit against AGENT_URL",
   "a2a_sdk: official a2a-sdk client interop check (skipped unless a2a-sdk is installed)",
+  "llm_live: real-model checks (skipped unless NETCOOP_LLM=local|cloud and the model is reachable)",
 ]
 
 [tool.ruff]
