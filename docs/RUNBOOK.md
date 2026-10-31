@@ -1,6 +1,7 @@
 # Stage runbook (one page)
 
-**Stage version: `demo-final-2`** (`git checkout demo-final-2`). Previous known-good: `demo-final`.
+**Stage version: `demo-final-3`** (`git checkout demo-final-3`). Previous known-good: `demo-final-2`, which has no
+dashboard, MCP or resume; its stage flow below is unchanged.
 
 Everything runs offline on `127.0.0.1`. Work from the repo root in a terminal at least 100 columns wide.
 
@@ -12,6 +13,7 @@ cd C:\Projects\new
 python tasks.py preflight                    # must end: PREFLIGHT OK (15/15). Fix any red line before going on
 python tasks.py present                      # 8 steps, press Enter between them
 python tasks.py present --judge              # same, plus step 9: a judge picks an organizer label + seed
+netcoop serve                                # optional visual: dashboard at http://127.0.0.1:8000/ (Ctrl+C to stop)
 ```
 
 Useful flags (combine freely):
@@ -29,7 +31,7 @@ A judge can also run the organizer's raw generator directly: `python tasks.py ju
 
 1. **Snapshots:** open `demo_snapshots/<step>/timeline.html` (and `report.json`) in any browser. They are static
    files that work offline, one folder per step, and are kept fresh: preflight checks the code + config hash.
-2. **Known-good code:** `git stash` (if you changed anything), then `git checkout demo-final-2` (or the previous `demo-final`), then rerun preflight.
+2. **Known-good code:** `git stash` (if you changed anything), then `git checkout demo-final-3` (or the previous `demo-final-2`), then rerun preflight.
 3. **Another machine:** `git clone https://github.com/omadityajha01/NetCoop-AI`, then
    `python -m venv .venv`, then `.venv\Scripts\pip install -e .[dev]`, then `python tasks.py preflight`.
 
@@ -37,6 +39,7 @@ A judge can also run the organizer's raw generator directly: `python tasks.py ju
 
 | Symptom | Do this |
 |---|---|
+| **Dashboard won't start** (port 8000 busy, or Windows "access … forbidden" on a reserved port) | `netcoop serve --port 8080` and open http://127.0.0.1:8080/. If the dashboard misbehaves, use `present` and the snapshots: the dashboard is optional |
 | **Port busy** (preflight: "Port … free" FAIL, or present says the port is busy with something that is not our agent) | `python tasks.py present --port 8790`. Preflight already kills a stale *wireless_agent* on that port, matched by its command line; it never kills other programs. |
 | **Agent won't start** ("wireless_agent starts" FAIL) | `node --version` must be ≥ 18 and on PATH. Try another port. If Node is unusable, present steps 1, 2, 6, 7, 8 live and show 3–5 from `demo_snapshots/`. |
 | **Browser won't open** (`--open` prints "could not open a browser") | Ignore it: the run continues. Copy the printed `timeline:` path into the browser's address bar, or open `demo_snapshots/<step>/timeline.html`. |

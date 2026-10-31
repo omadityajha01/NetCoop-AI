@@ -204,6 +204,10 @@ async function loadReport(incident) {
   kv("decided by", rep.decision_source || "deterministic_scoring");
   kv("sources", (rep.evidence_sources || []).join(", "));
   if (rep.scoring) kv("scoring", Object.entries(rep.scoring).map(([k, v]) => k + "=" + v).join("  "));
+  const llmInfo = rep.llm || { mode: "off", hints: [] };
+  kv("LLM", llmInfo.mode === "off" ? "off" : llmInfo.mode + " · " + llmInfo.model + " · narrative from " + llmInfo.narrative_source);
+  if ((llmInfo.hints || []).length)
+    kv("LLM hints (advisory)", llmInfo.hints.map(h => h.fault_type + ": " + h.rationale).join("; "));
   if (rep.narrative) kv("narrative", rep.narrative);
   box.appendChild(dl);
 

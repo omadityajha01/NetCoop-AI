@@ -83,6 +83,19 @@ guardrails and example prompts: [`docs/MCP.md`](docs/MCP.md).
 
 Requirements: Python ≥ 3.11 and Node ≥ 18 (only for the external agent; everything else runs without it).
 
+## Optional components
+
+The core (normalizer, agents, scoring, event log, CLI) needs none of these. Each one is opt-in and has its own guardrail.
+
+| Component | Status | How | Guardrail |
+|---|---|---|---|
+| LLM triage + narrative | ✓ off by default | `NETCOOP_LLM=local` (Ollama, `llama3.2:3b`) | Advisory only: a hint can only *add* a hypothesis; the report's `decision_source` is always `deterministic_scoring`; output allowlisted; strict narrative guard with a template fallback ([§10–11](#guardrails-and-security)) |
+| MCP server | ✓ | `netcoop mcp` ([docs/MCP.md](docs/MCP.md)) | Read-only tools plus `diagnose`; strict regexes; paths confined to `data/` and `runs/`; raw quoted input redacted from results |
+| Human in the loop | ✓ non-blocking | dashboard approve/reject, `netcoop feedback`, `POST /incidents/{id}/feedback` | Recorded as an NMP `human_decision` event after the report; never executed; the report and replay are unchanged |
+| Persistence / resume | ✓ | `netcoop resume <incident_id>` | Re-derives the run deterministically; the surviving log must be an exact prefix or resume refuses; idempotent |
+| Dashboard | ✓ | `netcoop serve` → http://127.0.0.1:8000/ | Static vanilla JS, no CDN; text-only rendering (PI8); strict CSP; read-only except Run scenario and HITL |
+| Remediation | ✗ by design | n/a | Never executed (D8, G1, G2): actions come from the playbook, pass the policy checker and are shown, not run |
+
 ## Scenarios (sample data)
 
 | Scenario | File | Expected outcome |
