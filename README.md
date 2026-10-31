@@ -66,7 +66,12 @@ netcoop replay <incident_id>                                           # byte-id
 netcoop agents refresh                                                 # re-check the allowlist; new agents join the next run
 netcoop feedback <incident_id> CONG-1 approve --note "ok"              # non-blocking HITL (nothing is executed)
 netcoop serve                                                          # read-only API on :8000 (/docs)
+netcoop mcp                                                            # MCP server over stdio (see docs/MCP.md)
 ```
+
+**Chat with NetCoop via MCP:** `netcoop mcp` exposes `list_scenarios`, `list_agents`, `diagnose`, `get_report` and
+`explain` to an MCP client such as Claude Desktop. The client's LLM can ask and explain, but the code decides. Setup,
+guardrails and example prompts: [`docs/MCP.md`](docs/MCP.md).
 
 Requirements: Python ≥ 3.11 and Node ≥ 18 (only for the external agent; everything else runs without it).
 
