@@ -318,6 +318,43 @@ def cmd_tune(a: argparse.Namespace) -> None:
                                          encoding="utf-8")
 
 
+SWEEP = [round(0.40 + 0.05 * i, 2) for i in range(7)]  # 0.40 .. 0.70
+
+
+def sweep_rows(base: Config, items: list[tuple[Incident, dict]]) -> list[dict[str, Any]]:
+    out = []
+    with wireless_agent([i for i, _ in items]) as url:
+        for mts in SWEEP:
+            sc = thaw(base.scoring)
+            sc["status"]["min_top_score"] = mts
+            s = summarize(run_set(cfg_for(base, url, sc), items))
+            out.append({"min_top_score": mts, "accuracy": s["overall_accuracy"], "wrong_diagnosis_rate": s["wrong_diagnosis_rate"],
+                        "false_positive_rate_normal": s["false_positive_rate_normal"],
+                        "precision_when_diagnosed": s["precision_when_diagnosed"],
+                        "fault_to_no_fault_rate": s["fault_to_no_fault_rate"]})
+            print(out[-1])
+    return out
+
+
+def cmd_sweep(a: argparse.Namespace) -> None:
+    """T3: choose min_top_score on seed range A (max accuracy s.t. wrong <= 3 %, normal FP <= 5 %); chart on B."""
+    base = load_config()
+    REPORTS.mkdir(parents=True, exist_ok=True)
+    rows_a = sweep_rows(base, make_incidents(a.n, a.seed_a))
+    ok = [r for r in rows_a if r["wrong_diagnosis_rate"] <= 0.03 and r["false_positive_rate_normal"] <= 0.05]
+    chosen = max(ok, key=lambda r: (r["accuracy"], -r["min_top_score"]))["min_top_score"] if ok else None
+    print(f"chosen on A: min_top_score={chosen}")
+    rows_b = sweep_rows(base, make_incidents(a.n, a.seed_b))
+    (REPORTS / "sweep.json").write_text(json.dumps({"seed_a": a.seed_a, "seed_b": a.seed_b, "n": a.n, "chosen": chosen,
+                                                     "rule": "max accuracy on A with wrong<=0.03 and normal FP<=0.05",
+                                                     "A": rows_a, "B": rows_b}, indent=2), encoding="utf-8")
+    try:
+        from eval.plot import operating_point_chart
+        print(f"wrote {operating_point_chart(rows_b, chosen)}")
+    except ImportError:
+        print("matplotlib not installed (pip install -e .[eval]); chart skipped")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -330,6 +367,11 @@ def main() -> None:
     p.add_argument("--n", type=int, default=70)
     p.add_argument("--seed", type=int, default=9000)
     p.set_defaults(fn=cmd_fuzz)
+    p = sub.add_parser("sweep")
+    p.add_argument("--n", type=int, default=280)
+    p.add_argument("--seed-a", type=int, default=1000)
+    p.add_argument("--seed-b", type=int, default=5000)
+    p.set_defaults(fn=cmd_sweep)
     p = sub.add_parser("tune")
     p.add_argument("--n", type=int, default=140)
     p.add_argument("--seed-a", type=int, default=1000)

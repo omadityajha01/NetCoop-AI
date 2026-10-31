@@ -336,7 +336,7 @@ Final constants (`config/scoring.yaml`; tuned on seed range A only):
 | quality_floor | 0.5 |
 | coerced_penalty | 0.05 |
 | stale_quality | 0.5 |
-| status.min_top_score | 0.45 |
+| status.min_top_score | 0.55 |
 | status.min_top_coverage | 0.5 |
 | status.min_margin | 0.15 |
 | confidence.high_min | 0.75 |
@@ -401,58 +401,56 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.846 |
-| macro accuracy | 0.846 |
-| precision when diagnosed | 0.972 |
-| wrong diagnosis rate | 0.021 |
+| overall accuracy | 0.796 |
+| macro accuracy | 0.796 |
+| precision when diagnosed | 0.985 |
+| wrong diagnosis rate | 0.011 |
 | fault to no fault rate | 0.013 |
 | normal accuracy | 0.625 |
-| false positive rate normal | 0.05 |
-| insufficient evidence rate | 0.121 |
+| false positive rate normal | 0.0 |
+| insufficient evidence rate | 0.182 |
 | localization accuracy | 0.995 |
-| accuracy on mutated inputs | 0.845 |
+| accuracy on mutated inputs | 0.774 |
 | mutated share | 0.3 |
 | crashes | 0 |
-| mean ms per incident | 43.5 |
+| mean ms per incident | 45.9 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
-| normal | 40 | 0.625 | 0.325 | 0.0 |
-| congestion | 40 | 0.825 | 0.15 | 0.05 |
-| interface_fault | 40 | 1.0 | 0.0 | 0.0 |
-| device_overload | 40 | 0.8 | 0.1 | 0.25 |
-| weak_wifi | 40 | 0.675 | 0.275 | 0.05 |
-| dns_failure | 40 | 1.0 | 0.0 | 0.0 |
-| dhcp_failure | 40 | 1.0 | 0.0 | 0.0 |
+| normal | 40 | 0.625 | 0.375 | 0.0 |
+| congestion | 40 | 0.8 | 0.175 | 0.05 |
+| interface_fault | 40 | 0.975 | 0.025 | 0.0 |
+| device_overload | 40 | 0.675 | 0.25 | 0.125 |
+| weak_wifi | 40 | 0.6 | 0.35 | 0.0 |
+| dns_failure | 40 | 0.95 | 0.05 | 0.0 |
+| dhcp_failure | 40 | 0.95 | 0.05 | 0.0 |
 
 **Confusion matrix** (rows = truth, columns = predicted)
 
 | truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | no_fault_detected | weak_wifi |
 |---|---|---|---|---|---|---|---|---|
-| normal | 1 | 1 | 0 | 0 | 13 | 0 | 25 | 0 |
-| congestion | 33 | 0 | 0 | 0 | 6 | 0 | 1 | 0 |
-| interface_fault | 0 | 0 | 0 | 0 | 0 | 40 | 0 | 0 |
-| device_overload | 4 | 32 | 0 | 0 | 4 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 11 | 0 | 2 | 27 |
-| dns_failure | 0 | 0 | 0 | 40 | 0 | 0 | 0 | 0 |
-| dhcp_failure | 0 | 0 | 40 | 0 | 0 | 0 | 0 | 0 |
+| normal | 0 | 0 | 0 | 0 | 15 | 0 | 25 | 0 |
+| congestion | 32 | 0 | 0 | 0 | 7 | 0 | 1 | 0 |
+| interface_fault | 0 | 0 | 0 | 0 | 1 | 39 | 0 | 0 |
+| device_overload | 3 | 27 | 0 | 0 | 10 | 0 | 0 | 0 |
+| weak_wifi | 0 | 0 | 0 | 0 | 14 | 0 | 2 | 24 |
+| dns_failure | 0 | 0 | 0 | 38 | 2 | 0 | 0 | 0 |
+| dhcp_failure | 0 | 0 | 38 | 0 | 2 | 0 | 0 | 0 |
 
 **Calibration** (diagnosed/probable only)
 
 | confidence bin | n | mean confidence | observed accuracy |
 |---|---|---|---|
-| [0.00, 0.50] | 9 | 0.476 | 0.778 |
-| [0.50, 0.75] | 62 | 0.626 | 0.952 |
+| [0.50, 0.75] | 54 | 0.644 | 0.963 |
 | [0.75, 0.90] | 66 | 0.83 | 0.985 |
 | [0.90, 1.00] | 81 | 0.992 | 1.0 |
 
 | confidence_category | n | observed accuracy |
 |---|---|---|
 | high | 147 | 0.993 |
-| medium | 62 | 0.952 |
-| low | 9 | 0.778 |
+| medium | 54 | 0.963 |
 <!-- END GENERATED: eval -->
 
 **Reading the numbers honestly:**
@@ -462,8 +460,24 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
   link, a CPU spike). Those runs correctly report `insufficient_evidence (no_signature_match)`: something is
   anomalous but matches no fault. Warn-only readings yield `no_fault_detected`, with the readings under `observations`.
 * Confidence is **under-confident**: in every bin, observed accuracy ≥ mean stated confidence.
-* Operating point: tuning on A preferred `contra_penalty = 1.0` at `min_top_score = 0.45`. `min_top_score = 0.60`
-  removes false positives on normal (FP 0.0 on A) at the cost of ~10 points of accuracy. See `eval/reports/tune_A.json`.
+
+### Operating point (`python -m eval.run_eval sweep`)
+
+`min_top_score` was swept 0.40–0.70 on **seed range A**. The rule, fixed before running: pick the highest accuracy with
+wrong-diagnosis ≤ 3% and normal false-positive ≤ 5%. Result: **0.55** (0.50 misses at 3.2% wrong on A). The chart
+and the B columns are held-out.
+
+![Operating point sweep on seed range B](docs/operating_point.png)
+
+| min_top_score | A accuracy | A wrong-diagnosis | A normal FP | eligible | B accuracy | B wrong-diagnosis | B normal FP | B committed precision |
+|---|---|---|---|---|---|---|---|---|
+| 0.40 | 0.836 | 0.079 | 0.225 | ✗ | 0.875 | 0.039 | 0.15 | 0.952 |
+| 0.45 | 0.811 | 0.054 | 0.1 | ✗ | 0.846 | 0.021 | 0.05 | 0.972 |
+| 0.50 | 0.786 | 0.032 | 0.05 | ✗ | 0.821 | 0.014 | 0.025 | 0.981 |
+| 0.55 | 0.743 | 0.025 | 0.025 | ✓ | 0.796 | 0.011 | 0.0 | 0.985 |
+| 0.60 | 0.714 | 0.007 | 0.0 | ✓ | 0.746 | 0.004 | 0.0 | 0.995 |
+| 0.65 | 0.7 | 0.007 | 0.0 | ✓ | 0.729 | 0.004 | 0.0 | 0.994 |
+| 0.70 | 0.618 | 0.007 | 0.0 | ✓ | 0.643 | 0.004 | 0.0 | 0.994 |
 
 <!-- BEGIN GENERATED: fuzz -->
 #### Degradation under corrupted input
@@ -472,13 +486,13 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 
 | corruption rate | accuracy | precision when diagnosed | insufficient_evidence | FP on normal | values recovered | records quarantined | failed | crashes | accuracy w/o registry | |
 |---|---|---|---|---|---|---|---|---|---|---|
-| 0% | 0.786 | 0.946 | 0.171 | 0.0 | 0 | 0.0 % | 0 | 0 | 0.457 | `████████████████` |
-| 10% | 0.786 | 0.964 | 0.186 | 0.0 | 808 | 0.4 % | 0 | 0 | 0.457 | `████████████████` |
-| 20% | 0.8 | 0.947 | 0.157 | 0.0 | 1798 | 0.6 % | 0 | 0 | 0.443 | `████████████████` |
-| 30% | 0.786 | 0.964 | 0.186 | 0.0 | 2739 | 1.0 % | 0 | 0 | 0.429 | `████████████████` |
-| 40% | 0.786 | 0.964 | 0.186 | 0.0 | 3703 | 1.2 % | 0 | 0 | 0.457 | `████████████████` |
-| 50% | 0.786 | 0.946 | 0.171 | 0.0 | 5241 | 1.9 % | 0 | 0 | 0.429 | `████████████████` |
-| 60% | 0.771 | 0.963 | 0.2 | 0.0 | 6358 | 2.1 % | 0 | 0 | 0.414 | `███████████████` |
+| 0% | 0.814 | 0.964 | 0.143 | 0.0 | 0 | 0.0 % | 0 | 0 | 0.471 | `████████████████` |
+| 10% | 0.814 | 0.981 | 0.157 | 0.0 | 808 | 0.4 % | 0 | 0 | 0.471 | `████████████████` |
+| 20% | 0.814 | 0.964 | 0.143 | 0.0 | 1798 | 0.6 % | 0 | 0 | 0.443 | `████████████████` |
+| 30% | 0.814 | 0.981 | 0.157 | 0.0 | 2739 | 1.0 % | 0 | 0 | 0.414 | `████████████████` |
+| 40% | 0.757 | 1.0 | 0.229 | 0.0 | 3703 | 1.2 % | 0 | 0 | 0.386 | `███████████████` |
+| 50% | 0.771 | 1.0 | 0.214 | 0.0 | 5241 | 1.9 % | 0 | 0 | 0.257 | `███████████████` |
+| 60% | 0.757 | 1.0 | 0.229 | 0.0 | 6358 | 2.1 % | 0 | 0 | 0.286 | `███████████████` |
 <!-- END GENERATED: fuzz -->
 
 Accuracy stays flat because the normalizer *recovers* what is recoverable: thousands of values are converted,

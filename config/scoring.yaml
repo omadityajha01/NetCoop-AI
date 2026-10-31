@@ -6,7 +6,7 @@ coerced_penalty: 0.05
 stale_quality: 0.5             # completeness assigned to findings of a source marked stale (C2)
 
 status:
-  min_top_score: 0.45          # below -> no_fault_detected (nothing >= high) or insufficient_evidence (something >= high)
+  min_top_score: 0.55          # T3: chosen on seed A (max accuracy s.t. wrong<=3%, normal FP<=5%); below -> no_fault_detected (nothing >= high) or insufficient_evidence (something >= high)
   min_top_coverage: 0.50       # coverage(top) below -> insufficient_evidence (data missing); checked first
   min_margin: 0.15             # below (after prediction rounds) -> probable
 

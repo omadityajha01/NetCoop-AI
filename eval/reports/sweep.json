@@ -1,0 +1,123 @@
+{
+  "seed_a": 1000,
+  "seed_b": 5000,
+  "n": 280,
+  "chosen": 0.55,
+  "rule": "max accuracy on A with wrong<=0.03 and normal FP<=0.05",
+  "A": [
+    {
+      "min_top_score": 0.4,
+      "accuracy": 0.836,
+      "wrong_diagnosis_rate": 0.079,
+      "false_positive_rate_normal": 0.225,
+      "precision_when_diagnosed": 0.906,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.45,
+      "accuracy": 0.811,
+      "wrong_diagnosis_rate": 0.054,
+      "false_positive_rate_normal": 0.1,
+      "precision_when_diagnosed": 0.932,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.5,
+      "accuracy": 0.786,
+      "wrong_diagnosis_rate": 0.032,
+      "false_positive_rate_normal": 0.05,
+      "precision_when_diagnosed": 0.956,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.55,
+      "accuracy": 0.743,
+      "wrong_diagnosis_rate": 0.025,
+      "false_positive_rate_normal": 0.025,
+      "precision_when_diagnosed": 0.964,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.6,
+      "accuracy": 0.714,
+      "wrong_diagnosis_rate": 0.007,
+      "false_positive_rate_normal": 0.0,
+      "precision_when_diagnosed": 0.989,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.65,
+      "accuracy": 0.7,
+      "wrong_diagnosis_rate": 0.007,
+      "false_positive_rate_normal": 0.0,
+      "precision_when_diagnosed": 0.989,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.7,
+      "accuracy": 0.618,
+      "wrong_diagnosis_rate": 0.007,
+      "false_positive_rate_normal": 0.0,
+      "precision_when_diagnosed": 0.987,
+      "fault_to_no_fault_rate": 0.013
+    }
+  ],
+  "B": [
+    {
+      "min_top_score": 0.4,
+      "accuracy": 0.875,
+      "wrong_diagnosis_rate": 0.039,
+      "false_positive_rate_normal": 0.15,
+      "precision_when_diagnosed": 0.952,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.45,
+      "accuracy": 0.846,
+      "wrong_diagnosis_rate": 0.021,
+      "false_positive_rate_normal": 0.05,
+      "precision_when_diagnosed": 0.972,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.5,
+      "accuracy": 0.821,
+      "wrong_diagnosis_rate": 0.014,
+      "false_positive_rate_normal": 0.025,
+      "precision_when_diagnosed": 0.981,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.55,
+      "accuracy": 0.796,
+      "wrong_diagnosis_rate": 0.011,
+      "false_positive_rate_normal": 0.0,
+      "precision_when_diagnosed": 0.985,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.6,
+      "accuracy": 0.746,
+      "wrong_diagnosis_rate": 0.004,
+      "false_positive_rate_normal": 0.0,
+      "precision_when_diagnosed": 0.995,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.65,
+      "accuracy": 0.729,
+      "wrong_diagnosis_rate": 0.004,
+      "false_positive_rate_normal": 0.0,
+      "precision_when_diagnosed": 0.994,
+      "fault_to_no_fault_rate": 0.013
+    },
+    {
+      "min_top_score": 0.7,
+      "accuracy": 0.643,
+      "wrong_diagnosis_rate": 0.004,
+      "false_positive_rate_normal": 0.0,
+      "precision_when_diagnosed": 0.994,
+      "fault_to_no_fault_rate": 0.013
+    }
+  ]
+}

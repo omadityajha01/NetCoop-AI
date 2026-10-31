@@ -71,6 +71,18 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   unchanged. Stability before the demo.
 - Tests: `tests/integration/test_organizer_data.py`.
 
+## T3: operating point
+
+- Sweep `min_top_score` 0.40–0.70 (step 0.05) on seed range A, n = 280. Rule: highest accuracy with wrong-diagnosis
+  ≤ 3% and normal FP ≤ 5%. Eligible on A: 0.55 (acc 0.743), 0.60, 0.65, 0.70. 0.50 is excluded (wrong 3.2%).
+  **Chosen: 0.55.**
+- Held-out B at 0.55: accuracy 0.796, wrong 1.1%, normal FP 0.0, committed precision 98.5%, fault → no_fault 1.3%
+  (T1 guards still hold).
+- Trade-off accepted: overall B accuracy 0.846 → 0.796 (more abstentions) in exchange for wrong 2.1% → 1.1% and
+  normal FP 5% → 0%.
+- Chart: `docs/operating_point.png` (matplotlib, optional extra `[eval]`); data in `eval/reports/sweep.json`.
+- The demo scenarios are unchanged at 0.55.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
@@ -78,4 +90,3 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - [ ] Dashboard (cut line #1, not started; the API is ready: `/incidents`, `/incidents/{id}/report|events|report.csv`).
 - [ ] Congestion remediation *simulation* (stretch, G2).
 - [ ] MCP server exposing `diagnose` / `get_report` (stretch, D6).
-- [ ] Optional: make `min_top_score = 0.60` a selectable "strict" operating point (FP 0 on normal in tuning).

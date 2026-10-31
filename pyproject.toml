@@ -23,6 +23,10 @@ dev = [
   "ruff>=0.5",
 ]
 
+eval = [
+  "matplotlib>=3.8",     # operating-point chart only (docs/operating_point.png)
+]
+
 [project.scripts]
 netcoop = "netcoop.cli:main"
 
