@@ -1,0 +1,80 @@
+# Fault signatures. Every fault_type here is a member of the diagnosis enum.
+#   entity      entity types the hypothesis may attach to (localization picks one)
+#   expects     signals that SUPPORT the fault: op + threshold ref (warn|high|critical) + weight
+#   contradicts signals that, if present, argue AGAINST the fault
+# Signals are matched on the hypothesis entity and its topology neighbours (link <-> endpoints, AP <-> uplink).
+# Weights are INITIAL values; tuned on eval seed range A only.
+
+congestion:
+  label: "Likely link congestion causing egress queue drops"
+  entity: [link, device]
+  expects:
+    link_utilization_pct: {op: ">=", ref: high, weight: 3}
+    queue_drops_count:    {op: ">=", ref: high, weight: 3}
+    latency_ms:           {op: ">=", ref: warn, weight: 2}
+    packet_loss_pct:      {op: ">=", ref: warn, weight: 1}
+  contradicts:
+    interface_errors_count: {op: ">=", ref: high, weight: 2}
+    cpu_pct:                {op: ">=", ref: high, weight: 1}
+  playbook: congestion
+
+interface_fault:
+  label: "Likely physical interface fault causing errors and packet loss"
+  entity: [link, device]
+  expects:
+    interface_errors_count: {op: ">=", ref: high, weight: 3}
+    crc_errors_count:       {op: ">=", ref: warn, weight: 2}
+    link_flaps_count:       {op: ">=", ref: warn, weight: 2}
+    packet_loss_pct:        {op: ">=", ref: warn, weight: 2}
+  contradicts:
+    link_utilization_pct: {op: ">=", ref: high, weight: 2}
+  playbook: interface_fault
+
+device_overload:
+  label: "Likely device overload (CPU exhaustion) causing drops across interfaces"
+  entity: [device]
+  expects:
+    cpu_pct:           {op: ">=", ref: high, weight: 3}
+    queue_drops_count: {op: ">=", ref: high, weight: 2}
+    memory_pct:        {op: ">=", ref: warn, weight: 1}
+    latency_ms:        {op: ">=", ref: warn, weight: 1}
+  contradicts:
+    link_utilization_pct:   {op: ">=", ref: high, weight: 2}
+    interface_errors_count: {op: ">=", ref: high, weight: 1}
+  playbook: device_overload
+
+weak_wifi:
+  label: "Likely weak Wi-Fi signal at the access point causing retransmissions"
+  entity: [ap]
+  expects:
+    rssi_dbm:           {op: "<=", ref: high, weight: 3}
+    snr_db:             {op: "<=", ref: high, weight: 2}
+    retransmission_pct: {op: ">=", ref: high, weight: 3}
+    latency_ms:         {op: ">=", ref: warn, weight: 1}
+    packet_loss_pct:    {op: ">=", ref: warn, weight: 1}
+  contradicts:
+    link_utilization_pct: {op: ">=", ref: high, weight: 2}
+    client_count:         {op: ">=", ref: high, weight: 1}
+  playbook: weak_wifi
+
+dns_failure:
+  label: "Likely DNS service failure causing name-resolution errors"
+  entity: [service]
+  service_kind: dns
+  expects:
+    dns_failure_pct: {op: ">=", ref: high, weight: 4}
+  contradicts:
+    latency_ms:      {op: ">=", ref: high, weight: 2}
+    packet_loss_pct: {op: ">=", ref: high, weight: 2}
+  playbook: dns_failure
+
+dhcp_failure:
+  label: "Likely DHCP service failure preventing new address leases"
+  entity: [service]
+  service_kind: dhcp
+  expects:
+    dhcp_failure_pct: {op: ">=", ref: high, weight: 4}
+  contradicts:
+    latency_ms:      {op: ">=", ref: high, weight: 2}
+    packet_loss_pct: {op: ">=", ref: high, weight: 2}
+  playbook: dhcp_failure

@@ -1,0 +1,40 @@
+# Hard rules. Code-enforced by netcoop/policy/checker.py, never retrieved or LLM-interpreted.
+# Times are campus local time.
+timezone_offset: "+05:30"   # IST
+
+rules:
+  - id: R1
+    type: forbidden_action
+    action: reboot
+    target_role: core_switch
+    window: "09:00-17:00"
+    weekdays: [mon, tue, wed, thu, fri]
+    reason: "Class hours"
+
+  - id: R2
+    type: threshold_override
+    metric: latency_ms
+    segment: lecture_halls
+    warn: 30
+    high: 50
+    reason: "Lecture-hall streaming SLA"
+
+  - id: R3
+    type: forbidden_action
+    action: [config_change, reboot, restart_service]
+    target_role: core_router
+    reason: "Core router changes require change-advisory-board approval"
+
+  - id: R4
+    type: forbidden_action
+    action: [reboot, restart_service, move_port, replace_optic]
+    target_role: any
+    dates: ["2026-11-16", "2026-11-28"]
+    reason: "End-semester examination period: no disruptive changes"
+
+  - id: R5
+    type: forbidden_action
+    action: [restart_service, failover]
+    target_role: service
+    window: "08:00-22:00"
+    reason: "Campus services may only be restarted outside 08:00-22:00 unless the duty officer approves"

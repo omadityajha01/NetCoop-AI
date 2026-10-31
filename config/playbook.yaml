@@ -1,0 +1,62 @@
+# fault_type -> checks -> actions. Every recommended action comes from here and passes policy/checker.py (G3).
+# Placeholders: {entity} hypothesis entity id, {device} primary device for the hypothesis, {segment} its segment.
+# `action` is the verb policies match on; `target` names which placeholder is the target device.
+# Actions are recommendations for human review. NetCoop never executes them (G2).
+
+congestion:
+  checks:
+    - "Compare egress utilization on {entity} with its upstream link"
+  actions:
+    - {id: CONG-1, action: inspect,     target: device, text: "Inspect upstream and egress link utilization on {entity}"}
+    - {id: CONG-2, action: review_qos,  target: device, text: "Review queue configuration and traffic distribution on {device}"}
+    - {id: CONG-3, action: rate_limit,  target: device, text: "Apply temporary rate limiting to top talkers behind {device}"}
+    - {id: CONG-4, action: reboot,      target: device, text: "Reboot {device} if egress queues remain stuck after traffic is reduced"}
+
+interface_fault:
+  checks:
+    - "Check CRC/interface error counters on both ends of {entity}"
+  actions:
+    - {id: IF-1, action: inspect,         target: device, text: "Inspect cabling, optics and port counters on {entity}"}
+    - {id: IF-2, action: move_port,       target: device, text: "Move the uplink on {device} to a spare port and monitor errors"}
+    - {id: IF-3, action: replace_optic,   target: device, text: "Replace the transceiver/cable on {entity} if errors persist"}
+    - {id: IF-4, action: reboot,          target: device, text: "Reboot {device} only if the port fails to recover"}
+
+device_overload:
+  checks:
+    - "Identify the processes consuming CPU on {device}"
+  actions:
+    - {id: OVL-1, action: inspect,        target: device, text: "Inspect CPU-bound processes and control-plane traffic on {device}"}
+    - {id: OVL-2, action: config_change,  target: device, text: "Apply control-plane policing on {device}"}
+    - {id: OVL-3, action: reboot,         target: device, text: "Reboot {device} during a maintenance window"}
+
+weak_wifi:
+  checks:
+    - "Survey RF signal and channel utilization around {entity}"
+  actions:
+    - {id: WIFI-1, action: inspect,       target: device, text: "Run an RF survey around {entity} and check for interference"}
+    - {id: WIFI-2, action: config_change, target: device, text: "Adjust transmit power and channel on {entity}"}
+    - {id: WIFI-3, action: relocate,      target: device, text: "Consider relocating {entity} or adding an access point to {segment}"}
+
+dns_failure:
+  checks:
+    - "Query {entity} directly from a wired host"
+  actions:
+    - {id: DNS-1, action: inspect,         target: device, text: "Check resolver health, upstream forwarders and logs on {entity}"}
+    - {id: DNS-2, action: failover,        target: device, text: "Point DHCP-provided resolvers to the secondary DNS while {entity} is investigated"}
+    - {id: DNS-3, action: restart_service, target: device, text: "Restart the DNS service on {entity}"}
+
+dhcp_failure:
+  checks:
+    - "Check address-pool utilization and relay configuration for {entity}"
+  actions:
+    - {id: DHCP-1, action: inspect,         target: device, text: "Inspect lease pool exhaustion and relay (ip helper) settings for {entity}"}
+    - {id: DHCP-2, action: config_change,   target: device, text: "Extend the address pool or shorten lease time on {entity}"}
+    - {id: DHCP-3, action: restart_service, target: device, text: "Restart the DHCP service on {entity}"}
+
+_insufficient_evidence:
+  actions:
+    - {id: GEN-1, action: collect, target: none, text: "Collect the missing signals listed in this report and re-run the diagnosis"}
+
+_no_fault:
+  actions:
+    - {id: GEN-2, action: monitor, target: none, text: "No action required; continue monitoring"}

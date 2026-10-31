@@ -1,0 +1,574 @@
+{
+ "schema_version": "1.0",
+ "incident": {
+  "time": "2026-10-30T18:00:00Z",
+  "complaint": "New laptops cannot get an IP address on campus Wi-Fi.",
+  "title": "dhcp_failure @ DHCP_01"
+ },
+ "records": [
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "device_id": "CORE_RTR_01",
+   "metrics": {
+    "cpu_utilization_pct": 33.55,
+    "memory_pct": 54.63,
+    "packet_loss_pct": 0.02,
+    "latency_ms": 17.09,
+    "jitter_ms": 4.22,
+    "queue_drops": 1,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "device_id": "DC_SW_01",
+   "metrics": {
+    "cpu_utilization_pct": 20.92,
+    "memory_pct": 52.21,
+    "packet_loss_pct": 0.08,
+    "latency_ms": 8.34,
+    "jitter_ms": 2.87,
+    "queue_drops": 5,
+    "interface_errors": 1,
+    "crc_errors": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "device_id": "SW_CAMPUS_1",
+   "metrics": {
+    "cpu_utilization_pct": 14.53,
+    "memory_pct": 40.94,
+    "packet_loss_pct": 0.11,
+    "latency_ms": 9.32,
+    "jitter_ms": 2.32,
+    "queue_drops": 1,
+    "interface_errors": 0,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "device_id": "SW_CAMPUS_9",
+   "metrics": {
+    "cpu_utilization_pct": 12.13,
+    "memory_pct": 32.79,
+    "packet_loss_pct": 0.1,
+    "latency_ms": 15.88,
+    "jitter_ms": 4.16,
+    "queue_drops": 2,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "link_id": "L_DC_UPLINK",
+   "metrics": {
+    "link_utilization_pct": 38.28,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "link_id": "L_SW_CAMPUS_1",
+   "metrics": {
+    "link_utilization_pct": 34.9,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "link_id": "L_SW_CAMPUS_9",
+   "metrics": {
+    "link_utilization_pct": 32.74,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "service": "DNS_01",
+   "metrics": {
+    "dns_failure_pct": 0.12
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:35:00Z",
+   "service": "DHCP_01",
+   "metrics": {
+    "dhcp_failure_pct": 28.25
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "device_id": "CORE_RTR_01",
+   "metrics": {
+    "cpu_utilization_pct": 16.12,
+    "memory_pct": 39.64,
+    "packet_loss_pct": 0.27,
+    "latency_ms": 8.2,
+    "jitter_ms": 1.52,
+    "queue_drops": 2,
+    "interface_errors": 0,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "device_id": "DC_SW_01",
+   "metrics": {
+    "cpu_utilization_pct": 23.75,
+    "memory_pct": 43.59,
+    "packet_loss_pct": 0.12,
+    "latency_ms": 14.79,
+    "jitter_ms": 1.96,
+    "queue_drops": 4,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "device_id": "SW_CAMPUS_1",
+   "metrics": {
+    "cpu_utilization_pct": 28.81,
+    "memory_pct": 41.6,
+    "packet_loss_pct": 0.29,
+    "latency_ms": 15.71,
+    "jitter_ms": 1.65,
+    "queue_drops": 0,
+    "interface_errors": 2,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "device_id": "SW_CAMPUS_9",
+   "metrics": {
+    "cpu_utilization_pct": 23.44,
+    "memory_pct": 31.98,
+    "packet_loss_pct": 0.03,
+    "latency_ms": 13.08,
+    "jitter_ms": 3.87,
+    "queue_drops": 3,
+    "interface_errors": 2,
+    "crc_errors": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "link_id": "L_DC_UPLINK",
+   "metrics": {
+    "link_utilization_pct": 36.49,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "link_id": "L_SW_CAMPUS_1",
+   "metrics": {
+    "link_utilization_pct": 44.7,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "link_id": "L_SW_CAMPUS_9",
+   "metrics": {
+    "link_utilization_pct": 26.48,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "service": "DNS_01",
+   "metrics": {
+    "dns_failure_pct": 0.67
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:40:00Z",
+   "service": "DHCP_01",
+   "metrics": {
+    "dhcp_failure_pct": 22.43
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "device_id": "CORE_RTR_01",
+   "metrics": {
+    "cpu_utilization_pct": 15.64,
+    "memory_pct": 38.81,
+    "packet_loss_pct": 0.24,
+    "latency_ms": 14.57,
+    "jitter_ms": 1.27,
+    "queue_drops": 5,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "device_id": "DC_SW_01",
+   "metrics": {
+    "cpu_utilization_pct": 32.76,
+    "memory_pct": 59.8,
+    "packet_loss_pct": 0.24,
+    "latency_ms": 5.04,
+    "jitter_ms": 3.06,
+    "queue_drops": 1,
+    "interface_errors": 0,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "device_id": "SW_CAMPUS_1",
+   "metrics": {
+    "cpu_utilization_pct": 16.84,
+    "memory_pct": 31.25,
+    "packet_loss_pct": 0.3,
+    "latency_ms": 12.31,
+    "jitter_ms": 2.15,
+    "queue_drops": 1,
+    "interface_errors": 0,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "device_id": "SW_CAMPUS_9",
+   "metrics": {
+    "cpu_utilization_pct": 10.12,
+    "memory_pct": 34.74,
+    "packet_loss_pct": 0.2,
+    "latency_ms": 12.92,
+    "jitter_ms": 3.83,
+    "queue_drops": 2,
+    "interface_errors": 0,
+    "crc_errors": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "link_id": "L_DC_UPLINK",
+   "metrics": {
+    "link_utilization_pct": 44.81,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "link_id": "L_SW_CAMPUS_1",
+   "metrics": {
+    "link_utilization_pct": 36.06,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "link_id": "L_SW_CAMPUS_9",
+   "metrics": {
+    "link_utilization_pct": 42.91,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "service": "DNS_01",
+   "metrics": {
+    "dns_failure_pct": 0.03
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:45:00Z",
+   "service": "DHCP_01",
+   "metrics": {
+    "dhcp_failure_pct": 52.48
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "device_id": "CORE_RTR_01",
+   "metrics": {
+    "cpu_utilization_pct": 23.87,
+    "memory_pct": 48.32,
+    "packet_loss_pct": 0.12,
+    "latency_ms": 5.75,
+    "jitter_ms": 2.28,
+    "queue_drops": 1,
+    "interface_errors": 2,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "device_id": "DC_SW_01",
+   "metrics": {
+    "cpu_utilization_pct": 15.9,
+    "memory_pct": 52.8,
+    "packet_loss_pct": 0.16,
+    "latency_ms": 10.84,
+    "jitter_ms": 3.46,
+    "queue_drops": 3,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "device_id": "SW_CAMPUS_1",
+   "metrics": {
+    "cpu_utilization_pct": 11.42,
+    "memory_pct": 55.81,
+    "packet_loss_pct": 0.09,
+    "latency_ms": 18.38,
+    "jitter_ms": 2.91,
+    "queue_drops": 3,
+    "interface_errors": 1,
+    "crc_errors": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "device_id": "SW_CAMPUS_9",
+   "metrics": {
+    "cpu_utilization_pct": 29.57,
+    "memory_pct": 58.63,
+    "packet_loss_pct": 0.23,
+    "latency_ms": 14.96,
+    "jitter_ms": 4.71,
+    "queue_drops": 1,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "link_id": "L_DC_UPLINK",
+   "metrics": {
+    "link_utilization_pct": 35.84,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "link_id": "L_SW_CAMPUS_1",
+   "metrics": {
+    "link_utilization_pct": 28.93,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "link_id": "L_SW_CAMPUS_9",
+   "metrics": {
+    "link_utilization_pct": 30.96,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "service": "DNS_01",
+   "metrics": {
+    "dns_failure_pct": 0.07
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:50:00Z",
+   "service": "DHCP_01",
+   "metrics": {
+    "dhcp_failure_pct": 43.9
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "device_id": "CORE_RTR_01",
+   "metrics": {
+    "cpu_utilization_pct": 24.06,
+    "memory_pct": 56.56,
+    "packet_loss_pct": 0.13,
+    "latency_ms": 5.42,
+    "jitter_ms": 3.4,
+    "queue_drops": 0,
+    "interface_errors": 2,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "device_id": "DC_SW_01",
+   "metrics": {
+    "cpu_utilization_pct": 21.69,
+    "memory_pct": 32.67,
+    "packet_loss_pct": 0.18,
+    "latency_ms": 11.0,
+    "jitter_ms": 4.24,
+    "queue_drops": 0,
+    "interface_errors": 0,
+    "crc_errors": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "device_id": "SW_CAMPUS_1",
+   "metrics": {
+    "cpu_utilization_pct": 31.36,
+    "memory_pct": 59.33,
+    "packet_loss_pct": 0.18,
+    "latency_ms": 16.64,
+    "jitter_ms": 1.06,
+    "queue_drops": 2,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "device_id": "SW_CAMPUS_9",
+   "metrics": {
+    "cpu_utilization_pct": 32.69,
+    "memory_pct": 31.6,
+    "packet_loss_pct": 0.3,
+    "latency_ms": 19.57,
+    "jitter_ms": 1.36,
+    "queue_drops": 3,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "link_id": "L_DC_UPLINK",
+   "metrics": {
+    "link_utilization_pct": 33.73,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "link_id": "L_SW_CAMPUS_1",
+   "metrics": {
+    "link_utilization_pct": 33.68,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "link_id": "L_SW_CAMPUS_9",
+   "metrics": {
+    "link_utilization_pct": 43.02,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "service": "DNS_01",
+   "metrics": {
+    "dns_failure_pct": 0.24
+   }
+  },
+  {
+   "timestamp": "2026-10-30T17:55:00Z",
+   "service": "DHCP_01",
+   "metrics": {
+    "dhcp_failure_pct": 65.83
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "device_id": "CORE_RTR_01",
+   "metrics": {
+    "cpu_utilization_pct": 30.11,
+    "memory_pct": 45.24,
+    "packet_loss_pct": 0.19,
+    "latency_ms": 13.48,
+    "jitter_ms": 1.03,
+    "queue_drops": 5,
+    "interface_errors": 0,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "device_id": "DC_SW_01",
+   "metrics": {
+    "cpu_utilization_pct": 21.77,
+    "memory_pct": 55.48,
+    "packet_loss_pct": 0.19,
+    "latency_ms": 5.52,
+    "jitter_ms": 1.46,
+    "queue_drops": 5,
+    "interface_errors": 1,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "device_id": "SW_CAMPUS_1",
+   "metrics": {
+    "cpu_utilization_pct": 17.73,
+    "memory_pct": 57.66,
+    "packet_loss_pct": 0.01,
+    "latency_ms": 5.3,
+    "jitter_ms": 4.44,
+    "queue_drops": 4,
+    "interface_errors": 0,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "device_id": "SW_CAMPUS_9",
+   "metrics": {
+    "cpu_utilization_pct": 18.62,
+    "memory_pct": 41.65,
+    "packet_loss_pct": 0.03,
+    "latency_ms": 6.26,
+    "jitter_ms": 4.05,
+    "queue_drops": 5,
+    "interface_errors": 2,
+    "crc_errors": 1
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "link_id": "L_DC_UPLINK",
+   "metrics": {
+    "link_utilization_pct": 33.08,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "link_id": "L_SW_CAMPUS_1",
+   "metrics": {
+    "link_utilization_pct": 40.11,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "link_id": "L_SW_CAMPUS_9",
+   "metrics": {
+    "link_utilization_pct": 24.79,
+    "link_flaps": 0
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "service": "DNS_01",
+   "metrics": {
+    "dns_failure_pct": 0.11
+   }
+  },
+  {
+   "timestamp": "2026-10-30T18:00:00Z",
+   "service": "DHCP_01",
+   "metrics": {
+    "dhcp_failure_pct": 64.19
+   }
+  }
+ ]
+}

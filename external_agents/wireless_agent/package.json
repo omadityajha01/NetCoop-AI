@@ -1,0 +1,11 @@
+{
+  "name": "netcoop-wireless-agent",
+  "version": "0.9.3",
+  "description": "External Wi-Fi telemetry agent for NetCoop. Speaks NMP dialect v0.9 on purpose.",
+  "main": "server.js",
+  "private": true,
+  "license": "MIT",
+  "engines": { "node": ">=18" },
+  "scripts": { "start": "node server.js" },
+  "dependencies": {}
+}

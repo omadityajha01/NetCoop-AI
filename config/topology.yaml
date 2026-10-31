@@ -1,0 +1,42 @@
+# Synthetic IIT Bhubaneswar campus topology (NetCoop-defined; the organizer generator has no topology).
+# Each device/AP declares its `upstream` and the `uplink` link id; links are derived from these.
+# Aliases are matched case- and separator-insensitively. IPs are aliases too.
+
+segments: [datacenter, hostel, departments, lecture_halls, campus]
+
+devices:
+  CORE_RTR_01:       {role: core_router,         segment: datacenter,    ip: 10.0.0.1,  aliases: [core-router, core-rtr]}
+  DC_SW_01:          {role: distribution_switch, segment: datacenter,    ip: 10.0.1.1,  upstream: CORE_RTR_01, uplink: L_DC_UPLINK}
+  HOSTEL_CORE_SW_01: {role: core_switch,         segment: hostel,        ip: 10.10.0.1, upstream: CORE_RTR_01, uplink: L_HOSTEL_UPLINK, aliases: [hostel-core, hcs1]}
+  HOSTEL_ACC_SW_01:  {role: access_switch,       segment: hostel,        ip: 10.10.1.1, upstream: HOSTEL_CORE_SW_01, uplink: L_HOSTEL_ACC_01}
+  HOSTEL_ACC_SW_02:  {role: access_switch,       segment: hostel,        ip: 10.10.1.2, upstream: HOSTEL_CORE_SW_01, uplink: L_HOSTEL_ACC_02}
+  DEPT_CORE_SW_01:   {role: core_switch,         segment: departments,   ip: 10.20.0.1, upstream: CORE_RTR_01, uplink: L_DEPT_UPLINK, aliases: [dept-core]}
+  DEPT_ACC_SW_01:    {role: access_switch,       segment: departments,   ip: 10.20.1.1, upstream: DEPT_CORE_SW_01, uplink: L_DEPT_ACC_01}
+  DEPT_ACC_SW_02:    {role: access_switch,       segment: departments,   ip: 10.20.1.2, upstream: DEPT_CORE_SW_01, uplink: L_DEPT_ACC_02}
+  LH_DIST_SW_01:     {role: distribution_switch, segment: lecture_halls, ip: 10.30.0.1, upstream: CORE_RTR_01, uplink: L_LH_UPLINK}
+  LH_ACC_SW_01:      {role: access_switch,       segment: lecture_halls, ip: 10.30.1.1, upstream: LH_DIST_SW_01, uplink: L_LH_ACC_01}
+  # Device IDs emitted by the organizer generator (SW_CAMPUS_1..10).
+  SW_CAMPUS_1:  {role: access_switch, segment: campus, ip: 10.40.0.1,  upstream: DEPT_CORE_SW_01, uplink: L_SW_CAMPUS_1}
+  SW_CAMPUS_2:  {role: access_switch, segment: campus, ip: 10.40.0.2,  upstream: DEPT_CORE_SW_01, uplink: L_SW_CAMPUS_2}
+  SW_CAMPUS_3:  {role: access_switch, segment: campus, ip: 10.40.0.3,  upstream: DEPT_CORE_SW_01, uplink: L_SW_CAMPUS_3}
+  SW_CAMPUS_4:  {role: access_switch, segment: campus, ip: 10.40.0.4,  upstream: DEPT_CORE_SW_01, uplink: L_SW_CAMPUS_4}
+  SW_CAMPUS_5:  {role: access_switch, segment: campus, ip: 10.40.0.5,  upstream: DEPT_CORE_SW_01, uplink: L_SW_CAMPUS_5}
+  SW_CAMPUS_6:  {role: access_switch, segment: campus, ip: 10.40.0.6,  upstream: LH_DIST_SW_01,   uplink: L_SW_CAMPUS_6}
+  SW_CAMPUS_7:  {role: access_switch, segment: campus, ip: 10.40.0.7,  upstream: LH_DIST_SW_01,   uplink: L_SW_CAMPUS_7}
+  SW_CAMPUS_8:  {role: access_switch, segment: campus, ip: 10.40.0.8,  upstream: LH_DIST_SW_01,   uplink: L_SW_CAMPUS_8}
+  SW_CAMPUS_9:  {role: access_switch, segment: campus, ip: 10.40.0.9,  upstream: LH_DIST_SW_01,   uplink: L_SW_CAMPUS_9}
+  SW_CAMPUS_10: {role: access_switch, segment: campus, ip: 10.40.0.10, upstream: LH_DIST_SW_01,   uplink: L_SW_CAMPUS_10}
+
+aps:
+  AP_H1:  {segment: hostel,        ip: 10.10.2.1, upstream: HOSTEL_ACC_SW_01, uplink: L_AP_H1}
+  AP_H2:  {segment: hostel,        ip: 10.10.2.2, upstream: HOSTEL_ACC_SW_01, uplink: L_AP_H2}
+  AP_H3:  {segment: hostel,        ip: 10.10.2.3, upstream: HOSTEL_ACC_SW_02, uplink: L_AP_H3}
+  AP_LH1: {segment: lecture_halls, ip: 10.30.2.1, upstream: LH_ACC_SW_01,     uplink: L_AP_LH1}
+
+services:
+  DNS_01:  {kind: dns,  segment: datacenter, ip: 10.0.1.53, attached_to: DC_SW_01, aliases: [dns, resolver, dns-primary]}
+  DHCP_01: {kind: dhcp, segment: datacenter, ip: 10.0.1.67, attached_to: DC_SW_01, aliases: [dhcp, dhcp-server]}
+
+# Extra link aliases (links are otherwise named by `uplink`)
+link_aliases:
+  L_HOSTEL_UPLINK: [hostel-uplink, "HOSTEL_CORE_SW_01-CORE_RTR_01"]

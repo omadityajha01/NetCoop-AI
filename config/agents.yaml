@@ -1,0 +1,65 @@
+# Internal agents, tools, timeouts, external allowlist, source priority, run bounds.
+
+internal:
+  performance_agent:
+    module: netcoop.agents.performance
+    tools: [telemetry, topology]
+    timeout_s: 5
+    owns: [latency_ms, jitter_ms, packet_loss_pct, throughput_mbps, link_utilization_pct]
+  infrastructure_agent:
+    module: netcoop.agents.infrastructure
+    tools: [telemetry, topology]
+    timeout_s: 5
+    owns: [device_up, cpu_pct, memory_pct, interface_errors_count, crc_errors_count, link_flaps_count, queue_drops_count]
+  connectivity_agent:
+    module: netcoop.agents.connectivity
+    tools: [telemetry, topology]
+    timeout_s: 5
+    owns: [dns_failure_pct, dhcp_failure_pct]
+  correlation_agent:
+    module: netcoop.agents.correlation
+    tools: [findings, topology]
+    timeout_s: 5
+    owns: []
+  reporting_agent:
+    module: netcoop.agents.reporting
+    tools: [findings, topology]
+    timeout_s: 5
+    owns: []
+
+analysis_agents: [performance_agent, infrastructure_agent, connectivity_agent]
+
+# External agents: discovery ONLY from this list (never from user input, incident data or agent output).
+external:
+  - agent_id: wireless_agent
+    base_url: "http://127.0.0.1:8765"
+    timeout_s: 10
+    max_message_bytes: 262144      # 256 KB
+    rate_limit_per_s: 20
+    # A2A skill id -> NMP capabilities
+    skill_map:
+      wifi-rf-telemetry: ["metric:rssi_dbm", "metric:snr_db", "metric:retransmission_pct", "metric:client_count"]
+    owns: [rssi_dbm, snr_db, retransmission_pct, client_count]
+
+discovery:
+  card_path: "/.well-known/agent-card.json"
+  probe_timeout_s: 1.5
+
+# C1 tie-break after freshness and sample_count. Earlier = preferred.
+source_priority: [infrastructure_agent, performance_agent, connectivity_agent, wireless_agent, snmp, netflow, probe, syslog, unknown]
+
+retries: 1
+
+data:
+  incident_window_s: 1800          # analysis window ends at incident time
+  expected_sample_interval_s: 300  # completeness = samples / (window / interval)
+  staleness_threshold_s: 900       # data older than this (relative to window end) is flagged stale
+  future_tolerance_s: 300          # timestamps > 5 min after incident time are rejected
+  max_upload_bytes: 10485760       # 10 MB
+  max_records: 200000
+
+rounds:
+  max_rounds: 2
+  max_predictions_per_round: 3
+  max_evidence_requests_per_round: 6
+  max_bus_messages: 2000           # hard bound against loops

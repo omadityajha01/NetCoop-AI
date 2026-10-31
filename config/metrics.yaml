@@ -1,0 +1,275 @@
+# NetCoop metric registry: the single source for names, units, meanings, aliases and thresholds.
+# README protocol tables are generated from this file (`make docs`).
+#
+# Per metric:
+#   unit               canonical unit after normalization
+#   label              short human label used in interpretations ("High <label>")
+#   meaning            what the number is
+#   range              plausible [min, max] in canonical unit; outside -> quarantine
+#   aggregation        p95 | mean | max | count | rate  (how a window of samples becomes one finding)
+#   direction          higher_is_worse | lower_is_worse
+#   entity_types       entity types this metric may be reported for
+#   aliases            field names whose name implies the canonical unit
+#   ambiguous_aliases  field names that do NOT imply a unit -> need explicit unit or batch inference, else quarantine
+#   unit_aliases       unit token -> multiplier to canonical unit
+#   fraction_inference if true and a batch has no unit and every value is in [0,1], multiply by 100 (logged as inferred)
+#   thresholds         INITIAL values; tuned with `make eval` on seed range A. Context: default | wireless (entity type ap)
+
+latency_ms:
+  unit: ms
+  label: network latency
+  meaning: Round-trip time probe->entity, aggregated over the window
+  range: [0, 60000]
+  aggregation: p95
+  direction: higher_is_worse
+  entity_types: [device, link, ap]
+  aliases: [rtt_ms, delay_ms, ping_ms, latency_msec, avg_latency_ms]
+  ambiguous_aliases: [latency, rtt, delay, ping]
+  unit_aliases: {ms: 1, msec: 1, millisecond: 1, milliseconds: 1, s: 1000, sec: 1000, second: 1000, seconds: 1000, us: 0.001, usec: 0.001}
+  thresholds:
+    default:  {warn: 50, high: 150, critical: 500}
+    wireless: {warn: 80, high: 200, critical: 600}
+
+jitter_ms:
+  unit: ms
+  label: jitter
+  meaning: Variation in latency (mean absolute delta between consecutive probes)
+  range: [0, 60000]
+  aggregation: p95
+  direction: higher_is_worse
+  entity_types: [device, link, ap]
+  aliases: [jitter_msec, pdv_ms]
+  ambiguous_aliases: [jitter, pdv]
+  unit_aliases: {ms: 1, msec: 1, s: 1000, sec: 1000, us: 0.001}
+  thresholds:
+    default:  {warn: 15, high: 30, critical: 80}
+    wireless: {warn: 25, high: 50, critical: 100}
+
+packet_loss_pct:
+  unit: pct
+  label: packet loss
+  meaning: Share of probe packets lost in the window
+  range: [0, 100]
+  aggregation: mean
+  direction: higher_is_worse
+  entity_types: [device, link, ap]
+  aliases: [loss_pct, packet_loss_percent, pkt_loss_pct, packetloss_pct]
+  ambiguous_aliases: [packet_loss, loss, pkt_loss, packetloss]
+  unit_aliases: {pct: 1, "%": 1, percent: 1, fraction: 100, ratio: 100}
+  fraction_inference: false   # 0.5 % loss is legitimately in [0,1]; never infer
+  thresholds:
+    default:  {warn: 1, high: 3, critical: 10}
+    wireless: {warn: 2, high: 5, critical: 15}
+
+throughput_mbps:
+  unit: mbps
+  label: throughput
+  meaning: Measured goodput across the entity in the window
+  range: [0, 400000]
+  aggregation: mean
+  direction: lower_is_worse
+  entity_types: [device, link, ap]
+  aliases: [throughput_mbit, bandwidth_mbps, goodput_mbps]
+  ambiguous_aliases: [throughput, bandwidth, goodput]
+  unit_aliases: {mbps: 1, "mbit/s": 1, gbps: 1000, kbps: 0.001, bps: 0.000001}
+  thresholds:
+    default:  {warn: 20, high: 5, critical: 1}
+
+link_utilization_pct:
+  unit: pct
+  label: link utilization
+  meaning: Egress utilization of the link relative to its capacity
+  range: [0, 100]
+  aggregation: p95
+  direction: higher_is_worse
+  entity_types: [link, device]
+  aliases: [utilization_pct, util_pct, link_util_pct, bandwidth_utilization_pct, if_util_pct]
+  ambiguous_aliases: [utilization, util, link_util, link_utilization]
+  unit_aliases: {pct: 1, "%": 1, percent: 1, fraction: 100, ratio: 100}
+  fraction_inference: true
+  thresholds:
+    default: {warn: 70, high: 85, critical: 95}
+
+cpu_pct:
+  unit: pct
+  label: CPU utilization
+  meaning: Control-plane CPU utilization of the device
+  range: [0, 100]
+  aggregation: p95
+  direction: higher_is_worse
+  entity_types: [device, ap]
+  aliases: [cpu_utilization_pct, cpu_util_pct, cpu_usage_pct, cpu_percent]
+  ambiguous_aliases: [cpu, cpu_util, cpu_usage, cpu_load]
+  unit_aliases: {pct: 1, "%": 1, percent: 1, fraction: 100, ratio: 100}
+  fraction_inference: true
+  thresholds:
+    default: {warn: 70, high: 85, critical: 95}
+
+memory_pct:
+  unit: pct
+  label: memory utilization
+  meaning: Memory utilization of the device
+  range: [0, 100]
+  aggregation: p95
+  direction: higher_is_worse
+  entity_types: [device, ap]
+  aliases: [memory_utilization_pct, mem_pct, mem_util_pct, memory_usage_pct]
+  ambiguous_aliases: [memory, mem, mem_usage]
+  unit_aliases: {pct: 1, "%": 1, percent: 1, fraction: 100, ratio: 100}
+  fraction_inference: true
+  thresholds:
+    default: {warn: 75, high: 90, critical: 97}
+
+queue_drops_count:
+  unit: count
+  label: egress queue drops
+  meaning: Packets dropped from egress queues per sample interval
+  range: [0, 100000000]
+  aggregation: max
+  direction: higher_is_worse
+  entity_types: [device, link]
+  aliases: [queue_drops, egress_drops, egress_queue_drops, output_drops, qdrops]
+  unit_aliases: {count: 1, packets: 1, pkts: 1}
+  thresholds:
+    default: {warn: 50, high: 100, critical: 1000}
+
+interface_errors_count:
+  unit: count
+  label: interface error count
+  meaning: Input+output interface errors per sample interval
+  range: [0, 100000000]
+  aggregation: max
+  direction: higher_is_worse
+  entity_types: [device, link]
+  aliases: [interface_errors, if_errors, iface_errors, port_errors, input_errors]
+  unit_aliases: {count: 1}
+  thresholds:
+    default: {warn: 10, high: 50, critical: 200}
+
+crc_errors_count:
+  unit: count
+  label: CRC error count
+  meaning: Frames with bad CRC per sample interval
+  range: [0, 100000000]
+  aggregation: max
+  direction: higher_is_worse
+  entity_types: [device, link]
+  aliases: [crc_errors, crc, fcs_errors]
+  unit_aliases: {count: 1}
+  thresholds:
+    default: {warn: 5, high: 20, critical: 100}
+
+link_flaps_count:
+  unit: count
+  label: link flaps
+  meaning: Link up/down transitions per sample interval
+  range: [0, 100000]
+  aggregation: max
+  direction: higher_is_worse
+  entity_types: [device, link]
+  aliases: [link_flaps, flaps, flap_count, link_state_changes]
+  unit_aliases: {count: 1}
+  thresholds:
+    default: {warn: 1, high: 3, critical: 10}
+
+device_up:
+  unit: bool
+  label: device availability
+  meaning: 1 if the device reported up in the sample, 0 if down; window value is the mean
+  range: [0, 1]
+  aggregation: mean
+  direction: lower_is_worse
+  entity_types: [device, ap]
+  aliases: [device_status_up, is_up, up]
+  value_map: {up: 1, down: 0, "true": 1, "false": 0, reachable: 1, unreachable: 0}
+  unit_aliases: {bool: 1}
+  thresholds:
+    default: {warn: 0.99, high: 0.5, critical: 0.0}
+
+rssi_dbm:
+  unit: dbm
+  label: Wi-Fi signal strength (RSSI)
+  meaning: Received signal strength of clients at the AP
+  range: [-120, 0]
+  aggregation: p95
+  direction: lower_is_worse
+  entity_types: [ap]
+  aliases: [rssi, signal, signal_dbm, signal_strength_dbm]   # `signal` = wireless_agent dialect 0.9
+  unit_aliases: {dbm: 1}
+  thresholds:
+    wireless: {warn: -67, high: -75, critical: -85}
+    default:  {warn: -67, high: -75, critical: -85}
+
+snr_db:
+  unit: db
+  label: signal-to-noise ratio
+  meaning: Signal-to-noise ratio of clients at the AP
+  range: [-20, 90]
+  aggregation: p95
+  direction: lower_is_worse
+  entity_types: [ap]
+  aliases: [snr, noise_margin, noise_margin_db]               # `noise_margin` = dialect 0.9
+  unit_aliases: {db: 1}
+  thresholds:
+    wireless: {warn: 25, high: 15, critical: 8}
+    default:  {warn: 25, high: 15, critical: 8}
+
+retransmission_pct:
+  unit: pct
+  label: Wi-Fi retransmissions
+  meaning: Share of 802.11 frames retransmitted at the AP
+  range: [0, 100]
+  aggregation: mean
+  direction: higher_is_worse
+  entity_types: [ap]
+  aliases: [retransmissions_pct, retry_pct, retx_pct, retry_rate_pct]
+  ambiguous_aliases: [retx, retransmissions, retries, retry_rate]   # `retx` = dialect 0.9 (unit declared by upcaster)
+  unit_aliases: {pct: 1, "%": 1, percent: 1, fraction: 100, ratio: 100}
+  fraction_inference: true
+  thresholds:
+    wireless: {warn: 10, high: 20, critical: 40}
+    default:  {warn: 10, high: 20, critical: 40}
+
+client_count:
+  unit: count
+  label: associated clients
+  meaning: Number of clients associated to the AP
+  range: [0, 2000]
+  aggregation: max
+  direction: higher_is_worse
+  entity_types: [ap]
+  aliases: [clients, num_clients, associated_clients, sta_count]
+  unit_aliases: {count: 1}
+  thresholds:
+    wireless: {warn: 40, high: 60, critical: 90}
+    default:  {warn: 40, high: 60, critical: 90}
+
+dns_failure_pct:
+  unit: pct
+  label: DNS query failure rate
+  meaning: Share of DNS queries that failed or timed out (synthetic probe)
+  range: [0, 100]
+  aggregation: mean
+  direction: higher_is_worse
+  entity_types: [service]
+  aliases: [dns_fail_pct, dns_error_pct, dns_failure_rate_pct]
+  ambiguous_aliases: [dns_failure_rate, dns_failures]
+  unit_aliases: {pct: 1, "%": 1, percent: 1, fraction: 100, ratio: 100}
+  fraction_inference: false
+  thresholds:
+    default: {warn: 2, high: 10, critical: 40}
+
+dhcp_failure_pct:
+  unit: pct
+  label: DHCP lease failure rate
+  meaning: Share of DHCP DISCOVER/REQUEST exchanges that did not complete
+  range: [0, 100]
+  aggregation: mean
+  direction: higher_is_worse
+  entity_types: [service]
+  aliases: [dhcp_fail_pct, dhcp_error_pct, dhcp_failure_rate_pct]
+  ambiguous_aliases: [dhcp_failure_rate, dhcp_failures]
+  unit_aliases: {pct: 1, "%": 1, percent: 1, fraction: 100, ratio: 100}
+  fraction_inference: false
+  thresholds:
+    default: {warn: 2, high: 10, critical: 40}

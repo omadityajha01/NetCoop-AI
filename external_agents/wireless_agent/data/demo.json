@@ -1,0 +1,148 @@
+{
+ "observations": [
+  {
+   "ap": "ap-h1",
+   "signal": -48,
+   "noise_margin": 32,
+   "retx": 0.047,
+   "clients": 7,
+   "ts": 1793284500
+  },
+  {
+   "ap": "ap-h2",
+   "signal": -52,
+   "noise_margin": 38,
+   "retx": 0.025,
+   "clients": 5,
+   "ts": 1793284500
+  },
+  {
+   "ap": "ap-h3",
+   "signal": -82,
+   "noise_margin": 5,
+   "retx": 0.319,
+   "clients": 9,
+   "ts": 1793284500
+  },
+  {
+   "ap": "ap-h1",
+   "signal": -46,
+   "noise_margin": 33,
+   "retx": 0.053,
+   "clients": 30,
+   "ts": 1793284800
+  },
+  {
+   "ap": "ap-h2",
+   "signal": -45,
+   "noise_margin": 32,
+   "retx": 0.045,
+   "clients": 13,
+   "ts": 1793284800
+  },
+  {
+   "ap": "ap-h3",
+   "signal": -78,
+   "noise_margin": 13,
+   "retx": 0.317,
+   "clients": 29,
+   "ts": 1793284800
+  },
+  {
+   "ap": "ap-h1",
+   "signal": -62,
+   "noise_margin": 35,
+   "retx": 0.06,
+   "clients": 11,
+   "ts": 1793285100
+  },
+  {
+   "ap": "ap-h2",
+   "signal": -54,
+   "noise_margin": 29,
+   "retx": 0.054,
+   "clients": 28,
+   "ts": 1793285100
+  },
+  {
+   "ap": "ap-h3",
+   "signal": -85,
+   "noise_margin": 9,
+   "retx": 0.346,
+   "clients": 19,
+   "ts": 1793285100
+  },
+  {
+   "ap": "ap-h1",
+   "signal": -54,
+   "noise_margin": 31,
+   "retx": 0.046,
+   "clients": 5,
+   "ts": 1793285400
+  },
+  {
+   "ap": "ap-h2",
+   "signal": -59,
+   "noise_margin": 37,
+   "retx": 0.025,
+   "clients": 11,
+   "ts": 1793285400
+  },
+  {
+   "ap": "ap-h3",
+   "signal": -80,
+   "noise_margin": 13,
+   "retx": 0.292,
+   "clients": 26,
+   "ts": 1793285400
+  },
+  {
+   "ap": "ap-h1",
+   "signal": -57,
+   "noise_margin": 38,
+   "retx": 0.056,
+   "clients": 25,
+   "ts": 1793285700
+  },
+  {
+   "ap": "ap-h2",
+   "signal": -57,
+   "noise_margin": 36,
+   "retx": 0.019,
+   "clients": 6,
+   "ts": 1793285700
+  },
+  {
+   "ap": "ap-h3",
+   "signal": -79,
+   "noise_margin": 7,
+   "retx": 0.216,
+   "clients": 6,
+   "ts": 1793285700
+  },
+  {
+   "ap": "ap-h1",
+   "signal": -60,
+   "noise_margin": 39,
+   "retx": 0.053,
+   "clients": 21,
+   "ts": 1793286000
+  },
+  {
+   "ap": "ap-h2",
+   "signal": -47,
+   "noise_margin": 35,
+   "retx": 0.035,
+   "clients": 12,
+   "ts": 1793286000
+  },
+  {
+   "ap": "ap-h3",
+   "signal": -79,
+   "noise_margin": 5,
+   "retx": 0.208,
+   "clients": 24,
+   "ts": 1793286000
+  }
+ ]
+}

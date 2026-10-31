@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "netcoop"
+version = "1.0.0"
+description = "NetCoop AI: multi-agent network fault diagnosis with an interoperable message protocol (NMP)"
+requires-python = ">=3.11"
+readme = "README.md"
+dependencies = [
+  "pydantic>=2.6,<3",    # NMP models are the protocol source of truth; JSON Schema export
+  "pyyaml>=6",           # config/*.yaml (safe_load only)
+  "fastapi>=0.110",      # optional read-only API (D7)
+  "uvicorn>=0.29",       # serves the API
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8",
+  "hypothesis>=6",       # property tests: normalizer never crashes on random input
+  "httpx>=0.27",         # FastAPI TestClient
+  "ruff>=0.5",
+]
+
+[project.scripts]
+netcoop = "netcoop.cli:main"
+
+# A2A: we implement the A2A wire shapes (Agent Card at /.well-known/agent-card.json,
+# JSON-RPC 2.0 `message/send`, Message.parts[kind=data]) over stdlib HTTP. This is the
+# documented cut-line fallback (CLAUDE.md §8). We take no a2a-sdk dependency, so there is
+# nothing to pin yet; see TODO.md.
+
+[tool.setuptools.packages.find]
+include = ["netcoop*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"
+markers = [
+  "external: needs node to run the wireless_agent",
+  "conformance: conformance kit against AGENT_URL",
+]
+
+[tool.ruff]
+line-length = 110
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP"]
+ignore = ["E501"]
