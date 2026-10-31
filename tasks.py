@@ -1,6 +1,7 @@
 """Cross-platform task runner mirroring the Makefile (Windows has no make).
 
-    python tasks.py setup | test | demo | eval | fuzz | tune | conformance [URL] | schemas | docs | fixtures | lint | agent
+    python tasks.py setup | test | demo | eval | fuzz | tune | sweep | organizer | conformance [URL] | schemas | docs
+                    | fixtures | lint | agent
 """
 
 from __future__ import annotations
@@ -31,9 +32,13 @@ def main() -> int:
         return sh(PY, "-m", "eval.run_eval", "eval", "--n", n, "--seed-a", os.environ.get("SEED_A", "1000"),
                   "--seed-b", os.environ.get("SEED_B", "5000"))
     if t == "fuzz":
-        return sh(PY, "-m", "eval.run_eval", "fuzz", "--n", os.environ.get("N", "70"))
+        return sh(PY, "-m", "eval.run_eval", "fuzz", "--n", os.environ.get("FUZZ_N", "70"))
     if t == "tune":
         return sh(PY, "-m", "eval.run_eval", "tune", "--n", n)
+    if t == "sweep":
+        return sh(PY, "-m", "eval.run_eval", "sweep", "--n", n)
+    if t == "organizer":
+        return sh(PY, "-m", "eval.organizer_check", "--seeds", os.environ.get("SEEDS", "500"))
     if t == "conformance":
         return sh(PY, "-m", "conformance.kit", args[0] if args else os.environ.get("AGENT_URL", "http://127.0.0.1:8765"))
     if t == "schemas":

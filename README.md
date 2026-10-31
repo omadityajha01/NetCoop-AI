@@ -30,7 +30,7 @@ make demo               # all 7 scenarios end-to-end via the CLI, LLM off
 make test               # unit + integration + security + property, offline
 ```
 
-There is no `make` on Windows; every target also exists as `python tasks.py <target>` (`python tasks.py demo`).
+`tasks.py` is the single source of truth for every target. The Makefile is a thin wrapper for Linux/macOS, and on Windows you run `python tasks.py <target>`. CI (`.github/workflows/ci.yml`) runs lint, tests, the demo and the conformance kit against the Node agent on Ubuntu and Windows (Python 3.11, Node 20).
 
 The **hot-plug demo** (the Wi-Fi scenario):
 

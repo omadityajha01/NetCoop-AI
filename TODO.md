@@ -125,6 +125,16 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - Numbers refreshed for min_top_score = 0.55 (committed precision 98.5%, wrong 1.1%, normal FP 0%). The status
   table now references `min_top_score` (0.55) instead of the stale 0.45. CLAUDE.md keeps 0.45 as the documented *initial* value.
 
+## T8: repo + CI
+
+- The git repo already existed (with an `origin` remote added by the user). **Nothing pushed in this run.**
+- `.gitignore` already covered runs/, .env, .venv, node_modules, __pycache__ and *.egg-info. `demo_snapshots/` stays tracked (noted in the file).
+- Makefile is now a thin wrapper: every target calls `python tasks.py <target>`, so tasks.py is the single source.
+  Fuzz uses `FUZZ_N` so the Makefile's exported `N=280` doesn't change it.
+- `external_agents/wireless_agent/package-lock.json` added (no dependencies) so `npm ci` works.
+- `.github/workflows/ci.yml`: ubuntu + windows, Python 3.11, Node 20 → pip install -e .[dev], npm ci, lint, tests,
+  demo, conformance vs the Node agent (bash shell on both OSes).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
