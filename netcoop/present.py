@@ -442,7 +442,7 @@ def present(port: int, *, auto: bool = False, out: Path | None = None, with_judg
         print(bad(f"{len(failures)} step(s) did not match the script: {', '.join(failures)}"))
         print(dim("  fallback: open demo_snapshots/<step>/timeline.html"))
         return 1
-    print(ok("All 8 steps matched the script. Measured, not claimed."))
+    print(ok(f"All {len(STEPS) + (1 if with_judge else 0)} steps matched the script. Measured, not claimed."))
     return 0
 
 

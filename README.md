@@ -623,7 +623,7 @@ These extensions are additive:
 
 | Command | What it does |
 |---|---|
-| `make test` | 104 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~40 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
+| `make test` | 115 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~40 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
 | `make demo` | All scenarios via the CLI |
 | `make eval` / `make fuzz` / sweep | Measured accuracy, confidence-vs-accuracy table, degradation curve, operating-point sweep → `eval/reports/` |
 | `make conformance AGENT_URL=…` | Conformance kit |

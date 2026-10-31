@@ -60,6 +60,7 @@
   ],
   "alternative_causes": [
     "Likely physical interface fault causing errors and packet loss on L_HOSTEL_ACC_01 (score 0.22)",
+    "Likely device hardware failure (every resource saturated, interface errors and heavy loss) on HOSTEL_CORE_SW_01 (score 0.17)",
     "Likely device overload (CPU exhaustion) causing drops across interfaces on HOSTEL_ACC_SW_01 (score 0.14)"
   ],
   "recommended_actions": [
@@ -126,10 +127,22 @@
       "reason": "expected interface_errors_count >= high, observed 2 count (F-infrastructure_agent-10001)"
     },
     {
+      "fault_type": "hardware_failure",
+      "entity": "HOSTEL_CORE_SW_01",
+      "score": 0.17,
+      "reason": "expected interface_errors_count >= high, observed 2 count (F-infrastructure_agent-10001)"
+    },
+    {
       "fault_type": "device_overload",
       "entity": "HOSTEL_ACC_SW_01",
       "score": 0.14,
       "reason": "insufficient support; missing cpu_pct@HOSTEL_ACC_SW_01, memory_pct@HOSTEL_ACC_SW_01, queue_drops_count@HOSTEL_ACC_SW_01"
+    },
+    {
+      "fault_type": "latency_spike",
+      "entity": "HOSTEL_CORE_SW_01",
+      "score": 0.0,
+      "reason": "contradicted: queue_drops_count 528 count on HOSTEL_CORE_SW_01 (F-infrastructure_agent-39)"
     }
   ],
   "predictions": [

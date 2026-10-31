@@ -248,6 +248,15 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   default 8-step script, the snapshots and preflight are unchanged.
 - U1's target was met (organizer B 100/100/100), so judge mode was added as instructed.
 
+## U7: refresh + freeze
+
+- demo_snapshots/ regenerated (8/8 steps matched). Preflight 12/12; `present --judge` ran all 9 steps.
+- DEMO.md judge Q&A added: "who generated the test data" (both sources + numbers), "the topology is NetCoop-defined",
+  "how organizer labels map to fault types". The self-graded answer was updated (the organizer generator is now
+  diagnosed, not just detected). Step 2 and step 6 rows were corrected to the current outputs (missing-signal order;
+  48/36/12 records since the ghost switch is kept unplaced).
+- Clean-clone check: see the commit after this entry. Tag `demo-safe-2` goes on the final green commit.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

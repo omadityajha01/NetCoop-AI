@@ -32,11 +32,11 @@ Every step prints a compact colored summary and writes a static timeline:
 | # | Step | Expected on screen | Talking points |
 |---|---|---|---|
 | 1 | **Congestion** | `diagnosed`, *Likely link congestion … on L_HOSTEL_UPLINK*. Evidence comes from performance + infrastructure agents. Predictions `P-1-1 … HIT`, `P-1-2 … MISS`, `P-1-3 … HIT` | • Six agents exchange typed NMP messages over one bus, and every message is in an append-only event log (show the timeline lanes). • **Predict before you look:** the prediction "interface errors stay low" is logged at seq 15. The evidence request is seq 18 and the answer seq 20. A test fails if that order is ever violated. |
-| 2 | **Wi-Fi without the agent** | `insufficient_evidence`; missing signals `rssi_dbm@AP_H3, snr_db@AP_H3, retransmission_pct@AP_H3` | • High packet loss at AP_H3 is real, but no signature matches with the data we have, and no connected agent can provide RF metrics. • We say so instead of guessing, and list exactly which signals would resolve it. |
+| 2 | **Wi-Fi without the agent** | `insufficient_evidence`; missing signals include `retransmission_pct@AP_H3, rssi_dbm@AP_H3, snr_db@AP_H3` (plus uplink signals for the congestion alternative) | • High packet loss at AP_H3 is real, but no signature matches with the data we have, and no connected agent can provide RF metrics. • We say so instead of guessing, and list exactly which signals would resolve it. |
 | 3 | **Start `wireless_agent`** | card `wifi-probe v0.9.3`, skill `wifi-rf-telemetry` | • A different language (Node.js) and a different protocol dialect (v0.9: `signal`, `noise_margin`, `retx` as a fraction, epoch timestamps, `ap-h3`). • It joins mid-session: discovered from the allowlist, no restart. |
 | 4 | **Conformance** | 7/7 PASS | • Valid card, valid replies, `error` on malformed input, idempotent on a duplicate `message_id`, tolerates a newer MINOR version. • The same kit runs against any agent URL, and the official `a2a-sdk` 1.3.0 client also talks to this agent. |
 | 5 | **Wi-Fi again** | `diagnosed`, *Likely weak Wi-Fi … on AP_H3*; RSSI −78 dBm, SNR 13 dB, retransmissions 28% | • Same incident file; the only change is that an agent joined. • The timeline shows the translation: `version 0.9→1.0`, `noise_margin→snr_db`, `ap-h3→AP_H3`, `retx 0.28 fraction → 28 %`. |
-| 6 | **Chaos input** | `diagnosed` device overload on `DEPT_CORE_SW_01`; 48 records in, 35 used, 13 quarantined | • No schema_version, a legacy v0.9 block, latency in seconds, memory as bare fractions, IDs like `dept-core` / `10.20.0.1`, a ghost switch, negative latency, a future timestamp, and an injection attempt in a device name. • **Recover what's recoverable, quarantine the rest, never silently drop:** records in = used + quarantined, always (property-tested). |
+| 6 | **Chaos input** | `diagnosed` device overload on `DEPT_CORE_SW_01`; 48 records in, 36 used, 12 quarantined | • No schema_version, a legacy v0.9 block, latency in seconds, memory as bare fractions, IDs like `dept-core` / `10.20.0.1`, a ghost switch (kept *unplaced*: "device not in topology"), negative latency, a future timestamp, and an injection attempt in a device name. • **Recover what's recoverable, quarantine the rest, never silently drop:** records in = used + quarantined, always (property-tested). |
 | 7 | **Policy** | `BLOCKED Reboot HOSTEL_CORE_SW_01: blocked by R1 (Class hours)` | • Recommendations come only from the playbook and pass code-enforced rules. The reboot is shown as *blocked with a rule id*, never silently dropped. • Remediation is never executed. |
 | 8 | **Normal network** | `no_fault_detected` | • A healthy network is reported as healthy. Warn-level noise goes to `observations`, never to evidence. |
 
@@ -72,18 +72,45 @@ Regenerate the snapshots after any change: `python tasks.py snapshots`.
 
 ## Likely judge questions
 
-**"You generated the eval data yourselves. Isn't that self-graded?"**
-Partly, and we say so in the README. Three mitigations:
-1. Constants are tuned on seed range A and reported on a held-out range B. The selection rule (max accuracy with
-   wrong ≤ 3% and normal FP ≤ 5%) was fixed before the sweep ran.
+**"Who generated the test data?"**
+Two sources, reported separately:
+* The **organizer's own generator**, run raw and unmodified (`data/generator/organizer_generator.py`), 500 seeds per
+  label on a held-out seed range. `normal` → `no_fault_detected` 100%,
+  `latency_spike` 100%, `hardware_failure`
+  100%, with 0 wrong diagnoses. You can check it live: `python tasks.py judge`
+  with your own label and seed.
+* **Our extended generator** (`eval/generate.py`) for what the organizer's doesn't cover: Wi-Fi, DNS/DHCP, links,
+  multi-sample windows. On a held-out range: overall 0.90, right 98.2%
+  of the time when it commits, 1.4% wrong diagnoses.
+
+**"You generated part of the eval data yourselves. Isn't that self-graded?"**
+For our generator, partly, and the README says so. Three mitigations:
+1. Constants are tuned on seed range A and reported on a held-out range B. The selection rule (max accuracy with wrong
+   ≤ 3%, normal FP ≤ 5%, faults-reported-healthy ≤ 3%) was fixed before the sweep ran.
 2. The generator is hardened with things that hurt us: variable fault intensity, confounders on healthy devices,
    telemetry gaps, lost samples, and 30% of incidents with corrupted records.
-3. We report the organizer's raw generator separately. There NetCoop detects every fault but does not claim a
-   root cause, because those records max out every signal at once. We show that result instead of hiding it.
+3. The organizer's generator is reported separately, untouched, and judges can sample it live.
+
+**"The topology isn't in the organizer's data. Where does it come from?"**
+It is **NetCoop-defined**: `config/topology.yaml` models the campus (core router, hostel / department /
+lecture-hall switches, APs, DNS/DHCP), and we added the generator's `SW_CAMPUS_1..10` as campus access switches.
+It is not invented at run time:
+* an input bundle may carry its own `topology`, which is validated and merged (config wins on conflicts, which are reported)
+* a device that is in neither is kept *unplaced*: findings are kept, but localization is skipped, the report says
+  "device not in topology", and confidence is capped at medium
+
+**"How do the organizer's labels map to your fault types?"**
+One to one, derived from the generator code (table in `data/generator/SCHEMA.md`):
+* `normal` → `no_fault_detected` (every field below `warn`)
+* `latency_spike` → `latency_spike`: latency 150–400 ms and jitter 30–80 ms. Those lower bounds equal our `high`
+  thresholds. Drops ≤ 50 and utilization < 85 separate it from congestion.
+* `hardware_failure` → `hardware_failure`: CPU 99.9, utilization 100, loss 15–30%, latency 500–1000 ms, drops
+  5,000–15,000 plus interface errors. Every resource is saturated at once, so no single-cause signature fits; the
+  signature expects them all together.
 
 **"Why not use the A2A SDK?"**
 A2A is our transport; the meaning lives in NMP plus the metric registry. The core speaks the A2A wire shapes (agent
-card, JSON-RPC `message/send`, data parts) over the standard library, so the 100+ tests run offline with no heavy
+card, JSON-RPC `message/send`, data parts) over the standard library, so the 115 tests run offline with no heavy
 dependencies. We verified compatibility with the official `a2a-sdk` 1.3.0 client against our Node agent (optional
 test). The SDK pulls protobuf ≥ 6, which conflicts with common ML stacks, so it is an optional extra rather than a core dependency.
 
