@@ -117,6 +117,8 @@ class Orchestrator:
         incident_id = opts.incident_id or new_incident_id(sha, opts.runs_dir)
         run_dir = safe_run_dir(opts.runs_dir, incident_id) if opts.persist else None
         log = EventLog(run_dir / "events.jsonl" if run_dir else None)
+        if run_dir is not None:  # checkpoint: input + meta before any agent runs, so `netcoop resume` can finish
+            self._write_input_meta(run_dir, raw, sha, incident_id, {})
         bus = Bus(log, max_messages=int(cfg.agents["rounds"]["max_bus_messages"]), retries=int(cfg.agents.get("retries", 1)))
         try:
             report, ext_status = self._run(raw, sha, incident_id, log, bus, run_dir)
@@ -280,14 +282,17 @@ class Orchestrator:
         }
         return report
 
-    def _persist(self, run_dir: Path, raw: bytes, sha: str, incident_id: str, report: dict[str, Any],
-                 ext_status: dict[str, str]) -> None:
+    def _write_input_meta(self, run_dir: Path, raw: bytes, sha: str, incident_id: str, ext_status: dict[str, str]) -> None:
         ext = ".csv" if (self.opts.filename or "").lower().endswith(".csv") else ".json"
         (run_dir / f"input{ext}").write_bytes(raw)
-        (run_dir / "report.json").write_bytes(dump_report(report))
         meta = {"incident_id": incident_id, "input_file": f"input{ext}", "input_sha256": sha, "llm": llm.mode(),
                 "external": self.opts.external, "external_status": ext_status, "filename": self.opts.filename}
         (run_dir / "meta.json").write_text(json.dumps(meta, indent=2, sort_keys=True), encoding="utf-8")
+
+    def _persist(self, run_dir: Path, raw: bytes, sha: str, incident_id: str, report: dict[str, Any],
+                 ext_status: dict[str, str]) -> None:
+        self._write_input_meta(run_dir, raw, sha, incident_id, ext_status)
+        (run_dir / "report.json").write_bytes(dump_report(report))
         if not self.opts.store:
             return
         try:
