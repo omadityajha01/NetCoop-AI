@@ -206,6 +206,18 @@ def cmd_feedback(a: argparse.Namespace) -> int:
         return 2
     print(f"recorded feedback #{r['id']}: {a.decision} {a.action_id} for {a.incident_id} as event #{r['event_seq']} "
           "(non-blocking; nothing is executed; the diagnosis is unchanged)")
+    pol = r.get("policy") or {}
+    if r.get("plan"):
+        p = r["plan"]
+        print(f"remediation_plan event #{r['plan_seq']}: {p['label']}")
+        for i, step in enumerate(p["steps"], 1):
+            print(f"  {i}. {step}")
+        for step in p["rollback"]:
+            print(f"  rollback: {step}")
+    elif a.decision == "approve" and pol.get("rule_id"):
+        print(f"no plan: {a.action_id} is blocked by {pol['rule_id']} ({pol.get('reason')})")
+    elif a.decision == "approve":
+        print(f"no plan: {pol.get('reason')}")
     return 0
 
 

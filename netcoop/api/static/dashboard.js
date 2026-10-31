@@ -164,29 +164,64 @@ function decisionsFor() {
   return m;
 }
 
+function plansFor() {
+  const m = new Map();
+  for (const e of state.events) if (e.message_type === "remediation_plan") m.set(e.payload.action_id, e);
+  return m;
+}
+
+const lastPolicy = new Map();  // action_id -> policy result of the latest approve in this session (blocked -> rule id)
+
 async function decide(actionId, decision) {
   try {
     const r = await getJSON("/incidents/" + encodeURIComponent(state.incident) + "/feedback", {
       method: "POST", headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ action_id: actionId, decision }) });
+    if (r.policy) lastPolicy.set(actionId, r.policy);
     const evs = await getJSON("/incidents/" + encodeURIComponent(state.incident) + "/events");
     for (const e of evs) if (!state.events.find(x => x.seq === e.seq)) addEvent(e);
     renderActions();
-    status("recorded " + decision + " for " + actionId + " as event #" + r.event_seq + " (nothing executed; diagnosis unchanged)");
+    let msg = "recorded " + decision + " for " + actionId + " as event #" + r.event_seq;
+    if (r.plan_seq) msg += "; dry-run plan #" + r.plan_seq + " (SIMULATED, NOT EXECUTED)";
+    else if (r.policy && r.policy.rule_id) msg += "; blocked by " + r.policy.rule_id + ", no plan";
+    status(msg + " (nothing executed; diagnosis unchanged)");
   } catch (err) { status("feedback failed: " + err.message); }
+}
+
+function decisionButtons(id) {
+  return [el("button", { class: "ghost", type: "button", on: { click: () => decide(id, "approve") } }, "approve"), " ",
+          el("button", { class: "ghost", type: "button", on: { click: () => decide(id, "reject") } }, "reject")];
+}
+
+function planBox(ev) {
+  const p = ev.payload;
+  const box = el("div", { class: "plan", id: "plan-" + p.action_id },
+    el("div", { class: "plan-label" }, p.label + " · dry-run #" + ev.seq + " · policy checked" +
+                                       (p.policy && p.policy.checked_at ? " at " + p.policy.checked_at : "")));
+  const ol = el("ol", {});
+  for (const s of p.steps) ol.appendChild(el("li", {}, s));
+  box.appendChild(ol);
+  for (const s of p.rollback) box.appendChild(el("div", { class: "rollback" }, "Rollback: " + s));
+  return box;
 }
 
 function renderActions() {
   const rep = state.report; if (!rep) return;
-  const dec = decisionsFor();
+  const dec = decisionsFor(), plans = plansFor();
   const blockedIds = new Set((rep.blocked_actions || []).map(b => b.action_id));
   const recs = (rep.action_details || []).filter(a => !blockedIds.has(a.id));
-  rows($("actions").tBodies[0], recs, a => el("tr", {}, el("td", {}, a.id), el("td", {}, a.text),
-    el("td", {}, dec.has(a.id) ? dec.get(a.id) : "",
-      el("button", { class: "ghost", type: "button", on: { click: () => decide(a.id, "approve") } }, "approve"), " ",
-      el("button", { class: "ghost", type: "button", on: { click: () => decide(a.id, "reject") } }, "reject"))));
-  rows($("blocked").tBodies[0], rep.blocked_actions || [], b => el("tr", {}, el("td", {}, b.action_id), el("td", {}, b.action),
-    el("td", {}, b.rule_id), el("td", {}, b.reason)));
+  rows($("actions").tBodies[0], recs, a => {
+    const cell = el("td", {}, dec.has(a.id) ? dec.get(a.id) + " " : "", ...decisionButtons(a.id));
+    const text = el("td", {}, a.text);
+    if (plans.has(a.id)) text.appendChild(planBox(plans.get(a.id)));
+    return el("tr", {}, el("td", {}, a.id), text, cell);
+  });
+  rows($("blocked").tBodies[0], rep.blocked_actions || [], b => {
+    const pol = lastPolicy.get(b.action_id);
+    const note = dec.has(b.action_id) ? dec.get(b.action_id) + (pol && pol.rule_id ? " · blocked by " + pol.rule_id + ", no plan" : "") + " " : "";
+    return el("tr", {}, el("td", {}, b.action_id), el("td", {}, b.action), el("td", {}, b.rule_id), el("td", {}, b.reason),
+              el("td", {}, note, ...decisionButtons(b.action_id)));
+  });
 }
 
 async function loadReport(incident) {

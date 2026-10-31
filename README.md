@@ -74,7 +74,8 @@ netcoop mcp                                                            # MCP ser
 one lane per agent, replayed from the event log in `seq` order. Alongside them you get the topology with affected and
 evidence entities, the report, evidence linked to the message that carried each `finding_id`, predictions with the
 `seq` at which they were logged, the normalization log and policy-blocked actions. Approve/reject is non-blocking: it
-is recorded as a `human_decision` event and never executed, and the diagnosis does not change. The page is static
+is recorded as a `human_decision` event. An approved, policy-allowed action also gets a simulated dry-run plan. Nothing
+is executed and the diagnosis does not change. The page is static
 vanilla JS (no build, no CDN). It renders text only and is served with a strict Content-Security-Policy.
 
 **Chat with NetCoop via MCP:** `netcoop mcp` exposes `list_scenarios`, `list_agents`, `diagnose`, `get_report` and
@@ -94,7 +95,7 @@ The core (normalizer, agents, scoring, event log, CLI) needs none of these. Each
 | Human in the loop | ✓ non-blocking | dashboard approve/reject, `netcoop feedback`, `POST /incidents/{id}/feedback` | Recorded as an NMP `human_decision` event after the report; never executed; the report and replay are unchanged |
 | Persistence / resume | ✓ | `netcoop resume <incident_id>` | Re-derives the run deterministically; the surviving log must be an exact prefix or resume refuses; idempotent |
 | Dashboard | ✓ | `netcoop serve` → http://127.0.0.1:8000/ | Static vanilla JS, no CDN; text-only rendering (PI8); strict CSP; read-only except Run scenario and HITL |
-| Remediation | ✗ by design | n/a | Never executed (D8, G1, G2): actions come from the playbook, pass the policy checker and are shown, not run |
+| Remediation | ✓ simulated dry-run, human-approved, policy-checked, never executed | approve an action (dashboard, `netcoop feedback`, API) | On approve the policy checker runs again. If the action is blocked, you get the rule id and no plan. If it is allowed, an NMP `remediation_plan` is emitted, labelled "SIMULATED – NOT EXECUTED", with steps and a rollback rendered from the `_dry_run` templates in `playbook.yaml`. No network, no shell (D8, G1, G2); the report and replay are unchanged |
 
 ## Scenarios (sample data)
 
@@ -173,11 +174,11 @@ a prediction is made before the agent shows the value.
 
 Agents talk only through typed NMP messages on the bus, and through A2A for external agents. See [Protocol: NMP 1.1](#protocol-netcoop-message-protocol-nmp-11) (envelope, finding, metric registry, versioning) and [A2A transport](#a2a-transport).
 
-## Protocol: NetCoop Message Protocol (NMP) 1.3
+## Protocol: NetCoop Message Protocol (NMP) 1.4
 
-Minor versions are additive: 1.1 added `normalization_summary`, 1.2 the advisory LLM `hint`, and 1.3
-`human_decision`, a non-blocking HITL record appended after the report that is never executed and never changes the
-diagnosis.
+Minor versions are additive: 1.1 added `normalization_summary`, 1.2 the advisory LLM `hint`, 1.3 `human_decision`
+(a non-blocking HITL record appended after the report), and 1.4 `remediation_plan`, a dry-run for an approved,
+policy-allowed action, labelled "SIMULATED – NOT EXECUTED". None of these is executed or changes the diagnosis.
 
 Pydantic v2 models (`netcoop/protocol/`) are the source of truth. `make schemas` exports JSON Schemas to
 `docs/schemas/`, and external agents should be pointed at those, not at the Python. The tables below are
@@ -188,9 +189,9 @@ generated from config by `make docs`.
 <!-- BEGIN GENERATED: envelope -->
 | Field | Type | Meaning |
 |---|---|---|
-| `schema_version` | "MAJOR.MINOR" | Protocol version of this message (current 1.3; older 1.x accepted; 0.9 upcast) |
+| `schema_version` | "MAJOR.MINOR" | Protocol version of this message (current 1.4; older 1.x accepted; 0.9 upcast) |
 | `message_id` | uuid | Unique; receivers are idempotent on duplicates (content-derived UUIDv4) |
-| `message_type` | enum | `task_request`, `finding_report`, `coverage_manifest`, `prediction`, `evidence_request`, `evidence_response`, `diagnosis`, `report`, `error`, `normalization_summary`, `hint`, `human_decision` |
+| `message_type` | enum | `task_request`, `finding_report`, `coverage_manifest`, `prediction`, `evidence_request`, `evidence_response`, `diagnosis`, `report`, `error`, `normalization_summary`, `hint`, `human_decision`, `remediation_plan` |
 | `incident_id` | str | Server-generated, `^INC-[0-9A-Z]{4,12}$` |
 | `sender / recipient` | agent_id | `recipient` may be `orchestrator` |
 | `in_reply_to` | uuid | null | `message_id` this responds to |
