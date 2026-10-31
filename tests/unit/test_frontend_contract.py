@@ -198,3 +198,50 @@ def test_mock_agent_join_switches_weak_wifi(mock):
     mock("POST", "/mock/agent/join")
     assert json.loads(mock("GET", "/agents")[2])["external"]["wireless_agent"] == "joined"
     assert json.loads(mock("POST", "/scenarios/weak_wifi/run")[2])["status"] == "diagnosed"
+
+
+# ---------- F5: handoff zip runs standalone ----------
+def test_handoff_zip_mock_runs_standalone(tmp_path):
+    import socket
+    import time
+    import zipfile
+
+    import make_handoff
+
+    z = make_handoff.build(tmp_path / "frontend_handoff.zip")
+    with zipfile.ZipFile(z) as zf:
+        names = set(zf.namelist())
+        zf.extractall(tmp_path / "x")
+    top = tmp_path / "x" / "frontend_handoff"
+    for f in ("README_HANDOFF.md", "FRONTEND_API.md", "architecture.svg", "mock_api.py", "dry_run_templates.json",
+              "frontend_fixtures/index.json", "frontend_fixtures/congestion/events.jsonl"):
+        assert f"frontend_handoff/{f}" in names, f
+    with socket.socket() as s:
+        s.bind(("127.0.0.1", 0))
+        port = s.getsockname()[1]
+    # -I: isolated mode, so the repo's netcoop package is NOT importable: the mock must be self-contained
+    proc = subprocess.Popen([sys.executable, "-I", str(top / "mock_api.py"), "--port", str(port), "--ui",
+                             str(ROOT / "dashboard_v2")], cwd=top, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    base = f"http://127.0.0.1:{port}"
+    try:
+        for _ in range(60):
+            try:
+                urllib.request.urlopen(base + "/scenarios", timeout=1)
+                break
+            except OSError:
+                time.sleep(0.2)
+        assert "NetCoop dashboard v2" in urllib.request.urlopen(base + "/").read().decode()
+        run = json.loads(urllib.request.urlopen(urllib.request.Request(base + "/scenarios/congestion/run", method="POST")).read())
+        req = urllib.request.Request(base + f"/incidents/{run['incident_id']}/feedback", method="POST",
+                                     data=json.dumps({"action_id": "CONG-3", "decision": "approve"}).encode(),
+                                     headers={"Content-Type": "application/json"})
+        fb = json.loads(urllib.request.urlopen(req).read())
+        assert fb["plan"]["steps"][0] == "Save the running configuration of HOSTEL_CORE_SW_01"  # from dry_run_templates.json
+        try:
+            urllib.request.urlopen(base + "/dashboard")
+            raise AssertionError("built-in dashboard should not exist in the handoff")
+        except urllib.error.HTTPError as e:
+            assert e.code == 404
+    finally:
+        proc.terminate()
+        proc.wait(timeout=10)

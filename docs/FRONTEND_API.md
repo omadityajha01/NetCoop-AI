@@ -1012,6 +1012,8 @@ python tools/mock_api.py --port 8080 --agent joined
 ```
 Standard library only. Same endpoints, bodies, errors, headers and SSE framing. `POST /scenarios/{name}/run` returns a new `INC-MOCKnnnn` copy of the recorded run. `weak_wifi` returns the *before* fixture until `POST /mock/agent/join` (or `--agent joined`), then *after*; `interop` includes the LLM hint. The stream honours `delay_ms`; `&timing=recorded` replays the recorded gaps between messages. Feedback appends `human_decision` and, for allowed approvals, `remediation_plan`, like the server. Mock-only: `POST /mock/agent/join|leave`, `GET /mock/fixtures`. `POST /incidents` replays the malformed-input fixture for invalid JSON and answers `501 MOCK_UNSUPPORTED` for anything else.
 
+Handoff bundle: `python tools/make_handoff.py` writes `frontend_handoff.zip` (gitignored) with this file, the fixtures, `mock_api.py`, `dry_run_templates.json`, `architecture.svg` and `README_HANDOFF.md`. Run the mock from the unzipped folder: `python mock_api.py --ui <your_ui>`. It has no built-in dashboard, so pass `--ui`.
+
 ## Glossary
 
 * **incident**: one diagnosis run over one input bundle, identified by `incident_id`; its event log is the source of truth.

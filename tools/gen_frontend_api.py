@@ -404,6 +404,10 @@ def gen() -> str:
       "`GET /mock/fixtures`. `POST /incidents` replays the malformed-input fixture for invalid JSON and answers "
       "`501 MOCK_UNSUPPORTED` for anything else.")
     w("")
+    w("Handoff bundle: `python tools/make_handoff.py` writes `frontend_handoff.zip` (gitignored) with this file, the "
+      "fixtures, `mock_api.py`, `dry_run_templates.json`, `architecture.svg` and `README_HANDOFF.md`. Run the mock from "
+      "the unzipped folder: `python mock_api.py --ui <your_ui>`. It has no built-in dashboard, so pass `--ui`.")
+    w("")
 
     # ---------------- glossary ----------------
     sc = cfg.scoring
