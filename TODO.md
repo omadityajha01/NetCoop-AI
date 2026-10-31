@@ -437,6 +437,16 @@ Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
   for congestion and interop → resume → report.json byte-identical to an uninterrupted run, events identical except
   timestamps, replay identical, second resume is a no-op; torn line; divergent log refused; bad ids; LLM runs refused.
 
+## M5: freeze (demo-final-3)
+
+- README "Optional components" table (LLM, MCP, HITL, resume, dashboard ✓; remediation ✗ by design), each with its
+  guardrail. SHOTLIST/VIDEO_SCRIPT: dashboard is the main visual for chapters 3, 4 and 7; new chapters "LLM explains,
+  code decides" (30 s, verified live on llama3.2:3b: interop injection → hint dns_failure, diagnosis device_overload
+  0.85 unchanged) and "Chat via MCP" (30 s); chapters 6 and 7 at 20 s; 4:27 content, ~4:40 total; script 727 words.
+- Dashboard report panel shows LLM mode, advisory hints and narrative source.
+- RUNBOOK stage version → demo-final-3 (fallback demo-final-2).
+- Gate: 210 passed / 2 skipped offline; llm_live 3/3; golden 0 / 1,680; preflight 15/15; fresh clone OK; CI green.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
