@@ -1,5 +1,5 @@
 {
-  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.error.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.error.schema.json",
   "additionalProperties": false,
   "properties": {
     "agent_id": {

@@ -22,7 +22,7 @@
       "type": "object"
     }
   },
-  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.normalization_summary.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.normalization_summary.schema.json",
   "additionalProperties": false,
   "properties": {
     "complaint_present": {

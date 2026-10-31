@@ -370,7 +370,7 @@
       "type": "object"
     }
   },
-  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.diagnosis.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.diagnosis.schema.json",
   "additionalProperties": false,
   "properties": {
     "anomalous_finding_count": {
@@ -480,6 +480,22 @@
       ],
       "title": "Status",
       "type": "string"
+    },
+    "status_reason": {
+      "anyOf": [
+        {
+          "enum": [
+            "data_missing",
+            "no_signature_match"
+          ],
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Status Reason"
     },
     "top_hypothesis_id": {
       "anyOf": [

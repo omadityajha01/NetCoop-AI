@@ -45,7 +45,7 @@
       "type": "object"
     }
   },
-  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.coverage_manifest.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.coverage_manifest.schema.json",
   "additionalProperties": false,
   "properties": {
     "signals": {

@@ -167,7 +167,7 @@
       "type": "object"
     }
   },
-  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.prediction.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.prediction.schema.json",
   "additionalProperties": false,
   "properties": {
     "prediction": {

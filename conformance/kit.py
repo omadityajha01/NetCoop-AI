@@ -16,6 +16,7 @@ from netcoop.config import load_config
 from netcoop.gateway.a2a_gateway import a2a_request, extract_data_part
 from netcoop.gateway.agent_cards import parse_card
 from netcoop.gateway.transport import HttpTransport, TransportError
+from netcoop.protocol.envelope import SCHEMA_VERSION
 from netcoop.protocol.versions import parse_message
 
 INCIDENT = "INC-CONF0001"
@@ -31,7 +32,7 @@ class Check:
 
 
 def _envelope(message_type: str, payload: dict[str, Any], **extra: Any) -> dict[str, Any]:
-    env = {"schema_version": "1.0", "message_id": str(uuid.uuid4()), "message_type": message_type,
+    env = {"schema_version": SCHEMA_VERSION, "message_id": str(uuid.uuid4()), "message_type": message_type,
            "incident_id": INCIDENT, "sender": "orchestrator", "recipient": "agent", "in_reply_to": None,
            "status": "completed", "payload": payload, "limitations": []}
     env.update(extra)

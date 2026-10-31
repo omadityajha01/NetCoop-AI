@@ -1,7 +1,7 @@
 # NetCoop AI: multi-agent network fault diagnosis
 
 Specialized agents analyze synthetic campus telemetry (IIT Bhubaneswar scenario). They exchange structured
-findings over a documented protocol (**NMP 1.0**), test competing hypotheses by asking each other for
+findings over a documented protocol (**NMP 1.1**), test competing hypotheses by asking each other for
 discriminating evidence, and produce **one JSON diagnostic report**. The report contains evidence, alternative
 causes, a documented confidence score, limitations and policy-checked recommendations.
 
@@ -126,7 +126,7 @@ a prediction is made before the agent shows the value.
 
 ---
 
-## Protocol: NetCoop Message Protocol (NMP) 1.0
+## Protocol: NetCoop Message Protocol (NMP) 1.1
 
 Pydantic v2 models (`netcoop/protocol/`) are the source of truth. `make schemas` exports JSON Schemas to
 `docs/schemas/`, and external agents should be pointed at those, not at the Python. The tables below are
@@ -137,7 +137,7 @@ generated from config by `make docs`.
 <!-- BEGIN GENERATED: envelope -->
 | Field | Type | Meaning |
 |---|---|---|
-| `schema_version` | "MAJOR.MINOR" | Protocol version of this message (1.0) |
+| `schema_version` | "MAJOR.MINOR" | Protocol version of this message (current 1.1; 1.0 accepted; 0.9 upcast) |
 | `message_id` | uuid | Unique; receivers are idempotent on duplicates (content-derived UUIDv4) |
 | `message_type` | enum | `task_request`, `finding_report`, `coverage_manifest`, `prediction`, `evidence_request`, `evidence_response`, `diagnosis`, `report`, `error`, `normalization_summary` |
 | `incident_id` | str | Server-generated, `^INC-[0-9A-Z]{4,12}$` |
@@ -209,6 +209,13 @@ only if exactly one unit keeps every value in the batch plausible, or if a `*_pc
 It is never inferred from a single value. Otherwise the field is quarantined.
 
 ### Versioning
+
+Current version: **1.1**. It is a MINOR bump over 1.0 and purely additive:
+* `Finding.source`
+* the report fields `observations` and `status_reason`
+* the `normalization_summary` message type
+
+1.0 messages are accepted unchanged. The external `wireless_agent` still speaks 0.9 and is upcast.
 
 * **MINOR bump:** accepted. Unknown fields go to `extras` with a warning limitation.
 * **MAJOR mismatch:** the registered upcaster chain runs (`upcasters.py`, `0.9 → 1.0`). With no upcaster the reply is `error SCHEMA_VERSION_UNSUPPORTED`.

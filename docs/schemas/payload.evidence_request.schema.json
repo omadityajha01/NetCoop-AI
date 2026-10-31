@@ -77,7 +77,7 @@
       "type": "object"
     }
   },
-  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.evidence_request.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.evidence_request.schema.json",
   "additionalProperties": false,
   "properties": {
     "prediction_ids": {

@@ -254,7 +254,7 @@
       "type": "object"
     }
   },
-  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.finding_report.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.finding_report.schema.json",
   "additionalProperties": false,
   "properties": {
     "findings": {

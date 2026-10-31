@@ -15,7 +15,7 @@ SCHEMA_DIR = ROOT / "docs" / "schemas"
 README = ROOT / "README.md"
 
 ENVELOPE_MEANING = {
-    "schema_version": ("\"MAJOR.MINOR\"", "Protocol version of this message (1.0)"),
+    "schema_version": ("\"MAJOR.MINOR\"", "Protocol version of this message (current 1.1; 1.0 accepted; 0.9 upcast)"),
     "message_id": ("uuid", "Unique; receivers are idempotent on duplicates (content-derived UUIDv4)"),
     "message_type": ("enum", ", ".join(f"`{t}`" for t in PAYLOAD_MODELS)),
     "incident_id": ("str", "Server-generated, `^INC-[0-9A-Z]{4,12}$`"),
@@ -38,7 +38,7 @@ def export_schemas() -> list[Path]:
     for name, model in items.items():
         p = SCHEMA_DIR / f"{name}.schema.json"
         schema = model.model_json_schema(by_alias=True)
-        schema["$id"] = f"https://netcoop.local/schemas/nmp-1.0/{name}.schema.json"
+        schema["$id"] = f"https://netcoop.local/schemas/nmp-1.1/{name}.schema.json"
         p.write_text(json.dumps(schema, indent=2, sort_keys=True) + "\n", encoding="utf-8")
         out.append(p)
     return out

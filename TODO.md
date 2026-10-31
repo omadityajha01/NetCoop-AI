@@ -83,6 +83,16 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - Chart: `docs/operating_point.png` (matplotlib, optional extra `[eval]`); data in `eval/reports/sweep.json`.
 - The demo scenarios are unchanged at 0.55.
 
+## T4: NMP 1.1
+
+- `SCHEMA_VERSION` 1.0 → **1.1** (MINOR, additive): `Finding.source`, report `observations` + `status_reason`,
+  `normalization_summary` message type. 1.0 messages are accepted unchanged (tested). The 0.9 upcaster
+  still targets 1.0, and the parser stamps the upcast message with the current MINOR (1.1).
+- **Decision:** the bundle (input file) `schema_version` stays at "1.0": only the message protocol changed, and the
+  fixtures are unchanged.
+- `wireless_agent` untouched (still 0.9). Conformance kit now sends 1.1 envelopes: 7/7 pass.
+- docs/schemas regenerated (`$id` …/nmp-1.1/…); README tables regenerated.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

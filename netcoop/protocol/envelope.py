@@ -12,7 +12,9 @@ from pydantic import BaseModel, ConfigDict, Field, model_validator
 from netcoop.protocol.findings import Limitation, UTCDateTime
 from netcoop.protocol.messages import PAYLOAD_MODELS
 
-SCHEMA_VERSION = "1.0"
+# 1.1 (MINOR, additive): Finding.source, report `observations` + `status_reason`, `normalization_summary` message type.
+# 1.0 messages are still accepted unchanged; 0.9 is upcast via upcasters.py.
+SCHEMA_VERSION = "1.1"
 INCIDENT_ID_PATTERN = r"^INC-[0-9A-Z]{4,12}$"
 AGENT_ID_PATTERN = r"^[a-z][a-z0-9_]{1,40}$"
 

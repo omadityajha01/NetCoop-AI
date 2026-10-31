@@ -107,7 +107,7 @@
       "type": "object"
     }
   },
-  "$id": "https://netcoop.local/schemas/nmp-1.0/prediction.schema.json",
+  "$id": "https://netcoop.local/schemas/nmp-1.1/prediction.schema.json",
   "additionalProperties": false,
   "properties": {
     "evidence_finding_id": {
