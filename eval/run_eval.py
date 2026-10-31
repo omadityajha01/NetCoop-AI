@@ -21,7 +21,6 @@ import subprocess
 import tempfile
 import time
 import urllib.request
-from collections import Counter, defaultdict
 from contextlib import contextmanager
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -142,7 +141,7 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         per[f] = {"n": len(rs), "accuracy": round(sum(r["correct"] for r in rs) / len(rs), 3),
                   "insufficient_rate": round(sum(r["status"] == "insufficient_evidence" for r in rs) / len(rs), 3),
                   "probable_rate": round(sum(r["status"] == "probable" for r in rs) / len(rs), 3)}
-    labels = sorted({r["pred"] for r in rows} | set(FAULTS))
+    labels = sorted(({r["pred"] for r in rows} | set(FAULTS) | {"no_fault_detected", "insufficient_evidence"}) - {"normal"})
     confusion = {t: {p: sum(1 for r in rows if r["truth"] == t and r["pred"] == p) for p in labels} for t in FAULTS}
     normals = [r for r in rows if r["truth"] == "normal"]
     fp = sum(r["status"] in ("diagnosed", "probable") for r in normals) / max(1, len(normals))
@@ -227,36 +226,64 @@ def cmd_eval(a: argparse.Namespace) -> None:
     print(f"wrote {REPORTS / 'eval.md'}")
 
 
+def registry_off(cfg: Config) -> Config:
+    """Ablation: metric registry without aliases/unit aliases (exact canonical names + canonical units only)."""
+    metrics = thaw(cfg.metrics)
+    for spec in metrics.values():
+        spec["aliases"], spec["ambiguous_aliases"] = [], []
+        spec["unit_aliases"] = {spec["unit"]: 1}
+        spec.pop("fraction_inference", None)
+    return cfg.with_overrides(metrics=metrics)
+
+
 def cmd_fuzz(a: argparse.Namespace) -> None:
+    from netcoop.normalize.pipeline import NormalizationError, normalize_bundle
+
     base = load_config()
     REPORTS.mkdir(parents=True, exist_ok=True)
     clean = make_incidents(a.n, a.seed, mutate_share=0.0)
     curve = []
     with wireless_agent([i for i, _ in clean]) as url:
         cfg = cfg_for(base, url)
+        cfg_ablate = registry_off(cfg)
         for rate in (0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6):
             rng = random.Random(a.seed + int(rate * 100))
             items = [(Incident(i.fault, i.entity, mutate_bundle(i.bundle, rate, random.Random(rng.random())), i.wifi_obs),
                       {"mutated": rate > 0, "rate": rate}) for i, _ in clean]
             rows = run_set(cfg, items)
             s = summarize(rows)
+            abl = summarize(run_set(cfg_ablate, items))
+            recovered = quarantined = records = 0
+            for inc, _ in items:
+                try:
+                    n = normalize_bundle(json.dumps(inc.bundle).encode(), base).summary
+                except NormalizationError:
+                    continue
+                recovered += n["unit_converted"] + n["unit_inferred"] + n["entity_canonicalized"] + n["version_upcast"] + n["coerced"]
+                quarantined += n["records_quarantined"]
+                records += n["records_in"]
             pt = {"corruption_rate": rate, "accuracy": s["overall_accuracy"],
                   "precision_when_diagnosed": s["precision_when_diagnosed"],
                   "insufficient_evidence_rate": s["insufficient_evidence_rate"],
                   "false_positive_rate_normal": s["false_positive_rate_normal"], "crashes": s["crashes"],
-                  "failed": sum(r["status"] == "failed" for r in rows)}
+                  "failed": sum(r["status"] == "failed" for r in rows),
+                  "recovered_values": recovered, "records_quarantined_pct": round(100 * quarantined / max(1, records), 1),
+                  "accuracy_without_registry": abl["overall_accuracy"]}
             curve.append(pt)
             print(pt)
     (REPORTS / "fuzz.json").write_text(json.dumps(curve, indent=2), encoding="utf-8")
     L = ["## Degradation under corrupted input", "",
          f"{a.n} incidents (seed {a.seed}); each record corrupted with probability = rate using: renamed fields, swapped "
-         "units, bare fractions, legacy v0.9 blocks, missing values, mangled IDs, dropped fields, missing schema_version.", "",
-         "| corruption rate | accuracy | precision when diagnosed | insufficient_evidence | FP on normal | failed | crashes | |",
-         "|---|---|---|---|---|---|---|---|"]
+         "units, bare fractions, legacy v0.9 blocks, missing values, mangled IDs, dropped fields, missing schema_version. "
+         "Ablation column: same pipeline with the metric registry's aliases and unit aliases removed.", "",
+         "| corruption rate | accuracy | precision when diagnosed | insufficient_evidence | FP on normal | values recovered | "
+         "records quarantined | failed | crashes | accuracy w/o registry | |",
+         "|---|---|---|---|---|---|---|---|---|---|---|"]
     for p in curve:
         bar = "█" * round(p["accuracy"] * 20)
         L.append(f"| {p['corruption_rate']:.0%} | {p['accuracy']} | {p['precision_when_diagnosed']} | "
-                 f"{p['insufficient_evidence_rate']} | {p['false_positive_rate_normal']} | {p['failed']} | {p['crashes']} | `{bar}` |")
+                 f"{p['insufficient_evidence_rate']} | {p['false_positive_rate_normal']} | {p['recovered_values']} | "
+                 f"{p['records_quarantined_pct']} % | {p['failed']} | {p['crashes']} | {p['accuracy_without_registry']} | `{bar}` |")
     (REPORTS / "fuzz.md").write_text("\n".join(L) + "\n", encoding="utf-8")
     print(f"wrote {REPORTS / 'fuzz.md'}")
 

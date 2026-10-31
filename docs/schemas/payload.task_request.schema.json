@@ -1,0 +1,59 @@
+{
+  "$defs": {
+    "Window": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Window",
+      "type": "object"
+    }
+  },
+  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.task_request.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "params": {
+      "additionalProperties": true,
+      "title": "Params",
+      "type": "object"
+    },
+    "round": {
+      "default": 0,
+      "title": "Round",
+      "type": "integer"
+    },
+    "task": {
+      "enum": [
+        "analyze",
+        "scope",
+        "correlate",
+        "finalize",
+        "report"
+      ],
+      "title": "Task",
+      "type": "string"
+    },
+    "window": {
+      "$ref": "#/$defs/Window"
+    }
+  },
+  "required": [
+    "task",
+    "window"
+  ],
+  "title": "TaskRequestPayload",
+  "type": "object"
+}

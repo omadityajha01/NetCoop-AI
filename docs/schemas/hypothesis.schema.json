@@ -1,0 +1,115 @@
+{
+  "$defs": {
+    "EntityRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:\\-]{1,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "device",
+            "link",
+            "ap",
+            "service"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "EntityRef",
+      "type": "object"
+    }
+  },
+  "$id": "https://netcoop.local/schemas/nmp-1.0/hypothesis.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "contra": {
+      "title": "Contra",
+      "type": "number"
+    },
+    "contradicting_finding_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Contradicting Finding Ids",
+      "type": "array"
+    },
+    "coverage": {
+      "title": "Coverage",
+      "type": "number"
+    },
+    "entity": {
+      "$ref": "#/$defs/EntityRef"
+    },
+    "fault_type": {
+      "title": "Fault Type",
+      "type": "string"
+    },
+    "hypothesis_id": {
+      "title": "Hypothesis Id",
+      "type": "string"
+    },
+    "missing_signals": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Signals",
+      "type": "array"
+    },
+    "quality": {
+      "title": "Quality",
+      "type": "number"
+    },
+    "score": {
+      "title": "Score",
+      "type": "number"
+    },
+    "source": {
+      "default": "findings",
+      "enum": [
+        "findings",
+        "hint",
+        "scope"
+      ],
+      "title": "Source",
+      "type": "string"
+    },
+    "support": {
+      "title": "Support",
+      "type": "number"
+    },
+    "supporting_finding_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Supporting Finding Ids",
+      "type": "array"
+    },
+    "unmatched_finding_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Unmatched Finding Ids",
+      "type": "array"
+    }
+  },
+  "required": [
+    "hypothesis_id",
+    "fault_type",
+    "entity",
+    "score",
+    "support",
+    "coverage",
+    "contra",
+    "quality"
+  ],
+  "title": "Hypothesis",
+  "type": "object"
+}

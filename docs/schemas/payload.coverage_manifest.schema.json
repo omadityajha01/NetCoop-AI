@@ -1,0 +1,61 @@
+{
+  "$defs": {
+    "CoverageSignal": {
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/EntityRef"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        }
+      },
+      "required": [
+        "metric",
+        "entity"
+      ],
+      "title": "CoverageSignal",
+      "type": "object"
+    },
+    "EntityRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:\\-]{1,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "device",
+            "link",
+            "ap",
+            "service"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "EntityRef",
+      "type": "object"
+    }
+  },
+  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.coverage_manifest.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "signals": {
+      "items": {
+        "$ref": "#/$defs/CoverageSignal"
+      },
+      "title": "Signals",
+      "type": "array"
+    }
+  },
+  "title": "CoverageManifestPayload",
+  "type": "object"
+}

@@ -1,0 +1,88 @@
+{
+  "$defs": {
+    "Window": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Window",
+      "type": "object"
+    }
+  },
+  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.normalization_summary.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "complaint_present": {
+      "default": false,
+      "title": "Complaint Present",
+      "type": "boolean"
+    },
+    "extras": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Extras",
+      "type": "array"
+    },
+    "hints": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Hints",
+      "type": "array"
+    },
+    "incident_time": {
+      "title": "Incident Time",
+      "type": "string"
+    },
+    "incident_time_inferred": {
+      "title": "Incident Time Inferred",
+      "type": "boolean"
+    },
+    "input_sha256": {
+      "title": "Input Sha256",
+      "type": "string"
+    },
+    "quarantined": {
+      "items": {
+        "additionalProperties": true,
+        "type": "object"
+      },
+      "title": "Quarantined",
+      "type": "array"
+    },
+    "summary": {
+      "additionalProperties": {
+        "type": "integer"
+      },
+      "title": "Summary",
+      "type": "object"
+    },
+    "window": {
+      "$ref": "#/$defs/Window"
+    }
+  },
+  "required": [
+    "input_sha256",
+    "incident_time",
+    "incident_time_inferred",
+    "window",
+    "summary"
+  ],
+  "title": "NormalizationSummaryPayload",
+  "type": "object"
+}

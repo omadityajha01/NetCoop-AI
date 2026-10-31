@@ -18,14 +18,21 @@ from datetime import datetime, timedelta
 from typing import Any
 
 from netcoop.config import Config
-from netcoop.normalize.aliases import ENTITY_KEYS, LABEL_FIELDS, META_KEYS, TIME_KEYS, build_alias_index, resolve_field
+from netcoop.normalize.aliases import (
+    ENTITY_KEYS,
+    LABEL_FIELDS,
+    META_KEYS,
+    TIME_KEYS,
+    build_alias_index,
+    resolve_field,
+)
 from netcoop.normalize.entities import canonicalize
 from netcoop.normalize.plausibility import check_range
 from netcoop.normalize.timefix import parse_ts, rfc3339
 from netcoop.normalize.units import MISSING, coerce_value, infer_batch_multiplier, unit_multiplier
 from netcoop.protocol.findings import Limitation, Transform, Window
-from netcoop.protocol.versions import parse_version
 from netcoop.protocol.upcasters import UPCASTERS
+from netcoop.protocol.versions import parse_version
 
 _SOURCE_RE = re.compile(r"^[A-Za-z0-9_.:\-]{1,40}$")
 
@@ -110,10 +117,13 @@ def _decode(data: bytes, max_bytes: int) -> str:
 
 
 def _parse_csv(text: str) -> list[dict[str, Any]]:
-    reader = csv.DictReader(io.StringIO(text))
-    if not reader.fieldnames:
-        raise NormalizationError("MALFORMED", "CSV has no header row")
-    return [{(k or "").strip(): v for k, v in row.items() if k is not None} for row in reader]
+    try:
+        reader = csv.DictReader(io.StringIO(text, newline=""))
+        if not reader.fieldnames:
+            raise NormalizationError("MALFORMED", "CSV has no header row")
+        return [{(k or "").strip(): v for k, v in row.items() if k is not None} for row in reader]
+    except csv.Error as exc:
+        raise NormalizationError("MALFORMED", f"invalid CSV: {exc}") from exc
 
 
 def parse_input(data: bytes | str | dict | list, cfg: Config, filename: str | None = None) -> tuple[Any, str]:

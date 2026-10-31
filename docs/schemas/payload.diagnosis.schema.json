@@ -1,0 +1,504 @@
+{
+  "$defs": {
+    "Conflict": {
+      "additionalProperties": false,
+      "properties": {
+        "conflict_id": {
+          "title": "Conflict Id",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Finding Ids",
+          "type": "array"
+        },
+        "loser_finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Loser Finding Ids",
+          "type": "array"
+        },
+        "resolution": {
+          "title": "Resolution",
+          "type": "string"
+        },
+        "resolved": {
+          "title": "Resolved",
+          "type": "boolean"
+        },
+        "stale_finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Stale Finding Ids",
+          "type": "array"
+        },
+        "type": {
+          "enum": [
+            "C1",
+            "C2",
+            "C3"
+          ],
+          "title": "Type",
+          "type": "string"
+        },
+        "winner_finding_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Winner Finding Id"
+        }
+      },
+      "required": [
+        "conflict_id",
+        "type",
+        "detail",
+        "resolution",
+        "resolved"
+      ],
+      "title": "Conflict",
+      "type": "object"
+    },
+    "EntityRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:\\-]{1,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "device",
+            "link",
+            "ap",
+            "service"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "EntityRef",
+      "type": "object"
+    },
+    "Expectation": {
+      "additionalProperties": false,
+      "properties": {
+        "op": {
+          "enum": [
+            ">=",
+            "<=",
+            "<",
+            ">"
+          ],
+          "title": "Op",
+          "type": "string"
+        },
+        "ref": {
+          "enum": [
+            "warn",
+            "high",
+            "critical"
+          ],
+          "title": "Ref",
+          "type": "string"
+        }
+      },
+      "required": [
+        "op",
+        "ref"
+      ],
+      "title": "Expectation",
+      "type": "object"
+    },
+    "Hypothesis": {
+      "additionalProperties": false,
+      "properties": {
+        "contra": {
+          "title": "Contra",
+          "type": "number"
+        },
+        "contradicting_finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Contradicting Finding Ids",
+          "type": "array"
+        },
+        "coverage": {
+          "title": "Coverage",
+          "type": "number"
+        },
+        "entity": {
+          "$ref": "#/$defs/EntityRef"
+        },
+        "fault_type": {
+          "title": "Fault Type",
+          "type": "string"
+        },
+        "hypothesis_id": {
+          "title": "Hypothesis Id",
+          "type": "string"
+        },
+        "missing_signals": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Missing Signals",
+          "type": "array"
+        },
+        "quality": {
+          "title": "Quality",
+          "type": "number"
+        },
+        "score": {
+          "title": "Score",
+          "type": "number"
+        },
+        "source": {
+          "default": "findings",
+          "enum": [
+            "findings",
+            "hint",
+            "scope"
+          ],
+          "title": "Source",
+          "type": "string"
+        },
+        "support": {
+          "title": "Support",
+          "type": "number"
+        },
+        "supporting_finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Supporting Finding Ids",
+          "type": "array"
+        },
+        "unmatched_finding_ids": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Unmatched Finding Ids",
+          "type": "array"
+        }
+      },
+      "required": [
+        "hypothesis_id",
+        "fault_type",
+        "entity",
+        "score",
+        "support",
+        "coverage",
+        "contra",
+        "quality"
+      ],
+      "title": "Hypothesis",
+      "type": "object"
+    },
+    "Prediction": {
+      "additionalProperties": false,
+      "properties": {
+        "evidence_finding_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Evidence Finding Id"
+        },
+        "expected": {
+          "$ref": "#/$defs/Expectation"
+        },
+        "fault_type": {
+          "title": "Fault Type",
+          "type": "string"
+        },
+        "hypothesis_id": {
+          "title": "Hypothesis Id",
+          "type": "string"
+        },
+        "outcome": {
+          "default": "pending",
+          "enum": [
+            "pending",
+            "hit",
+            "miss",
+            "unknown"
+          ],
+          "title": "Outcome",
+          "type": "string"
+        },
+        "prediction_id": {
+          "title": "Prediction Id",
+          "type": "string"
+        },
+        "round": {
+          "default": 1,
+          "title": "Round",
+          "type": "integer"
+        },
+        "signal": {
+          "$ref": "#/$defs/SignalRef"
+        }
+      },
+      "required": [
+        "prediction_id",
+        "hypothesis_id",
+        "fault_type",
+        "signal",
+        "expected"
+      ],
+      "title": "Prediction",
+      "type": "object"
+    },
+    "Scope": {
+      "additionalProperties": false,
+      "properties": {
+        "affected_devices": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Affected Devices",
+          "type": "array"
+        },
+        "affected_entities": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Affected Entities",
+          "type": "array"
+        },
+        "nearest_common_upstream": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "title": "Nearest Common Upstream"
+        },
+        "segments": {
+          "items": {
+            "type": "string"
+          },
+          "title": "Segments",
+          "type": "array"
+        }
+      },
+      "required": [
+        "affected_entities",
+        "affected_devices",
+        "nearest_common_upstream",
+        "segments"
+      ],
+      "title": "Scope",
+      "type": "object"
+    },
+    "SignalRef": {
+      "additionalProperties": false,
+      "properties": {
+        "entity": {
+          "$ref": "#/$defs/EntityRef"
+        },
+        "metric": {
+          "title": "Metric",
+          "type": "string"
+        },
+        "window": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/Window"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null
+        }
+      },
+      "required": [
+        "metric",
+        "entity"
+      ],
+      "title": "SignalRef",
+      "type": "object"
+    },
+    "Window": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Window",
+      "type": "object"
+    }
+  },
+  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.diagnosis.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "anomalous_finding_count": {
+      "default": 0,
+      "title": "Anomalous Finding Count",
+      "type": "integer"
+    },
+    "caps": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Caps",
+      "type": "array"
+    },
+    "co_candidate_ids": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Co Candidate Ids",
+      "type": "array"
+    },
+    "confidence": {
+      "default": 0.0,
+      "title": "Confidence",
+      "type": "number"
+    },
+    "confidence_category": {
+      "default": "low",
+      "enum": [
+        "high",
+        "medium",
+        "low"
+      ],
+      "title": "Confidence Category",
+      "type": "string"
+    },
+    "conflicts": {
+      "items": {
+        "$ref": "#/$defs/Conflict"
+      },
+      "title": "Conflicts",
+      "type": "array"
+    },
+    "hypotheses": {
+      "items": {
+        "$ref": "#/$defs/Hypothesis"
+      },
+      "title": "Hypotheses",
+      "type": "array"
+    },
+    "margin": {
+      "default": 0.0,
+      "title": "Margin",
+      "type": "number"
+    },
+    "missing_signals": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Missing Signals",
+      "type": "array"
+    },
+    "notes": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Notes",
+      "type": "array"
+    },
+    "phase": {
+      "enum": [
+        "interim",
+        "final"
+      ],
+      "title": "Phase",
+      "type": "string"
+    },
+    "predictions": {
+      "items": {
+        "$ref": "#/$defs/Prediction"
+      },
+      "title": "Predictions",
+      "type": "array"
+    },
+    "round": {
+      "title": "Round",
+      "type": "integer"
+    },
+    "scope": {
+      "anyOf": [
+        {
+          "$ref": "#/$defs/Scope"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null
+    },
+    "status": {
+      "enum": [
+        "diagnosed",
+        "probable",
+        "insufficient_evidence",
+        "no_fault_detected",
+        "failed"
+      ],
+      "title": "Status",
+      "type": "string"
+    },
+    "top_hypothesis_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Top Hypothesis Id"
+    }
+  },
+  "required": [
+    "phase",
+    "round",
+    "status"
+  ],
+  "title": "DiagnosisPayload",
+  "type": "object"
+}

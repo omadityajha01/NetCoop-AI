@@ -1,0 +1,211 @@
+{
+  "$defs": {
+    "DataQuality": {
+      "additionalProperties": false,
+      "properties": {
+        "coerced": {
+          "default": false,
+          "title": "Coerced",
+          "type": "boolean"
+        },
+        "completeness": {
+          "maximum": 1,
+          "minimum": 0,
+          "title": "Completeness",
+          "type": "number"
+        },
+        "staleness_s": {
+          "minimum": 0,
+          "title": "Staleness S",
+          "type": "number"
+        }
+      },
+      "required": [
+        "completeness",
+        "staleness_s"
+      ],
+      "title": "DataQuality",
+      "type": "object"
+    },
+    "EntityRef": {
+      "additionalProperties": false,
+      "properties": {
+        "id": {
+          "pattern": "^[A-Za-z0-9_.:\\-]{1,64}$",
+          "title": "Id",
+          "type": "string"
+        },
+        "type": {
+          "enum": [
+            "device",
+            "link",
+            "ap",
+            "service"
+          ],
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "type",
+        "id"
+      ],
+      "title": "EntityRef",
+      "type": "object"
+    },
+    "Transform": {
+      "additionalProperties": false,
+      "properties": {
+        "field": {
+          "title": "Field",
+          "type": "string"
+        },
+        "from": {
+          "default": null,
+          "title": "From"
+        },
+        "reason": {
+          "title": "Reason",
+          "type": "string"
+        },
+        "step": {
+          "title": "Step",
+          "type": "string"
+        },
+        "to": {
+          "default": null,
+          "title": "To"
+        }
+      },
+      "required": [
+        "step",
+        "field",
+        "reason"
+      ],
+      "title": "Transform",
+      "type": "object"
+    },
+    "Window": {
+      "additionalProperties": false,
+      "properties": {
+        "end": {
+          "format": "date-time",
+          "title": "End",
+          "type": "string"
+        },
+        "start": {
+          "format": "date-time",
+          "title": "Start",
+          "type": "string"
+        }
+      },
+      "required": [
+        "start",
+        "end"
+      ],
+      "title": "Window",
+      "type": "object"
+    }
+  },
+  "$id": "https://netcoop.local/schemas/nmp-1.0/finding.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "aggregation": {
+      "enum": [
+        "p95",
+        "mean",
+        "max",
+        "count",
+        "rate"
+      ],
+      "title": "Aggregation",
+      "type": "string"
+    },
+    "data_quality": {
+      "$ref": "#/$defs/DataQuality"
+    },
+    "entity": {
+      "$ref": "#/$defs/EntityRef"
+    },
+    "finding_id": {
+      "pattern": "^F-[a-z0-9_]+-[0-9]+$",
+      "title": "Finding Id",
+      "type": "string"
+    },
+    "metric": {
+      "title": "Metric",
+      "type": "string"
+    },
+    "sample_count": {
+      "minimum": 0,
+      "title": "Sample Count",
+      "type": "integer"
+    },
+    "severity": {
+      "enum": [
+        "normal",
+        "warn",
+        "high",
+        "critical"
+      ],
+      "title": "Severity",
+      "type": "string"
+    },
+    "source": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Source"
+    },
+    "source_refs": {
+      "items": {
+        "type": "string"
+      },
+      "title": "Source Refs",
+      "type": "array"
+    },
+    "threshold_ref": {
+      "title": "Threshold Ref",
+      "type": "string"
+    },
+    "transforms": {
+      "items": {
+        "$ref": "#/$defs/Transform"
+      },
+      "title": "Transforms",
+      "type": "array"
+    },
+    "unit": {
+      "title": "Unit",
+      "type": "string"
+    },
+    "value": {
+      "title": "Value",
+      "type": "number"
+    },
+    "window": {
+      "$ref": "#/$defs/Window"
+    }
+  },
+  "required": [
+    "finding_id",
+    "metric",
+    "entity",
+    "value",
+    "unit",
+    "window",
+    "aggregation",
+    "sample_count",
+    "threshold_ref",
+    "severity",
+    "data_quality"
+  ],
+  "title": "Finding",
+  "type": "object"
+}

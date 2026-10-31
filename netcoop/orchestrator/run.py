@@ -6,9 +6,9 @@ import base64
 import hashlib
 import json
 import re
-from types import MappingProxyType
 from dataclasses import dataclass, field
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any
 
 from netcoop.agents.base import FindingsTool, ReadOnlyContext, TelemetryTool, make_context
@@ -27,7 +27,13 @@ from netcoop.normalize.pipeline import NormalizationError, normalize_bundle
 from netcoop.normalize.timefix import rfc3339
 from netcoop.orchestrator.rounds import max_rounds, needs_more_rounds
 from netcoop.policy.validator import scrub, validate_report
-from netcoop.protocol.envelope import INCIDENT_ID_PATTERN, SCHEMA_VERSION, Message, error_message, make_message
+from netcoop.protocol.envelope import (
+    INCIDENT_ID_PATTERN,
+    SCHEMA_VERSION,
+    Message,
+    error_message,
+    make_message,
+)
 from netcoop.storage import Store
 
 RUNS_DIR = ROOT / "runs"

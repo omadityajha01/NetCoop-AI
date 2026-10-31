@@ -1,0 +1,16 @@
+{
+  "$id": "https://netcoop.local/schemas/nmp-1.0/payload.report.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "report": {
+      "additionalProperties": true,
+      "title": "Report",
+      "type": "object"
+    }
+  },
+  "required": [
+    "report"
+  ],
+  "title": "ReportPayload",
+  "type": "object"
+}

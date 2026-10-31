@@ -43,8 +43,9 @@ def test_contradiction_and_quality(cfg):
     h = score_hypothesis(cfg, "congestion", "L_HOSTEL_UPLINK", index_findings(fs), q)
     support = 6 / 9
     contra = 2 / 3  # interface_errors (2) of C weights 2 + 1
-    quality = max(0.5, (0.5 + 0.5 + 1.0) / 3 - 0.05 * 1)
-    assert h.score == pytest.approx(max(0, support - 0.5 * contra) * quality, abs=1e-3)
+    sc = cfg.scoring
+    quality = max(sc["quality_floor"], (0.5 + 0.5 + 1.0) / 3 - sc["coerced_penalty"] * 1)
+    assert h.score == pytest.approx(max(0, support - sc["contra_penalty"] * contra) * quality, abs=1e-3)
 
 
 def test_localization_prefers_link_on_tie(cfg):

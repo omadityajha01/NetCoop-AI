@@ -85,7 +85,23 @@ def tables() -> dict[str, str]:
         ann = getattr(f.annotation, "__name__", str(f.annotation)).replace("typing.", "")
         rows.append(f"| `{k}` | {ann} | {FINDING_MEANING.get(k, '')} |")
     fnd = "\n".join(rows)
-    return {"metrics": metrics, "signatures": sigs, "policies": pol, "envelope": env, "finding": fnd}
+    out = {"metrics": metrics, "signatures": sigs, "policies": pol, "envelope": env, "finding": fnd}
+    rep = ROOT / "eval" / "reports"
+    if (rep / "eval.md").exists():
+        text = (rep / "eval.md").read_text(encoding="utf-8")
+        b = text.find("## Seed range B")
+        out["eval"] = (text[b:] if b >= 0 else text).replace("## Seed range B", "#### Seed range B").strip()
+    if (rep / "fuzz.md").exists():
+        out["fuzz"] = (rep / "fuzz.md").read_text(encoding="utf-8").replace("## Degradation", "#### Degradation").strip()
+    sc = cfg.scoring
+    out["constants"] = "\n".join([
+        "| Constant | Value |", "|---|---|",
+        f"| contra_penalty | {sc['contra_penalty']} |", f"| quality_floor | {sc['quality_floor']} |",
+        f"| coerced_penalty | {sc['coerced_penalty']} |", f"| stale_quality | {sc['stale_quality']} |",
+        *[f"| status.{k} | {v} |" for k, v in sc["status"].items()],
+        *[f"| confidence.{k} | {v} |" for k, v in sc["confidence"].items()],
+        f"| conflicts.c1_relative_diff | {sc['conflicts']['c1_relative_diff']} |"])
+    return out
 
 
 FINDING_MEANING = {
@@ -109,6 +125,6 @@ FINDING_MEANING = {
 def update_readme() -> None:
     text = README.read_text(encoding="utf-8")
     for key, table in tables().items():
-        pat = re.compile(rf"(<!-- BEGIN GENERATED: {key} -->\n).*?(\n<!-- END GENERATED: {key} -->)", re.S)
-        text = pat.sub(lambda m, t=table: m.group(1) + t + m.group(2), text)
+        pat = re.compile(rf"(<!-- BEGIN GENERATED: {key} -->\n)(?:.*?\n)?(<!-- END GENERATED: {key} -->)", re.S)
+        text = pat.sub(lambda m, t=table: m.group(1) + t + "\n" + m.group(2), text)
     README.write_text(text, encoding="utf-8")

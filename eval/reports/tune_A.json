@@ -1,0 +1,326 @@
+[
+  {
+    "objective": 0.661,
+    "macro": 0.775,
+    "wrong_rate": 0.057,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.1,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.661,
+    "macro": 0.775,
+    "wrong_rate": 0.057,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.1,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.667,
+    "macro": 0.775,
+    "wrong_rate": 0.054,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.1,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.661,
+    "macro": 0.775,
+    "wrong_rate": 0.057,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.15,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.661,
+    "macro": 0.775,
+    "wrong_rate": 0.057,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.15,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.667,
+    "macro": 0.775,
+    "wrong_rate": 0.054,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.15,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.661,
+    "macro": 0.775,
+    "wrong_rate": 0.057,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.2,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.661,
+    "macro": 0.775,
+    "wrong_rate": 0.057,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.2,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.667,
+    "macro": 0.775,
+    "wrong_rate": 0.054,
+    "fp_normal": 0.1,
+    "min_top_score": 0.45,
+    "min_margin": 0.2,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.629,
+    "macro": 0.707,
+    "wrong_rate": 0.039,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.1,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.643,
+    "macro": 0.707,
+    "wrong_rate": 0.032,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.1,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.657,
+    "macro": 0.707,
+    "wrong_rate": 0.025,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.1,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.629,
+    "macro": 0.707,
+    "wrong_rate": 0.039,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.15,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.643,
+    "macro": 0.707,
+    "wrong_rate": 0.032,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.15,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.657,
+    "macro": 0.707,
+    "wrong_rate": 0.025,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.15,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.629,
+    "macro": 0.707,
+    "wrong_rate": 0.039,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.2,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.643,
+    "macro": 0.707,
+    "wrong_rate": 0.032,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.2,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.657,
+    "macro": 0.707,
+    "wrong_rate": 0.025,
+    "fp_normal": 0.025,
+    "min_top_score": 0.55,
+    "min_margin": 0.2,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.637,
+    "macro": 0.679,
+    "wrong_rate": 0.021,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.1,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.657,
+    "macro": 0.679,
+    "wrong_rate": 0.011,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.1,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.665,
+    "macro": 0.679,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.1,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.637,
+    "macro": 0.679,
+    "wrong_rate": 0.021,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.15,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.657,
+    "macro": 0.679,
+    "wrong_rate": 0.011,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.15,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.665,
+    "macro": 0.679,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.15,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.637,
+    "macro": 0.679,
+    "wrong_rate": 0.021,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.2,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.657,
+    "macro": 0.679,
+    "wrong_rate": 0.011,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.2,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.665,
+    "macro": 0.679,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.6,
+    "min_margin": 0.2,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.636,
+    "macro": 0.664,
+    "wrong_rate": 0.014,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.1,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.65,
+    "macro": 0.664,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.1,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.65,
+    "macro": 0.664,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.1,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.636,
+    "macro": 0.664,
+    "wrong_rate": 0.014,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.15,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.65,
+    "macro": 0.664,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.15,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.65,
+    "macro": 0.664,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.15,
+    "contra_penalty": 1.0
+  },
+  {
+    "objective": 0.636,
+    "macro": 0.664,
+    "wrong_rate": 0.014,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.2,
+    "contra_penalty": 0.5
+  },
+  {
+    "objective": 0.65,
+    "macro": 0.664,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.2,
+    "contra_penalty": 0.75
+  },
+  {
+    "objective": 0.65,
+    "macro": 0.664,
+    "wrong_rate": 0.007,
+    "fp_normal": 0.0,
+    "min_top_score": 0.65,
+    "min_margin": 0.2,
+    "contra_penalty": 1.0
+  }
+]

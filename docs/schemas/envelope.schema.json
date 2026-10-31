@@ -1,0 +1,154 @@
+{
+  "$defs": {
+    "Limitation": {
+      "additionalProperties": false,
+      "properties": {
+        "code": {
+          "title": "Code",
+          "type": "string"
+        },
+        "detail": {
+          "title": "Detail",
+          "type": "string"
+        },
+        "impact": {
+          "default": "low",
+          "enum": [
+            "none",
+            "low",
+            "medium",
+            "high"
+          ],
+          "title": "Impact",
+          "type": "string"
+        }
+      },
+      "required": [
+        "code",
+        "detail"
+      ],
+      "title": "Limitation",
+      "type": "object"
+    }
+  },
+  "$id": "https://netcoop.local/schemas/nmp-1.0/envelope.schema.json",
+  "additionalProperties": false,
+  "properties": {
+    "created_at": {
+      "anyOf": [
+        {
+          "format": "date-time",
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Created At"
+    },
+    "extras": {
+      "additionalProperties": true,
+      "title": "Extras",
+      "type": "object"
+    },
+    "in_reply_to": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "In Reply To"
+    },
+    "incident_id": {
+      "pattern": "^INC-[0-9A-Z]{4,12}$",
+      "title": "Incident Id",
+      "type": "string"
+    },
+    "limitations": {
+      "items": {
+        "$ref": "#/$defs/Limitation"
+      },
+      "title": "Limitations",
+      "type": "array"
+    },
+    "message_id": {
+      "title": "Message Id",
+      "type": "string"
+    },
+    "message_type": {
+      "enum": [
+        "task_request",
+        "finding_report",
+        "coverage_manifest",
+        "prediction",
+        "evidence_request",
+        "evidence_response",
+        "diagnosis",
+        "report",
+        "error",
+        "normalization_summary"
+      ],
+      "title": "Message Type",
+      "type": "string"
+    },
+    "payload": {
+      "additionalProperties": true,
+      "title": "Payload",
+      "type": "object"
+    },
+    "recipient": {
+      "pattern": "^[a-z][a-z0-9_]{1,40}$",
+      "title": "Recipient",
+      "type": "string"
+    },
+    "schema_version": {
+      "default": "1.0",
+      "pattern": "^[0-9]+\\.[0-9]+$",
+      "title": "Schema Version",
+      "type": "string"
+    },
+    "sender": {
+      "pattern": "^[a-z][a-z0-9_]{1,40}$",
+      "title": "Sender",
+      "type": "string"
+    },
+    "seq": {
+      "anyOf": [
+        {
+          "type": "integer"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Seq"
+    },
+    "status": {
+      "default": "completed",
+      "enum": [
+        "completed",
+        "partial",
+        "failed",
+        "insufficient_data"
+      ],
+      "title": "Status",
+      "type": "string"
+    }
+  },
+  "required": [
+    "message_id",
+    "message_type",
+    "incident_id",
+    "sender",
+    "recipient",
+    "payload"
+  ],
+  "title": "Message",
+  "type": "object"
+}

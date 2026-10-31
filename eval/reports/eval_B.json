@@ -3,13 +3,14 @@
   "overall_accuracy": 0.818,
   "macro_accuracy": 0.818,
   "precision_when_diagnosed": 0.972,
+  "wrong_diagnosis_rate": 0.021,
   "false_positive_rate_normal": 0.05,
   "insufficient_evidence_rate": 0.161,
   "localization_accuracy": 0.995,
   "accuracy_on_mutated_inputs": 0.81,
   "mutated_share": 0.3,
   "crashes": 0,
-  "mean_ms_per_incident": 43.4,
+  "mean_ms_per_incident": 43.2,
   "per_fault": {
     "normal": {
       "n": 40,
@@ -63,7 +64,6 @@
       "insufficient_evidence": 21,
       "interface_fault": 0,
       "no_fault_detected": 17,
-      "normal": 0,
       "weak_wifi": 0
     },
     "congestion": {
@@ -74,7 +74,6 @@
       "insufficient_evidence": 7,
       "interface_fault": 0,
       "no_fault_detected": 0,
-      "normal": 0,
       "weak_wifi": 0
     },
     "interface_fault": {
@@ -85,7 +84,6 @@
       "insufficient_evidence": 0,
       "interface_fault": 40,
       "no_fault_detected": 0,
-      "normal": 0,
       "weak_wifi": 0
     },
     "device_overload": {
@@ -96,7 +94,6 @@
       "insufficient_evidence": 4,
       "interface_fault": 0,
       "no_fault_detected": 0,
-      "normal": 0,
       "weak_wifi": 0
     },
     "weak_wifi": {
@@ -107,7 +104,6 @@
       "insufficient_evidence": 13,
       "interface_fault": 0,
       "no_fault_detected": 0,
-      "normal": 0,
       "weak_wifi": 27
     },
     "dns_failure": {
@@ -118,7 +114,6 @@
       "insufficient_evidence": 0,
       "interface_fault": 0,
       "no_fault_detected": 0,
-      "normal": 0,
       "weak_wifi": 0
     },
     "dhcp_failure": {
@@ -129,7 +124,6 @@
       "insufficient_evidence": 0,
       "interface_fault": 0,
       "no_fault_detected": 0,
-      "normal": 0,
       "weak_wifi": 0
     }
   },

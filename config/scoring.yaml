@@ -1,6 +1,6 @@
 # Scoring constants (CLAUDE.md §6.3). INITIAL values.
 # Tune on eval seed range A; report on seed range B; never tune on demo scenarios.
-contra_penalty: 0.5            # score = clamp(support - contra_penalty * contra, 0, 1) * quality
+contra_penalty: 1.0            # TUNED on seed range A (was 0.5); score = clamp(support - contra_penalty * contra, 0, 1) * quality
 quality_floor: 0.5             # quality = max(quality_floor, mean(completeness) - coerced_penalty * n_coerced)
 coerced_penalty: 0.05
 stale_quality: 0.5             # completeness assigned to findings of a source marked stale (C2)

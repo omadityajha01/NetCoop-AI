@@ -6,7 +6,6 @@ import contextlib
 import io
 import random
 import runpy
-
 from datetime import UTC, datetime
 
 import pytest

@@ -14,7 +14,15 @@ from dataclasses import dataclass, field
 
 from netcoop.config import Config
 from netcoop.protocol.envelope import Message
-from netcoop.protocol.findings import EntityRef, Expectation, Finding, Hypothesis, Prediction, SignalRef, Window
+from netcoop.protocol.findings import (
+    EntityRef,
+    Expectation,
+    Finding,
+    Hypothesis,
+    Prediction,
+    SignalRef,
+    Window,
+)
 from netcoop.scoring.hypotheses import FindingIndex, best_finding, target_entities
 from netcoop.scoring.thresholds import NEGATE, compare, threshold_value
 
