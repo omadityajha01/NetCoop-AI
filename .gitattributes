@@ -1,0 +1,4 @@
+# Normalize line endings in the repo and in every working copy (Windows checkouts included)
+* text=auto eol=lf
+*.png binary
+*.pdf binary
