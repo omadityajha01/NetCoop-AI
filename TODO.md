@@ -239,6 +239,15 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   README tables are now generated, including the sweep table (previously static). The README prose and DEMO.md numbers
   are rebuilt from the reports.
 
+## U6: judge mode
+
+- `python tasks.py judge --fault <normal|latency_spike|hardware_failure|random> --seed <n|random>` runs the raw organizer
+  generator → full pipeline → summary + timeline (`runs/judge/`), and states whether the result matches the
+  documented label mapping (non-zero exit if not). Random choices use `SystemRandom`.
+- `python tasks.py present --judge` adds an **optional** step 9 (prompts for label/seed). **Decision:** opt-in, so the
+  default 8-step script, the snapshots and preflight are unchanged.
+- U1's target was met (organizer B 100/100/100), so judge mode was added as instructed.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

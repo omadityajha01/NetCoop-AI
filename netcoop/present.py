@@ -326,7 +326,7 @@ STEPS = [
 ]
 
 
-def present(port: int, *, auto: bool = False, out: Path | None = None) -> int:
+def present(port: int, *, auto: bool = False, out: Path | None = None, with_judge: bool = False) -> int:
     os.environ["NETCOOP_LLM"] = "off"
     runs = (ROOT / "runs" / "present") if out is None else out / "_runs"
     if runs.exists():
@@ -423,6 +423,18 @@ def present(port: int, *, auto: bool = False, out: Path | None = None) -> int:
             save(step, rep, tl, text)
             if i < len(STEPS):
                 pause()
+        if with_judge:  # optional step 9: a judge picks the organizer label and seed
+            pause()
+            print("\n" + c("[9/9] Judge mode: you pick an organizer label and a seed", "1;34"))
+            fault, seed = "random", "random"
+            if not auto:
+                try:
+                    fault = input(f"  label ({'/'.join(ORGANIZER_LABELS)}/random) [random]: ").strip() or "random"
+                    seed = input("  seed (number/random) [random]: ").strip() or "random"
+                except EOFError:
+                    pass
+            if judge(fault, seed, runs) != 0:
+                failures.append("09_judge")
     finally:
         agent.stop()
     print()
@@ -432,6 +444,53 @@ def present(port: int, *, auto: bool = False, out: Path | None = None) -> int:
         return 1
     print(ok("All 8 steps matched the script. Measured, not claimed."))
     return 0
+
+
+# ---------------------------------------------------------------------------- judge mode (U6)
+
+ORGANIZER_LABELS = ("normal", "latency_spike", "hardware_failure")
+EXPECTED_FOR_LABEL = {"normal": ("no_fault_detected", None), "latency_spike": ("diagnosed", "latency_spike"),
+                      "hardware_failure": ("diagnosed", "hardware_failure")}
+
+
+def judge(fault: str = "random", seed: str | int = "random", runs: Path | None = None) -> int:
+    """Raw organizer generator -> full pipeline -> summary + timeline. A judge picks the label and seed."""
+    import random as _random
+
+    from eval.organizer_check import load_generator
+    from netcoop.config import load_config, thaw
+
+    os.environ["NETCOOP_LLM"] = "off"
+    pick = _random.SystemRandom()
+    label = pick.choice(ORGANIZER_LABELS) if fault == "random" else fault
+    if label not in ORGANIZER_LABELS:
+        print(bad(f"unknown organizer label {label!r}; choose one of {', '.join(ORGANIZER_LABELS)} or random"))
+        return 2
+    s = pick.randrange(1_000_000) if str(seed) == "random" else int(seed)
+    _random.seed(s)
+    rec = load_generator()(label)  # exactly what the organizer's generator emits, no preprocessing
+    print(c(f"Judge mode: organizer generator, label={label}, seed={s}", "1;34"))
+    print(dim("  raw record: " + json.dumps(rec)))
+    base = load_config()
+    agents = thaw(base.agents)
+    agents["external"] = []  # organizer data has no Wi-Fi telemetry
+    cfg = base.with_overrides(agents=agents)
+    rep, tl = run_scenario_bytes(json.dumps(rec).encode(), cfg, runs or ROOT / "runs" / "judge", f"INC-JUDGE{s % 10000:04d}")
+    print(summary(rep))
+    st, ft = EXPECTED_FOR_LABEL[label]
+    match = rep["status"] == st and (ft is None or rep.get("fault_type") == ft)
+    print(("  " + ok("MATCHES") if match else "  " + bad("DIFFERS FROM")) +
+          f" the documented mapping {label} -> {ft or st} (data/generator/SCHEMA.md)")
+    print(dim(f"  timeline: {tl}"))
+    return 0 if match else 1
+
+
+def run_scenario_bytes(data: bytes, cfg: Any, runs: Path, incident_id: str) -> tuple[dict[str, Any], Path]:
+    from netcoop.orchestrator.run import RunOptions, run_incident
+    from netcoop.timeline import write_timeline
+
+    res = run_incident(data, cfg, RunOptions(incident_id=incident_id, runs_dir=runs, external=False, store=False))
+    return res.report, write_timeline(res.run_dir, res.run_dir / "timeline.html")
 
 
 def snapshots(port: int) -> int:
@@ -449,14 +508,19 @@ def snapshots(port: int) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="tasks.py")
-    ap.add_argument("cmd", choices=["preflight", "present", "snapshots"])
+    ap.add_argument("cmd", choices=["preflight", "present", "snapshots", "judge"])
     ap.add_argument("--port", type=int, default=DEFAULT_PORT)
     ap.add_argument("--auto", action="store_true", help="present without waiting for Enter")
+    ap.add_argument("--judge", action="store_true", help="present: add optional step 9 (judge mode)")
+    ap.add_argument("--fault", default="random", help="judge: organizer label or random")
+    ap.add_argument("--seed", default="random", help="judge: integer seed or random")
     a = ap.parse_args(argv)
     if a.cmd == "preflight":
         return preflight(a.port)
     if a.cmd == "present":
-        return present(a.port, auto=a.auto)
+        return present(a.port, auto=a.auto, with_judge=a.judge)
+    if a.cmd == "judge":
+        return judge(a.fault, a.seed)
     return snapshots(a.port)
 
 

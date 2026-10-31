@@ -33,3 +33,10 @@ def test_stale_agent_matcher_ignores_unrelated_processes(monkeypatch):
         "104 node /x/external_agents/wireless_agent/server.js\n")})())
     assert present._agent_pids(9001) == [101]
     assert present._agent_pids(8765) == [104]  # default port when --port is absent
+
+
+def test_judge_mode_matches_documented_mapping(tmp_path):
+    for label in present.ORGANIZER_LABELS:
+        for seed in (1, 2):
+            assert present.judge(label, seed, runs=tmp_path) == 0, (label, seed)
+    assert present.judge("not_a_label", 1, runs=tmp_path) == 2

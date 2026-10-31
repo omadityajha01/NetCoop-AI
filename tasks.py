@@ -1,7 +1,8 @@
 """Cross-platform task runner mirroring the Makefile (Windows has no make).
 
     python tasks.py setup | test | demo | eval | fuzz | tune | sweep | organizer | conformance [URL] | schemas | docs
-                    | fixtures | lint | agent | preflight | present [--port N] [--auto] | snapshots
+                    | fixtures | lint | agent | preflight | present [--port N] [--auto] [--judge] | snapshots
+                    | judge [--fault normal|latency_spike|hardware_failure|random] [--seed N|random]
 """
 
 from __future__ import annotations
@@ -49,7 +50,7 @@ def main() -> int:
         return sh(PY, "-m", "eval.generate", "--fixtures")
     if t == "lint":
         return sh(PY, "-m", "ruff", "check", "netcoop", "eval", "conformance", "tests", "tasks.py")
-    if t in ("preflight", "present", "snapshots"):
+    if t in ("preflight", "present", "snapshots", "judge"):
         from netcoop.present import main as present_main
 
         return present_main([t, *args])

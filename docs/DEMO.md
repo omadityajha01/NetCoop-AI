@@ -40,6 +40,11 @@ Every step prints a compact colored summary and writes a static timeline:
 | 7 | **Policy** | `BLOCKED Reboot HOSTEL_CORE_SW_01: blocked by R1 (Class hours)` | • Recommendations come only from the playbook and pass code-enforced rules. The reboot is shown as *blocked with a rule id*, never silently dropped. • Remediation is never executed. |
 | 8 | **Normal network** | `no_fault_detected` | • A healthy network is reported as healthy. Warn-level noise goes to `observations`, never to evidence. |
 
+**Optional step 9, judge mode** (`python tasks.py present --judge`, or on its own: `python tasks.py judge --fault <label|random> --seed <n|random>`).
+A judge picks an organizer label (`normal`, `latency_spike`, `hardware_failure`) and any seed. The **raw organizer
+generator** produces the record, which goes through the full pipeline with no preprocessing, and the output says whether
+it matches the documented mapping (`data/generator/SCHEMA.md`). Talking point: "we don't pick the data, you do."
+
 ### Numbers to quote (`eval/reports/`; tuned on seed range A, reported on held-out seed range B)
 
 **Organizer generator** (raw `data/generator/organizer_generator.py`, 500 seeds per label, seed range B):
