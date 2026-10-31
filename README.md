@@ -78,6 +78,12 @@ is recorded as a `human_decision` event. An approved, policy-allowed action also
 is executed and the diagnosis does not change. The page is static
 vanilla JS (no build, no CDN). It renders text only and is served with a strict Content-Security-Policy.
 
+**Building a frontend:** the API, SSE stream, every message payload and a glossary are in
+[`docs/FRONTEND_API.md`](docs/FRONTEND_API.md), generated from the code. Real recorded runs are in
+[`docs/frontend_fixtures/`](docs/frontend_fixtures/). `python tools/mock_api.py` serves them on the same endpoints with
+no backend. Put a new UI in `dashboard_v2/` and serve it with `netcoop serve --ui dashboard_v2`; the default UI is
+unchanged.
+
 **Chat with NetCoop via MCP:** `netcoop mcp` exposes `list_scenarios`, `list_agents`, `diagnose`, `get_report` and
 `explain` to an MCP client such as Claude Desktop. The client's LLM can ask and explain, but the code decides. Setup,
 guardrails and example prompts: [`docs/MCP.md`](docs/MCP.md).

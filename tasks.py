@@ -55,7 +55,7 @@ def main() -> int:
     if t == "fixtures":
         return sh(PY, "-m", "eval.generate", "--fixtures")
     if t == "lint":
-        return sh(PY, "-m", "ruff", "check", "netcoop", "eval", "conformance", "tests", "tasks.py")
+        return sh(PY, "-m", "ruff", "check", "netcoop", "eval", "conformance", "tests", "tools", "tasks.py")
     if t in ("preflight", "present", "snapshots", "judge"):
         from netcoop.present import main as present_main
 
