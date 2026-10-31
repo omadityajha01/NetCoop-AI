@@ -78,12 +78,36 @@ it matches the documented mapping (`data/generator/SCHEMA.md`). Talking point: "
 
 * Corruption (organizer records through the fuzzer): accuracy 1.0 at 0% → 0.982 at 60%, **0 wrong diagnoses**, 0 failed runs, 0 crashes.
 
-### Known weaknesses (say them before you're asked)
-* **device_overload 0.80** on our generator (target was 0.85). The misses are mostly weakened overloads ending as
-  `insufficient_evidence`, plus a few read as congestion.
-* **hardware_failure at reduced severity is confidently mislabeled**: at 25% severity it is called `interface_fault`/`congestion`.
-  At the generator's own severity it is 100% correct. Scoring was frozen for the demo, so this is reported, not tuned.
-* Calibration on organizer data is slightly overconfident in the 0.50–0.75 bin (from that same case).
+### Known weaknesses: say them before you're asked (one spoken answer each)
+
+**Weakened hardware failure.**
+> "If we weaken the organizer's hardware failure to a quarter or half of its strength, we never claim high confidence:
+> all 400 of those cases come back *medium*. Hardware failure is either the top cause or named in the report 100% of
+> the time. By score it is in the top two 75% of the time at a quarter strength and 100% at half strength. At a quarter
+> strength the top cause is interface fault or congestion, because that is what the weakened symptoms look like."
+
+(Numbers: held-out seeds, 200 per level, `eval/reports/weak_hw_after.json`. At 25%: 150 probable interface fault with hardware
+failure as co-candidate, 50 congestion with hardware failure as an alternative. At 50%: 140 hardware failure on top,
+60 interface fault on top with hardware failure as co-candidate.)
+
+If someone asks about the line *"symptoms also consistent with hardware failure at lower severity"* on the congestion
+report: "That line is report-only. It lists any fault whose signature covers every symptom we matched. It changed no
+status, confidence or root cause on any of 1,680 test incidents; we checked byte for byte."
+
+**Device overload at 0.80.**
+> "Device overload is our weakest class on our own generator: 0.80 on held-out data, 32 of 40. Five end as
+> *insufficient evidence* and three are read as congestion. When we're unsure we abstain rather than guess: overall,
+> when we commit we're right 98% of the time."
+
+**Single snapshot.**
+> "The organizer's generator gives one record per device. One sample can show a fault but not that it persists, so
+> every such report carries the limitation *single snapshot: persistence not verified*. It's a disclosure; it doesn't
+> change the diagnosis."
+
+**Organizer calibration gap.**
+> "On organizer data, in the 0.5–0.75 confidence band, we say 0.60 and we're right 0.567 of the time, within 4
+> points. Those are the weakened hardware-failure cases. At the generator's real strength every diagnosis is confidence
+> 1.0 and correct, and on our own generator we're never overconfident in any band."
 
 ## Fallback plan
 
@@ -149,6 +173,12 @@ No. Both sources are synthetic: the organizer's generator, and ours, which we wr
 the organizer's lacks (Wi-Fi, DNS/DHCP, links, multi-sample windows) plus things that hurt us (confounders, gaps,
 corruption). Its numbers (0.90 overall on held-out seeds) measure internal consistency under realistic
 noise, not field accuracy, and the README says so.
+
+**"Why not tune it away?"**
+"Because the held-out numbers are only honest if we don't tune on what we've seen. Scoring was frozen before these
+measurements. Tuning to the weakened hardware-failure cases now would mean fitting the test set and quoting a number we
+can no longer trust. So it's a measured, disclosed trade-off. The fix we did make (W2) only adds hardware failure to the
+report's alternatives, and a byte-for-byte check over 1,680 incidents shows it changed no decision."
 
 **"Why not use the A2A SDK?"**
 A2A is our transport; the meaning lives in NMP plus the metric registry. The core speaks the A2A wire shapes (agent

@@ -357,6 +357,14 @@ Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
 - True label in top-2 (rank by score, unaffected by W2): 25% 0.75, 50% 1.00, 75% 1.00, 100% 1.00.
   hardware_failure is shown in the report (top or alternative_causes) 100% at every level after W2 (25%: 0.25 before).
 
+## W3: stage wording
+
+- DEMO.md known weaknesses rewritten as one spoken answer each, with exact numbers: weakened hardware failure (all 400 medium,
+  shown 100%, top-2 by score 0.75/1.00 at 25%/50%), overload 0.80 (32/40; 5 insufficient, 3 congestion),
+  single snapshot, organizer calibration gap (0.60 vs 0.567, within 4 points). There is also an answer for the new
+  "consistent with hardware failure at lower severity" line, which appears on stage step 1 (congestion).
+- Q&A added: "Why not tune it away?"
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
