@@ -164,6 +164,24 @@ class HumanDecisionPayload(_P):
     note_stored: bool = False
 
 
+SIMULATED_LABEL = "SIMULATED – NOT EXECUTED"
+
+
+class RemediationPlanPayload(_P):
+    """Dry-run plan for a human-approved, policy-allowed action (NMP 1.4). A record only: NetCoop never executes it
+    (no network, no shell; G1/G2) and it never changes the diagnosis."""
+
+    action_id: str = Field(pattern=r"^[A-Z]{2,6}-[0-9]{1,3}$")
+    action: str = Field(pattern=r"^[a-z_]{1,40}$")
+    target: str | None = Field(default=None, max_length=64)
+    label: Literal["SIMULATED – NOT EXECUTED"] = SIMULATED_LABEL
+    executed: Literal[False] = False
+    policy: dict[str, Any]
+    steps: list[str] = Field(min_length=1, max_length=10)
+    rollback: list[str] = Field(min_length=1, max_length=5)
+    human_decision_seq: int = Field(ge=1)
+
+
 PAYLOAD_MODELS: dict[str, type[BaseModel]] = {
     "task_request": TaskRequestPayload,
     "finding_report": FindingReportPayload,
@@ -177,4 +195,5 @@ PAYLOAD_MODELS: dict[str, type[BaseModel]] = {
     "normalization_summary": NormalizationSummaryPayload,
     "hint": HintPayload,
     "human_decision": HumanDecisionPayload,
+    "remediation_plan": RemediationPlanPayload,
 }

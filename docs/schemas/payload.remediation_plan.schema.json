@@ -1,0 +1,80 @@
+{
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.remediation_plan.schema.json",
+  "additionalProperties": false,
+  "description": "Dry-run plan for a human-approved, policy-allowed action (NMP 1.4). A record only: NetCoop never executes it\n(no network, no shell; G1/G2) and it never changes the diagnosis.",
+  "properties": {
+    "action": {
+      "pattern": "^[a-z_]{1,40}$",
+      "title": "Action",
+      "type": "string"
+    },
+    "action_id": {
+      "pattern": "^[A-Z]{2,6}-[0-9]{1,3}$",
+      "title": "Action Id",
+      "type": "string"
+    },
+    "executed": {
+      "const": false,
+      "default": false,
+      "title": "Executed",
+      "type": "boolean"
+    },
+    "human_decision_seq": {
+      "minimum": 1,
+      "title": "Human Decision Seq",
+      "type": "integer"
+    },
+    "label": {
+      "const": "SIMULATED \u2013 NOT EXECUTED",
+      "default": "SIMULATED \u2013 NOT EXECUTED",
+      "title": "Label",
+      "type": "string"
+    },
+    "policy": {
+      "additionalProperties": true,
+      "title": "Policy",
+      "type": "object"
+    },
+    "rollback": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 5,
+      "minItems": 1,
+      "title": "Rollback",
+      "type": "array"
+    },
+    "steps": {
+      "items": {
+        "type": "string"
+      },
+      "maxItems": 10,
+      "minItems": 1,
+      "title": "Steps",
+      "type": "array"
+    },
+    "target": {
+      "anyOf": [
+        {
+          "maxLength": 64,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Target"
+    }
+  },
+  "required": [
+    "action_id",
+    "action",
+    "policy",
+    "steps",
+    "rollback",
+    "human_decision_seq"
+  ],
+  "title": "RemediationPlanPayload",
+  "type": "object"
+}

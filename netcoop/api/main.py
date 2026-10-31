@@ -127,7 +127,7 @@ class Feedback(BaseModel):
 def post_feedback(incident_id: str, fb: Feedback) -> dict[str, Any]:
     d = _dir(incident_id)
     try:
-        return record_human_decision(d, _store(), incident_id, fb.action_id, fb.decision, fb.note)
+        return record_human_decision(d, _store(), incident_id, fb.action_id, fb.decision, fb.note, cfg=load_config())
     except UnknownAction as exc:
         raise _err(404, "UNKNOWN_ACTION", "action_id is not an action of this incident") from exc
 

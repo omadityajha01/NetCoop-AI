@@ -77,3 +77,48 @@ hardware_failure:
     - {id: HW-2, action: failover,         target: device, text: "Fail traffic over from {device} to a redundant path"}
     - {id: HW-3, action: replace_hardware, target: device, text: "Open an RMA / replace the faulty hardware in {device}"}
     - {id: HW-4, action: reboot,           target: device, text: "Reboot {device} only if hardware diagnostics pass"}
+
+# Dry-run templates (S1), one per action verb. Rendered ONLY after a human approves an action that passes the policy
+# checker, and emitted as an NMP `remediation_plan` labelled "SIMULATED – NOT EXECUTED". NetCoop never executes these
+# steps: no network, no shell (G1/G2). Placeholders: {target} the action's target device (validated topology id),
+# {segment} its segment, {action_id} the playbook action id. Substitution is single-pass and literal.
+_dry_run:
+  inspect:
+    steps: ["Open a read-only session to {target}", "Collect the counters and logs named in {action_id}", "Attach the collected output to the incident"]
+    rollback: ["Close the read-only session to {target}; nothing was changed"]
+  review_qos:
+    steps: ["Export the current QoS / queue configuration of {target}", "Compare queue thresholds with the {segment} traffic profile", "Draft a proposed queue change for review"]
+    rollback: ["Discard the draft; the exported configuration of {target} stays unchanged"]
+  rate_limit:
+    steps: ["Save the running configuration of {target}", "Prepare a temporary rate-limit policy for the top talkers behind {target}", "Schedule an expiry for the temporary policy"]
+    rollback: ["Remove the temporary rate-limit policy and restore the saved configuration of {target}"]
+  reboot:
+    steps: ["Save the running configuration of {target}", "Announce a maintenance notice for the {segment} segment", "Reload {target} in a maintenance window"]
+    rollback: ["If {target} does not return, boot the saved configuration and fail traffic to the redundant path"]
+  move_port:
+    steps: ["Save the running configuration of {target}", "Prepare the spare port on {target} with the uplink configuration", "Move the uplink cable to the spare port"]
+    rollback: ["Move the cable back and restore the saved port configuration on {target}"]
+  replace_optic:
+    steps: ["Identify the transceiver model and port on {target}", "Prepare a spare transceiver of the same model", "Swap the transceiver during a maintenance window"]
+    rollback: ["Reinstall the original transceiver on {target}"]
+  config_change:
+    steps: ["Save the running configuration of {target}", "Prepare the configuration change named in {action_id}", "Apply it during a maintenance window"]
+    rollback: ["Restore the saved configuration of {target}"]
+  relocate:
+    steps: ["Survey candidate mounting points near {target} in {segment}", "Prepare a site plan for review"]
+    rollback: ["Keep {target} in place; the site plan is only a proposal"]
+  failover:
+    steps: ["Check that the redundant path for {target} is healthy", "Prepare the failover change for {target}", "Shift traffic in a maintenance window"]
+    rollback: ["Shift traffic back to {target} and restore the saved configuration"]
+  restart_service:
+    steps: ["Check the service status on {target}", "Restart the service on {target} in a maintenance window"]
+    rollback: ["If the service does not start, restore its previous configuration on {target}"]
+  replace_hardware:
+    steps: ["Open an RMA for the faulty component in {target}", "Schedule the replacement in a maintenance window"]
+    rollback: ["Reinstall the original component in {target} if the replacement fails its checks"]
+  collect:
+    steps: ["Collect the missing signals listed in the report", "Re-run the diagnosis with the new data"]
+    rollback: ["Nothing to undo: data collection only"]
+  monitor:
+    steps: ["Keep the current monitoring in place"]
+    rollback: ["Nothing to undo"]
