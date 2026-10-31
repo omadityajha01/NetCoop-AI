@@ -85,7 +85,7 @@
     "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
     "Root cause requires further verification by an operator before any change"
   ],
-  "schema_version": "1.3",
+  "schema_version": "1.4",
   "decision_source": "deterministic_scoring",
   "confidence_category": "high",
   "status_reason": null,
