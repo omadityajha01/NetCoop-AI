@@ -91,6 +91,8 @@ def tables() -> dict[str, str]:
         text = (rep / "eval.md").read_text(encoding="utf-8")
         b = text.find("## Seed range B")
         out["eval"] = (text[b:] if b >= 0 else text).replace("## Seed range B", "#### Seed range B").strip()
+    if (rep / "organizer.md").exists():
+        out["organizer"] = (rep / "organizer.md").read_text(encoding="utf-8").strip()
     if (rep / "fuzz.md").exists():
         out["fuzz"] = (rep / "fuzz.md").read_text(encoding="utf-8").replace("## Degradation", "#### Degradation").strip()
     sc = cfg.scoring

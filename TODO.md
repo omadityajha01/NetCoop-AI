@@ -57,6 +57,20 @@ Decisions taken where CLAUDE.md left room ("choose the simpler option and log it
 
 Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 
+## T2: organizer-data truth check
+
+- `python -m eval.organizer_check --seeds 500` runs the raw, unmodified organizer generator (500 seeds × 3 faults)
+  through the full pipeline. Results are in `eval/reports/organizer.{json,md}` and the README.
+- Result: normal → 100% `no_fault_detected`. `latency_spike` and `hardware_failure` → detected 100%, but 0% committed
+  (all `insufficient_evidence (no_signature_match)`).
+- **Decision:** organizer faults are scored on *detection*. The organizer gives no mapping from `latency_spike` /
+  `hardware_failure` to a NetCoop signature, and we do not invent one.
+- **Decision (conditional rule not triggered):** "if organizer device IDs aren't in topology → keep them unplaced".
+  They are in topology (`SW_CAMPUS_1..10` were added to `config/topology.yaml` in the initial build), and none are
+  quarantined (tested). So the unplaced-entity path was **not** implemented, and quarantine of unknown entities is
+  unchanged. Stability before the demo.
+- Tests: `tests/integration/test_organizer_data.py`.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

@@ -1,0 +1,38 @@
+{
+  "normal": {
+    "n": 500,
+    "statuses": {
+      "no_fault_detected": 500
+    },
+    "labels": {
+      "no_fault_detected": 500
+    },
+    "records_quarantined": 0,
+    "accuracy": 1.0,
+    "committed_rate": 0.0
+  },
+  "latency_spike": {
+    "n": 500,
+    "statuses": {
+      "insufficient_evidence": 500
+    },
+    "labels": {
+      "insufficient_evidence (no_signature_match)": 500
+    },
+    "records_quarantined": 0,
+    "detection_rate": 1.0,
+    "committed_rate": 0.0
+  },
+  "hardware_failure": {
+    "n": 500,
+    "statuses": {
+      "insufficient_evidence": 500
+    },
+    "labels": {
+      "insufficient_evidence (no_signature_match)": 500
+    },
+    "records_quarantined": 0,
+    "detection_rate": 1.0,
+    "committed_rate": 0.0
+  }
+}

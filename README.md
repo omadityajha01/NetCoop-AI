@@ -360,6 +360,39 @@ realistic:
 `wireless_agent`**. Constants were tuned on **seed range A** (`python -m eval.run_eval tune`, grid in
 `eval/reports/tune_A.json`); the numbers below are from the held-out **seed range B**.
 
+### Accuracy by data source
+
+Two data sources are evaluated separately:
+
+| Source | Fault types it produces | Ground truth |
+|---|---|---|
+| **Organizer generator** (`data/generator/`, raw, unmodified) | `normal`, `latency_spike`, `hardware_failure` (one record per call, `SW_CAMPUS_1..10`) | `normal` only; the two faults have no mapping to a NetCoop signature |
+| **NetCoop extended generator** (`eval/generate.py` + `harden()`) | `normal`, `congestion`, `interface_fault`, `device_overload`, `weak_wifi`, `dns_failure`, `dhcp_failure` | exact fault type + location |
+
+<!-- BEGIN GENERATED: organizer -->
+#### Organizer generator (raw, unmodified)
+
+`data/generator/organizer_generator.py`, 500 seeds per fault type, one record per call, full pipeline, no preprocessing. The organizer faults have no mapping to NetCoop signatures, so `latency_spike` / `hardware_failure` are scored on detection (not `no_fault_detected`).
+
+| organizer fault | n | score | committed (diagnosed/probable) | status distribution | label distribution | records quarantined |
+|---|---|---|---|---|---|---|
+| `normal` | 500 | accuracy 1.0 | 0.0 | no_fault_detected 500 | no_fault_detected 500 | 0 |
+| `latency_spike` | 500 | detection 1.0 | 0.0 | insufficient_evidence 500 | insufficient_evidence (no_signature_match) 500 | 0 |
+| `hardware_failure` | 500 | detection 1.0 | 0.0 | insufficient_evidence 500 | insufficient_evidence (no_signature_match) 500 | 0 |
+<!-- END GENERATED: organizer -->
+
+**What this shows:**
+* On raw organizer data NetCoop **detects** every fault (never `no_fault_detected`) but **does not commit** to a
+  root cause: all 1,000 fault records end as `insufficient_evidence (no_signature_match)`. Healthy records are
+  100% `no_fault_detected`.
+* This is the intended behavior on that data. `hardware_failure` maxes *every* signal (CPU 99.9, utilization 100,
+  interface errors, drops), so each signature is contradicted by another's symptom. `latency_spike` has high
+  latency, but utilization stays below `high` and queue drops are normal, so no signature matches.
+* A single sample per window also caps data quality at 0.5. NetCoop reports the anomaly and the missing
+  discriminating signals instead of guessing.
+
+### Extended generator (held-out seed range B)
+
 <!-- BEGIN GENERATED: eval -->
 #### Seed range B (held-out report)
 
