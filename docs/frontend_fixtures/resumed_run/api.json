@@ -1,0 +1,16 @@
+[
+  {
+    "method": "CLI",
+    "path": "netcoop resume INC-RESUMED1",
+    "request": null,
+    "status": 0,
+    "response": {
+      "state": "resumed",
+      "kept": 13,
+      "appended": 14,
+      "detail": "kept 13 logged message(s), appended 14",
+      "killed_exit_code": 137,
+      "messages_before_resume": 13
+    }
+  }
+]

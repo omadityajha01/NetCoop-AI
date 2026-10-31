@@ -1,0 +1,83 @@
+{
+  "incident_id": "INC-Q3BLERDV",
+  "status": "no_fault_detected",
+  "suspected_root_cause": "No fault detected: measurements within expected ranges",
+  "confidence": 1.0,
+  "affected_devices": [],
+  "supporting_evidence": [],
+  "alternative_causes": [],
+  "recommended_actions": [
+    "No action required; continue monitoring"
+  ],
+  "evidence_sources": [
+    "connectivity_agent",
+    "infrastructure_agent",
+    "performance_agent"
+  ],
+  "limitations": [
+    "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
+    "External agent wireless_agent unreachable; its signals were unavailable"
+  ],
+  "schema_version": "1.4",
+  "decision_source": "deterministic_scoring",
+  "confidence_category": "high",
+  "status_reason": null,
+  "observations": [],
+  "fault_type": null,
+  "scoring": {
+    "support": 0.0,
+    "coverage": 0.0,
+    "contra": 0.0,
+    "quality": 1.0,
+    "score": 0.0,
+    "margin": 0.0
+  },
+  "co_candidates": [],
+  "rejected_alternatives": [],
+  "predictions": [],
+  "blocked_actions": [],
+  "action_details": [
+    {
+      "id": "GEN-2",
+      "action": "monitor",
+      "target": null,
+      "text": "No action required; continue monitoring",
+      "allowed": true,
+      "rule_id": null
+    }
+  ],
+  "missing_signals": [],
+  "conflicts": [],
+  "agents": {
+    "connectivity_agent": "completed",
+    "correlation_agent": "completed",
+    "infrastructure_agent": "completed",
+    "performance_agent": "completed",
+    "reporting_agent": "completed",
+    "wireless_agent": "unreachable"
+  },
+  "normalization_summary": {
+    "records_in": 150,
+    "records_used": 150,
+    "records_quarantined": 0,
+    "observations_used": 720,
+    "renamed": 354,
+    "unit_converted": 0,
+    "unit_inferred": 0,
+    "entity_canonicalized": 0,
+    "coerced": 0,
+    "quarantined": 0,
+    "missing_values": 0,
+    "deduped": 0,
+    "out_of_window": 0,
+    "version_upcast": 0,
+    "extras": 0
+  },
+  "narrative": "All analysed measurements are within expected ranges; no fault was detected.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
+}

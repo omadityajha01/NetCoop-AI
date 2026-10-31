@@ -1,0 +1,155 @@
+{
+  "incident_id": "INC-UPUDVYA2",
+  "status": "diagnosed",
+  "suspected_root_cause": "Likely DHCP service failure preventing new address leases on DHCP_01",
+  "confidence": 1.0,
+  "affected_devices": [
+    "DHCP_01"
+  ],
+  "supporting_evidence": [
+    {
+      "metric": "dhcp_failure_pct",
+      "value": 46.18,
+      "unit": "pct",
+      "entity": "DHCP_01",
+      "interpretation": "Critical DHCP lease failure rate",
+      "finding_id": "F-connectivity_agent-1",
+      "source_agent": "connectivity_agent",
+      "hypothesis": "dhcp_failure"
+    },
+    {
+      "metric": "latency_ms",
+      "value": 14.79,
+      "unit": "ms",
+      "entity": "DC_SW_01",
+      "interpretation": "Normal network latency (prediction P-1-1 hit)",
+      "finding_id": "F-performance_agent-10001",
+      "source_agent": "performance_agent",
+      "hypothesis": "dhcp_failure"
+    },
+    {
+      "metric": "packet_loss_pct",
+      "value": 0.162,
+      "unit": "pct",
+      "entity": "DC_SW_01",
+      "interpretation": "Normal packet loss (prediction P-1-2 hit)",
+      "finding_id": "F-performance_agent-10002",
+      "source_agent": "performance_agent",
+      "hypothesis": "dhcp_failure"
+    }
+  ],
+  "alternative_causes": [],
+  "recommended_actions": [
+    "Inspect lease pool exhaustion and relay (ip helper) settings for DHCP_01",
+    "Extend the address pool or shorten lease time on DHCP_01",
+    "Restart the DHCP service on DHCP_01"
+  ],
+  "evidence_sources": [
+    "connectivity_agent",
+    "performance_agent"
+  ],
+  "limitations": [
+    "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
+    "Root cause requires further verification by an operator before any change",
+    "External agent wireless_agent unreachable; its signals were unavailable"
+  ],
+  "schema_version": "1.4",
+  "decision_source": "deterministic_scoring",
+  "confidence_category": "high",
+  "status_reason": null,
+  "observations": [],
+  "fault_type": "dhcp_failure",
+  "scoring": {
+    "support": 1.0,
+    "coverage": 1.0,
+    "contra": 0.0,
+    "quality": 1.0,
+    "score": 1.0,
+    "margin": 1.0
+  },
+  "co_candidates": [],
+  "rejected_alternatives": [],
+  "predictions": [
+    {
+      "prediction_id": "P-1-1",
+      "round": 1,
+      "hypothesis": "dhcp_failure",
+      "signal": "latency_ms@DC_SW_01",
+      "expected": "< high (150 ms)",
+      "outcome": "hit",
+      "observed": 14.79,
+      "evidence_finding_id": "F-performance_agent-10001"
+    },
+    {
+      "prediction_id": "P-1-2",
+      "round": 1,
+      "hypothesis": "dhcp_failure",
+      "signal": "packet_loss_pct@DC_SW_01",
+      "expected": "< high (3 pct)",
+      "outcome": "hit",
+      "observed": 0.162,
+      "evidence_finding_id": "F-performance_agent-10002"
+    }
+  ],
+  "blocked_actions": [],
+  "action_details": [
+    {
+      "id": "DHCP-1",
+      "action": "inspect",
+      "target": "DHCP_01",
+      "text": "Inspect lease pool exhaustion and relay (ip helper) settings for DHCP_01",
+      "allowed": true,
+      "rule_id": null
+    },
+    {
+      "id": "DHCP-2",
+      "action": "config_change",
+      "target": "DHCP_01",
+      "text": "Extend the address pool or shorten lease time on DHCP_01",
+      "allowed": true,
+      "rule_id": null
+    },
+    {
+      "id": "DHCP-3",
+      "action": "restart_service",
+      "target": "DHCP_01",
+      "text": "Restart the DHCP service on DHCP_01",
+      "allowed": true,
+      "rule_id": null
+    }
+  ],
+  "missing_signals": [],
+  "conflicts": [],
+  "agents": {
+    "connectivity_agent": "completed",
+    "correlation_agent": "completed",
+    "infrastructure_agent": "completed",
+    "performance_agent": "completed",
+    "reporting_agent": "completed",
+    "wireless_agent": "unreachable"
+  },
+  "normalization_summary": {
+    "records_in": 54,
+    "records_used": 54,
+    "records_quarantined": 0,
+    "observations_used": 240,
+    "renamed": 114,
+    "unit_converted": 0,
+    "unit_inferred": 0,
+    "entity_canonicalized": 0,
+    "coerced": 0,
+    "quarantined": 0,
+    "missing_values": 0,
+    "deduped": 0,
+    "out_of_window": 0,
+    "version_upcast": 0,
+    "extras": 0
+  },
+  "narrative": "Likely DHCP service failure preventing new address leases on DHCP_01 (confidence 1.00, high). Key evidence: dhcp_failure_pct=46.18 on DHCP_01, latency_ms=14.79 on DC_SW_01, packet_loss_pct=0.162 on DC_SW_01. 2 of 2 logged predictions were hits.",
+  "llm": {
+    "mode": "off",
+    "model": null,
+    "narrative_source": "template",
+    "hints": []
+  }
+}

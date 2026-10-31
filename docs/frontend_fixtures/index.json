@@ -1,0 +1,122 @@
+[
+  {
+    "name": "congestion",
+    "incident_id": "INC-LWP6J7WP",
+    "status": "diagnosed",
+    "fault_type": "congestion",
+    "confidence": 1.0,
+    "messages": 27,
+    "scenario": "congestion",
+    "about": "Link congestion on L_HOSTEL_UPLINK: 3 predictions (2 hit, 1 miss), one action blocked by R1 in the report"
+  },
+  {
+    "name": "weak_wifi_before",
+    "incident_id": "INC-3MX2CGBG",
+    "status": "insufficient_evidence",
+    "fault_type": null,
+    "confidence": 0.33,
+    "messages": 30,
+    "scenario": "weak_wifi",
+    "about": "Wi-Fi complaint, external wireless_agent NOT running: insufficient_evidence with missing_signals rssi_dbm/snr_db/retransmission_pct@AP_H3"
+  },
+  {
+    "name": "normal",
+    "incident_id": "INC-Q3BLERDV",
+    "status": "no_fault_detected",
+    "fault_type": null,
+    "confidence": 1.0,
+    "messages": 18,
+    "scenario": "normal",
+    "about": "Healthy network: no_fault_detected"
+  },
+  {
+    "name": "dns_failure",
+    "incident_id": "INC-FQD7PRLB",
+    "status": "diagnosed",
+    "fault_type": "dns_failure",
+    "confidence": 1.0,
+    "messages": 24,
+    "scenario": "dns_failure",
+    "about": "dns_failure scenario (extra, so the mock can serve every scenario)"
+  },
+  {
+    "name": "dhcp_failure",
+    "incident_id": "INC-UPUDVYA2",
+    "status": "diagnosed",
+    "fault_type": "dhcp_failure",
+    "confidence": 1.0,
+    "messages": 24,
+    "scenario": "dhcp_failure",
+    "about": "dhcp_failure scenario (extra, so the mock can serve every scenario)"
+  },
+  {
+    "name": "interface_fault",
+    "incident_id": "INC-QPKVQ6JL",
+    "status": "diagnosed",
+    "fault_type": "interface_fault",
+    "confidence": 1.0,
+    "messages": 27,
+    "scenario": "interface_fault",
+    "about": "interface_fault scenario (extra, so the mock can serve every scenario)"
+  },
+  {
+    "name": "weak_wifi_after",
+    "incident_id": "INC-3MX2CGBG1",
+    "status": "diagnosed",
+    "fault_type": "weak_wifi",
+    "confidence": 1.0,
+    "messages": 30,
+    "scenario": "weak_wifi",
+    "about": "Same incident after the Node wireless_agent (dialect 0.9) joined via A2A: diagnosed weak_wifi on AP_H3; its findings carry version/alias/unit/entity transforms"
+  },
+  {
+    "name": "interop_llm_hint",
+    "incident_id": "INC-AAQTTVKO",
+    "status": "diagnosed",
+    "fault_type": "device_overload",
+    "confidence": 0.85,
+    "messages": 28,
+    "scenario": "interop",
+    "about": "Messy multi-dialect input with an injected complaint; NETCOOP_LLM=local llama3.2:3b: triage_agent sends an advisory `hint` (dns_failure); the diagnosis is unchanged (device_overload, deterministic_scoring)"
+  },
+  {
+    "name": "blocked_action_r1",
+    "incident_id": "INC-LWP6J7WP1",
+    "status": "diagnosed",
+    "fault_type": "congestion",
+    "confidence": 1.0,
+    "messages": 28,
+    "scenario": "congestion",
+    "about": "Approve CONG-4 (reboot HOSTEL_CORE_SW_01): human_decision is logged, the policy check blocks it by R1 (Class hours), no remediation_plan"
+  },
+  {
+    "name": "approved_action_plan",
+    "incident_id": "INC-LWP6J7WP2",
+    "status": "diagnosed",
+    "fault_type": "congestion",
+    "confidence": 1.0,
+    "messages": 30,
+    "scenario": "congestion",
+    "about": "Approve CONG-1: human_decision + remediation_plan 'SIMULATED – NOT EXECUTED' (steps + rollback); then reject CONG-2: human_decision only. The report is unchanged"
+  },
+  {
+    "name": "resumed_run",
+    "incident_id": "INC-RESUMED1",
+    "status": "diagnosed",
+    "fault_type": "congestion",
+    "confidence": 1.0,
+    "messages": 27,
+    "scenario": "congestion",
+    "about": "Process killed (exit 137) at the first correlation task after round 0 with 13 messages logged; `netcoop resume` kept them and appended 14. report.json is byte-identical to an uninterrupted run"
+  },
+  {
+    "name": "malformed_input_error",
+    "incident_id": "INC-LNPPZSZE",
+    "status": "failed",
+    "fault_type": null,
+    "confidence": 0.0,
+    "messages": 1,
+    "scenario": null,
+    "about": "Upload of invalid JSON: an `error` message (code MALFORMED) from the normalizer; HTTP 200 with a report whose status is `failed`"
+  }
+]

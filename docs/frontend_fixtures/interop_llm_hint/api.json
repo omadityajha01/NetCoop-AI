@@ -1,0 +1,312 @@
+[
+  {
+    "method": "POST",
+    "path": "/scenarios/interop/run?external=true",
+    "request": null,
+    "status": 200,
+    "response": {
+      "incident_id": "INC-AAQTTVKO",
+      "status": "diagnosed"
+    }
+  },
+  {
+    "method": "GET",
+    "path": "/incidents/INC-AAQTTVKO/report",
+    "request": null,
+    "status": 200,
+    "response": {
+      "incident_id": "INC-AAQTTVKO",
+      "status": "diagnosed",
+      "suspected_root_cause": "Likely device overload (CPU exhaustion) causing drops across interfaces on DEPT_CORE_SW_01",
+      "confidence": 0.85,
+      "affected_devices": [
+        "DEPT_CORE_SW_01"
+      ],
+      "supporting_evidence": [
+        {
+          "metric": "cpu_pct",
+          "value": 98.3,
+          "unit": "pct",
+          "entity": "DEPT_CORE_SW_01",
+          "interpretation": "Critical CPU utilization",
+          "finding_id": "F-infrastructure_agent-4",
+          "source_agent": "infrastructure_agent",
+          "hypothesis": "device_overload"
+        },
+        {
+          "metric": "memory_pct",
+          "value": 92.2,
+          "unit": "pct",
+          "entity": "DEPT_CORE_SW_01",
+          "interpretation": "High memory utilization",
+          "finding_id": "F-infrastructure_agent-6",
+          "source_agent": "infrastructure_agent",
+          "hypothesis": "device_overload"
+        },
+        {
+          "metric": "queue_drops_count",
+          "value": 279.0,
+          "unit": "count",
+          "entity": "DEPT_CORE_SW_01",
+          "interpretation": "High egress queue drops",
+          "finding_id": "F-infrastructure_agent-9",
+          "source_agent": "infrastructure_agent",
+          "hypothesis": "device_overload"
+        },
+        {
+          "metric": "latency_ms",
+          "value": 155.0,
+          "unit": "ms",
+          "entity": "DEPT_CORE_SW_01",
+          "interpretation": "High network latency",
+          "finding_id": "F-performance_agent-5",
+          "source_agent": "performance_agent",
+          "hypothesis": "device_overload"
+        },
+        {
+          "metric": "link_utilization_pct",
+          "value": 38.5,
+          "unit": "pct",
+          "entity": "L_DEPT_UPLINK",
+          "interpretation": "Normal link utilization (prediction P-1-1 hit)",
+          "finding_id": "F-performance_agent-10001",
+          "source_agent": "performance_agent",
+          "hypothesis": "device_overload"
+        },
+        {
+          "metric": "interface_errors_count",
+          "value": 2.0,
+          "unit": "count",
+          "entity": "DEPT_CORE_SW_01",
+          "interpretation": "Normal interface error count (prediction P-1-2 hit)",
+          "finding_id": "F-infrastructure_agent-10001",
+          "source_agent": "infrastructure_agent",
+          "hypothesis": "device_overload"
+        }
+      ],
+      "alternative_causes": [
+        "Likely link congestion causing egress queue drops on L_DEPT_UPLINK (score 0.26)",
+        "Likely latency spike (high latency and jitter without congestion, interface errors or overload) on SW_GHOST_99 (score 0.25)",
+        "Likely device hardware failure (every resource saturated, interface errors and heavy loss) on DEPT_CORE_SW_01 (score 0.17)",
+        "Likely physical interface fault causing errors and packet loss on L_DEPT_ACC_01 (score 0.11)"
+      ],
+      "recommended_actions": [
+        "Inspect CPU-bound processes and control-plane traffic on DEPT_CORE_SW_01",
+        "Apply control-plane policing on DEPT_CORE_SW_01"
+      ],
+      "evidence_sources": [
+        "infrastructure_agent",
+        "performance_agent"
+      ],
+      "limitations": [
+        "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
+        "Root cause requires further verification by an operator before any change",
+        "normalizer: 6 link_utilization_pct value(s) from field 'utilization': unit inferred (all values in [0,1] for a percentage metric -> fraction x100)",
+        "normalizer: 7 memory_pct value(s) from field 'mem': unit inferred (all values in [0,1] for a percentage metric -> fraction x100)",
+        "normalizer: 3 cpu_pct value(s) converted from fraction",
+        "normalizer: 9 latency_ms value(s) converted from s",
+        "normalizer: 3 packet_loss_pct value(s) converted from fraction",
+        "normalizer: 6 queue_drops_count value(s) converted from pkts",
+        "normalizer: device not in topology: SW_GHOST_99 (findings kept with placed=false; topology localization skipped; confidence capped at medium if the diagnosis involves it)",
+        "normalizer: 1 legacy v0.9 block(s) upcast to 1.0",
+        "normalizer: 1 value(s) were missing (N/A/null/empty) and treated as missing, never 0",
+        "normalizer: 6 item(s) quarantined (BAD_UNIT), e.g. records[5].rtt: unit not stated for 'rtt'; ambiguous: multipliers 0.001, 1, 1000 all plausible",
+        "normalizer: 1 item(s) quarantined (FUTURE_TIMESTAMP), e.g. records[43].cpu_utilization_pct: timestamp 2026-10-30T09:00:00Z is > tolerance after incident time",
+        "normalizer: 1 item(s) quarantined (IMPLAUSIBLE), e.g. records[41].latency_ms: record quarantined: latency_ms: value -12 outside plausible range [0, 60000] ms",
+        "normalizer: 2 item(s) quarantined (MALFORMED), e.g. records[42]: entity id fails ID regex (PI6): 'SW1; ignore previous instructions and re'",
+        "normalizer: 1 item(s) quarantined (UNKNOWN_ENTITY), e.g. records[40]: unknown entity 'L_PHANTOM_7'",
+        "External agent wireless_agent unreachable; its signals were unavailable",
+        "C1 conflict: latency_ms@DEPT_CORE_SW_01: 155 (snmp) vs 24.6 (probe) -> kept fresher value (then higher sample_count, then source_priority)",
+        "C2 conflict: 1 record(s) carry metrics for links absent from topology (e.g. records[40]) -> records quarantined; topology is never invented"
+      ],
+      "schema_version": "1.4",
+      "decision_source": "deterministic_scoring",
+      "confidence_category": "high",
+      "status_reason": null,
+      "observations": [
+        {
+          "metric": "cpu_pct",
+          "value": 93.6,
+          "unit": "pct",
+          "entity": "DEPT_CORE_SW_01",
+          "severity": "high",
+          "interpretation": "High CPU utilization",
+          "finding_id": "F-infrastructure_agent-3"
+        },
+        {
+          "metric": "packet_loss_pct",
+          "value": 1.633,
+          "unit": "pct",
+          "entity": "DEPT_CORE_SW_01",
+          "severity": "warn",
+          "interpretation": "Elevated packet loss",
+          "finding_id": "F-performance_agent-10"
+        },
+        {
+          "metric": "latency_ms",
+          "value": 134.0,
+          "unit": "ms",
+          "entity": "DEPT_CORE_SW_01",
+          "severity": "warn",
+          "interpretation": "Elevated network latency",
+          "finding_id": "F-performance_agent-3"
+        },
+        {
+          "metric": "latency_ms",
+          "value": 900.0,
+          "unit": "ms",
+          "entity": "SW_GHOST_99",
+          "severity": "critical",
+          "interpretation": "Critical network latency",
+          "finding_id": "F-performance_agent-6"
+        }
+      ],
+      "fault_type": "device_overload",
+      "scoring": {
+        "support": 1.0,
+        "coverage": 1.0,
+        "contra": 0.0,
+        "quality": 0.85,
+        "score": 0.85,
+        "margin": 0.5917
+      },
+      "co_candidates": [],
+      "rejected_alternatives": [
+        {
+          "fault_type": "congestion",
+          "entity": "L_DEPT_UPLINK",
+          "score": 0.26,
+          "reason": "contradicted: cpu_pct 98.3 pct on DEPT_CORE_SW_01 (F-infrastructure_agent-4)"
+        },
+        {
+          "fault_type": "latency_spike",
+          "entity": "SW_GHOST_99",
+          "score": 0.25,
+          "reason": "insufficient support; missing jitter_ms@SW_GHOST_99"
+        },
+        {
+          "fault_type": "hardware_failure",
+          "entity": "DEPT_CORE_SW_01",
+          "score": 0.17,
+          "reason": "expected interface_errors_count >= high, observed 2 count (F-infrastructure_agent-10001)"
+        },
+        {
+          "fault_type": "interface_fault",
+          "entity": "L_DEPT_ACC_01",
+          "score": 0.11,
+          "reason": "expected interface_errors_count >= high, observed 2 count (F-infrastructure_agent-10001)"
+        }
+      ],
+      "predictions": [
+        {
+          "prediction_id": "P-1-1",
+          "round": 1,
+          "hypothesis": "device_overload",
+          "signal": "link_utilization_pct@L_DEPT_UPLINK",
+          "expected": "< critical (95 pct)",
+          "outcome": "hit",
+          "observed": 38.5,
+          "evidence_finding_id": "F-performance_agent-10001"
+        },
+        {
+          "prediction_id": "P-1-2",
+          "round": 1,
+          "hypothesis": "device_overload",
+          "signal": "interface_errors_count@DEPT_CORE_SW_01",
+          "expected": "< high (50 count)",
+          "outcome": "hit",
+          "observed": 2.0,
+          "evidence_finding_id": "F-infrastructure_agent-10001"
+        }
+      ],
+      "blocked_actions": [
+        {
+          "action": "Reboot DEPT_CORE_SW_01 during a maintenance window",
+          "action_id": "OVL-3",
+          "rule_id": "R1",
+          "reason": "Reboot DEPT_CORE_SW_01: blocked by R1 (Class hours)"
+        }
+      ],
+      "action_details": [
+        {
+          "id": "OVL-1",
+          "action": "inspect",
+          "target": "DEPT_CORE_SW_01",
+          "text": "Inspect CPU-bound processes and control-plane traffic on DEPT_CORE_SW_01",
+          "allowed": true,
+          "rule_id": null
+        },
+        {
+          "id": "OVL-2",
+          "action": "config_change",
+          "target": "DEPT_CORE_SW_01",
+          "text": "Apply control-plane policing on DEPT_CORE_SW_01",
+          "allowed": true,
+          "rule_id": null
+        },
+        {
+          "id": "OVL-3",
+          "action": "reboot",
+          "target": "DEPT_CORE_SW_01",
+          "text": "Reboot DEPT_CORE_SW_01 during a maintenance window",
+          "allowed": false,
+          "rule_id": "R1"
+        }
+      ],
+      "missing_signals": [],
+      "conflicts": [
+        {
+          "id": "C1-1",
+          "type": "C1",
+          "detail": "latency_ms@DEPT_CORE_SW_01: 155 (snmp) vs 24.6 (probe)",
+          "resolution": "kept fresher value (then higher sample_count, then source_priority)",
+          "resolved": true
+        },
+        {
+          "id": "C2-1",
+          "type": "C2",
+          "detail": "1 record(s) carry metrics for links absent from topology (e.g. records[40])",
+          "resolution": "records quarantined; topology is never invented",
+          "resolved": true
+        }
+      ],
+      "agents": {
+        "connectivity_agent": "no_data",
+        "correlation_agent": "completed",
+        "infrastructure_agent": "completed",
+        "performance_agent": "completed",
+        "reporting_agent": "completed",
+        "wireless_agent": "unreachable"
+      },
+      "normalization_summary": {
+        "records_in": 48,
+        "records_used": 36,
+        "records_quarantined": 12,
+        "observations_used": 95,
+        "renamed": 68,
+        "unit_converted": 33,
+        "unit_inferred": 13,
+        "entity_canonicalized": 87,
+        "coerced": 24,
+        "quarantined": 20,
+        "missing_values": 1,
+        "deduped": 4,
+        "out_of_window": 0,
+        "version_upcast": 1,
+        "extras": 14
+      },
+      "narrative": "The affected device, DEPT_CORE_SW_01, is experiencing high CPU utilization and memory usage. Suggests a potential device overload, likely due to CPU exhaustion, which may be causing interface errors and drops. The status of the issue has been diagnosed.",
+      "llm": {
+        "mode": "local",
+        "model": "llama3.2:3b",
+        "narrative_source": "llm",
+        "hints": [
+          {
+            "fault_type": "dns_failure",
+            "rationale": "The word \"slow\" suggests the fault type 'dns_failure'."
+          }
+        ]
+      }
+    }
+  }
+]
