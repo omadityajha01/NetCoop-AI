@@ -82,6 +82,11 @@
           "title": "Metric",
           "type": "string"
         },
+        "placed": {
+          "default": true,
+          "title": "Placed",
+          "type": "boolean"
+        },
         "sample_count": {
           "minimum": 0,
           "title": "Sample Count",

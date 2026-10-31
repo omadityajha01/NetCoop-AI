@@ -160,7 +160,7 @@ generated from config by `make docs`.
 |---|---|---|
 | `schema_version` | "MAJOR.MINOR" | Protocol version of this message (current 1.1; 1.0 accepted; 0.9 upcast) |
 | `message_id` | uuid | Unique; receivers are idempotent on duplicates (content-derived UUIDv4) |
-| `message_type` | enum | `task_request`, `finding_report`, `coverage_manifest`, `prediction`, `evidence_request`, `evidence_response`, `diagnosis`, `report`, `error`, `normalization_summary` |
+| `message_type` | enum | `task_request`, `finding_report`, `coverage_manifest`, `prediction`, `evidence_request`, `evidence_response`, `diagnosis`, `report`, `error`, `normalization_summary`, `hint` |
 | `incident_id` | str | Server-generated, `^INC-[0-9A-Z]{4,12}$` |
 | `sender / recipient` | agent_id | `recipient` may be `orchestrator` |
 | `in_reply_to` | uuid | null | `message_id` this responds to |

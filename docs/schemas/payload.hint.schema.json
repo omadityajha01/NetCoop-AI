@@ -1,0 +1,37 @@
+{
+  "$id": "https://netcoop.local/schemas/nmp-1.1/payload.hint.schema.json",
+  "additionalProperties": false,
+  "description": "LLM triage hint (NMP 1.2). Advisory only: it can ADD a hypothesis for the agents to test (PI5), never decide.",
+  "properties": {
+    "fault_type": {
+      "maxLength": 40,
+      "minLength": 1,
+      "title": "Fault Type",
+      "type": "string"
+    },
+    "model": {
+      "anyOf": [
+        {
+          "maxLength": 60,
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ],
+      "default": null,
+      "title": "Model"
+    },
+    "rationale": {
+      "maxLength": 200,
+      "title": "Rationale",
+      "type": "string"
+    }
+  },
+  "required": [
+    "fault_type",
+    "rationale"
+  ],
+  "title": "HintPayload",
+  "type": "object"
+}

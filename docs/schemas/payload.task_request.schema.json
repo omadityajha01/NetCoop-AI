@@ -41,7 +41,8 @@
         "scope",
         "correlate",
         "finalize",
-        "report"
+        "report",
+        "triage"
       ],
       "title": "Task",
       "type": "string"
