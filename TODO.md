@@ -447,6 +447,36 @@ Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
 - RUNBOOK stage version → demo-final-3 (fallback demo-final-2).
 - Gate: 210 passed / 2 skipped offline; llm_live 3/3; golden 0 / 1,680; preflight 15/15; fresh clone OK; CI green.
 
+## S1: remediation dry-run (demo-final-4)
+
+- `playbook.yaml` `_dry_run`: one parameterized template per action verb (steps + rollback). On a `human_decision`
+  approve, the policy checker runs again at the incident time, the same time the report used. If blocked: the rule id,
+  no plan. If allowed: NMP **1.4** `remediation_plan` labelled "SIMULATED – NOT EXECUTED". No network, no shell
+  (AST-checked); report and replay are unchanged. Single-pass literal substitution; targets must be topology ids.
+
+## S2: dashboard animation (demo-final-5)
+
+- Static files only; CSP unchanged (tested). Seq-ordered reorder buffer, sender→recipient pulse, Replay at 1×/2×,
+  prediction flip at the evidence message, topology fade + localized-root pulse, raw → canonical morph rows,
+  "joined via A2A" badge, plan reveal, report slide-in + confidence bar. Transform/opacity keyframes only; fixed lane
+  height; prefers-reduced-motion disables motion and paced replay. Pure helpers unit-tested with Node.
+
+## S3: smoke test (fresh clone of demo-final-5, new venv)
+
+Install, 228 passed / 2 skipped, preflight 15/15, then (scratchpad smoke.py over HTTP + MCP stdio):
+
+| Check | Result |
+|---|---|
+| congestion → diagnosed | PASS: congestion 1.00 on HOSTEL_CORE_SW_01 |
+| weak_wifi, no agent → insufficient_evidence | PASS |
+| Node agent + conformance | PASS: 7/7 |
+| weak_wifi with agent → diagnosed AP_H3 | PASS: weak_wifi 1.00 |
+| approve CONG-1 → human_decision + remediation_plan | PASS: #28 + #29 "SIMULATED – NOT EXECUTED"; report unchanged |
+| approve CONG-4 (reboot) → blocked | PASS: R1 (Class hours), no plan |
+| resume after os._exit kill | PASS: kept 13, appended 14, report byte-identical |
+| MCP stdio (list_scenarios, diagnose, explain) | PASS: 5 tools, 7 scenarios, 5 evidence, 3 predictions; traversal → BAD_PATH |
+| LLM local llama3.2:3b on interop | PASS: hint dns_failure; device_overload 0.85 identical to LLM off; narrative from llm |
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
