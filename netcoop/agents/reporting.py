@@ -189,6 +189,20 @@ def build_report(ctx: ReadOnlyContext, params: dict[str, Any]) -> dict[str, Any]
             alternatives.append(f"{label(h)} on {h.entity.id} (score {h.score:.2f})")
         reason = _reject_reason(cfg, h, fmap)
         rejected.append({"fault_type": h.fault_type, "entity": h.entity.id, "score": round(h.score, 2), "reason": reason})
+    # W2 (report only, no effect on status/confidence/root cause): a hypothesis whose expected signals cover every
+    # signal the top hypothesis matched, and which has partial support, is also listed as an alternative (with its
+    # score), even if it is the co-candidate or was contradicted to score 0.
+    lower_severity: list[str] = []
+    if top is not None:
+        matched = {fmap[f].metric for f in top.supporting_finding_ids if f in fmap}
+        for h in hyps:
+            if h.hypothesis_id == top.hypothesis_id or not matched:
+                continue
+            if matched <= set(cfg.signatures[h.fault_type]["expects"]) and 0 < h.support < 1:
+                txt = f"{label(h)} on {h.entity.id} (score {h.score:.2f})"
+                if txt not in alternatives:
+                    alternatives.append(txt)
+                lower_severity.append(h.fault_type.replace("_", " "))
 
     # ---- actions
     if status in ("diagnosed", "probable") and top:
@@ -252,6 +266,8 @@ def build_report(ctx: ReadOnlyContext, params: dict[str, Any]) -> dict[str, Any]
                     if f.finding_id in ev_ids and f.data_quality.staleness_s > float(cfg.agents["data"]["staleness_threshold_s"])})
     if stale:
         limitations.append("Stale evidence used: " + ", ".join(stale[:6]))
+    for name in lower_severity:
+        limitations.append(f"symptoms also consistent with {name} at lower severity")
     limitations = list(dict.fromkeys(scrub(x)[:300] for x in limitations))
 
     # ---- extensions

@@ -75,7 +75,8 @@
   "limitations": [
     "Synthetic telemetry (organizer generator schema + NetCoop extensions); not campus measurements",
     "Root cause requires further verification by an operator before any change",
-    "External agent wireless_agent unreachable; its signals were unavailable"
+    "External agent wireless_agent unreachable; its signals were unavailable",
+    "symptoms also consistent with hardware failure at lower severity"
   ],
   "schema_version": "1.1",
   "confidence_category": "high",

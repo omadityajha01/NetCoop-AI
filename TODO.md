@@ -342,6 +342,21 @@ Organizer generator wrapped (`eval/weak_hw.py`), held-out seeds 100000–100199:
   all of those name it as co-candidate. W2 is implemented as specified.
 - Golden baseline for W2: `eval/golden.py --write eval/reports/golden_before.json` (1,680 incidents).
 
+## W2: report-only alternatives (triggered by W1)
+
+- Rule (reporting agent only): if a hypothesis's expected signals include every signal the top hypothesis matched, and
+  its support is partial (0 < support < 1), list it in `alternative_causes` with its score (even when it is the co-candidate
+  or was contradicted to score 0), and add the limitation "symptoms also consistent with <fault> at lower severity".
+- **Golden test** (`eval/golden.py`, 1,680 incidents: our generator B, organizer B, hardware_failure at 25/50/75/100%):
+  **0 changes to status / confidence / suspected_root_cause / affected_devices.** 281 report-only changes
+  (hw 25%: 200, hw 50%: 60, ours: 21). The comparison normalizes the organizer generator's `utcnow()` timestamps inside
+  limitation text, which differ on every run regardless of code.
+- Side effect: 19 of our-generator congestion reports also say "symptoms also consistent with hardware failure at
+  lower severity" (hardware_failure expects all congestion symptoms at critical level), and 2 overload→congestion misses now
+  list device overload as an alternative.
+- True label in top-2 (rank by score, unaffected by W2): 25% 0.75, 50% 1.00, 75% 1.00, 100% 1.00.
+  hardware_failure is shown in the report (top or alternative_causes) 100% at every level after W2 (25%: 0.25 before).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

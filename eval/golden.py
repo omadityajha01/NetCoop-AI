@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import random
+import re
 import sys
 from pathlib import Path
 from typing import Any
@@ -25,6 +26,14 @@ from netcoop.orchestrator.run import RunOptions, run_incident
 
 DECISION = ("status", "confidence", "suspected_root_cause", "affected_devices")
 FREE = ("alternative_causes", "limitations")
+
+
+_TS = re.compile(r"\d{4}-\d\d-\d\dT[\d:.]+Z")
+
+
+def _norm(v: Any) -> Any:
+    """The organizer generator stamps records with utcnow(), so limitation text carries run-time timestamps."""
+    return [_TS.sub("<ts>", x) for x in v] if isinstance(v, list) else v
 
 
 def fp(rep: dict[str, Any]) -> dict[str, Any]:
@@ -68,7 +77,7 @@ def main() -> int:
     base = json.loads(Path(a.compare).read_text(encoding="utf-8"))
     assert set(base) == set(cur), "incident sets differ"
     decision_diffs = [k for k in base if any(base[k][f] != cur[k][f] for f in DECISION)]
-    free_diffs = [k for k in base if any(base[k][f] != cur[k][f] for f in FREE)]
+    free_diffs = [k for k in base if any(_norm(base[k][f]) != _norm(cur[k][f]) for f in FREE)]
     print(f"incidents: {len(base)}; decision fields differ: {len(decision_diffs)}; "
           f"alternative_causes/limitations differ: {len(free_diffs)}")
     for k in decision_diffs[:10]:
