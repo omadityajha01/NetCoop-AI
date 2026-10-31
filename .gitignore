@@ -11,3 +11,4 @@ node_modules/
 runs/
 
 # demo_snapshots/ is intentionally tracked (fallback for the live demo)
+frontend_handoff.zip
