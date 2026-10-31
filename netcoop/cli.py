@@ -217,6 +217,13 @@ def cmd_docs(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_mcp(a: argparse.Namespace) -> int:
+    from netcoop.mcp_server import main as mcp_main
+
+    mcp_main()
+    return 0
+
+
 def cmd_serve(a: argparse.Namespace) -> int:
     import uvicorn
 
@@ -266,6 +273,8 @@ def main(argv: list[str] | None = None) -> int:
     p.set_defaults(fn=cmd_conformance)
     sub.add_parser("schemas", help="export JSON Schemas to docs/schemas/").set_defaults(fn=cmd_schemas)
     sub.add_parser("docs", help="regenerate README tables from config").set_defaults(fn=cmd_docs)
+    sub.add_parser("mcp", help="run NetCoop as an MCP server over stdio (tools: list_scenarios, list_agents, "
+                               "diagnose, get_report, explain)").set_defaults(fn=cmd_mcp)
     p = sub.add_parser("serve", help="run the read-only API")
     p.add_argument("--port", type=int, default=8000)
     p.set_defaults(fn=cmd_serve)
