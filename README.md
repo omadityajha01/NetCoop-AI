@@ -42,7 +42,7 @@ make test               # unit + integration + security + property, offline
 **Live demo:** `python tasks.py preflight` (red/green, non-zero exit on any failure), then `python tasks.py present`
 (8 scripted steps, Enter between them; `--port N` if 8765 is busy; `--auto --delay N` hands-free for recording; `--no-color` for projectors; `--open` to open each timeline in the browser). Fallback copies of every step live in
 `demo_snapshots/` (regenerate with `python tasks.py snapshots`). The run of show, numbers and judge Q&A are in
-[`docs/DEMO.md`](docs/DEMO.md).
+[`docs/DEMO.md`](docs/DEMO.md). Stage runbook (commands, fallbacks, what to do if the port is busy, the agent won't start or the browser won't open): [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
 The **hot-plug demo** by hand (the Wi-Fi scenario):
 

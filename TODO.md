@@ -316,6 +316,13 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
 - User's decision: push to the **existing public repo** `omadityajha01/NetCoop-AI` (no new repo; gh not needed).
   Pushed f1ac414 → CI run 41211134958: **ubuntu ✓, windows ✓**. The Linux diagnosis was confirmed.
 
+## V5: final freeze
+
+- Snapshots regenerated; preflight 15/15; `present --judge` all 9 steps matched.
+- `docs/RUNBOOK.md`: one page with stage commands, fallbacks (snapshots / `demo-final` / a fresh clone), and what to do
+  if the port is busy, the agent won't start, or the browser won't open.
+- Clean clone FROM GITHUB in a fresh venv (test, demo, judge) is run after this commit is pushed; then tag `demo-final`.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
