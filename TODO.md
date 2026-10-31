@@ -255,7 +255,8 @@ Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
   "how organizer labels map to fault types". The self-graded answer was updated (the organizer generator is now
   diagnosed, not just detected). Step 2 and step 6 rows were corrected to the current outputs (missing-signal order;
   48/36/12 records since the ghost switch is kept unplaced).
-- Clean-clone check: see the commit after this entry. Tag `demo-safe-2` goes on the final green commit.
+- Clean-clone check (fresh clone + fresh venv + `npm ci`): 115 tests pass, demo as expected, preflight 12/12 on
+  port 8781 (includes conformance 7/7), judge mode matches. Tagged `demo-safe-2`.
 
 ## Open
 
