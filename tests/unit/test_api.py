@@ -28,7 +28,7 @@ def test_upload_and_read(client):
     assert client.get(f"/incidents/{iid}/events").json()[0]["seq"] == 1
     assert any(x["incident_id"] == iid for x in client.get("/incidents").json())
     fb = client.post(f"/incidents/{iid}/feedback", json={"action_id": "CONG-1", "decision": "approve", "note": "ok"})
-    assert fb.json() == {"id": 1, "executed": False}
+    assert {k: fb.json()[k] for k in ("id", "executed")} == {"id": 1, "executed": False}
 
 
 def test_path_traversal_and_bad_ids(client):

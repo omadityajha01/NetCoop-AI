@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetCoop AI dashboard</title>
+<link rel="stylesheet" href="/dashboard/dashboard.css">
+<script src="/dashboard/dashboard.js" defer></script>
+</head>
+<body>
+<header>
+  <h1>NetCoop AI</h1>
+  <span class="tag">read-only dashboard · LLM explains, code decides</span>
+  <div class="controls">
+    <label>Scenario <select id="scenario"></select></label>
+    <label><input type="checkbox" id="external" checked> external agents</label>
+    <label>Replay speed <select id="speed">
+      <option value="0">instant</option><option value="120" selected>normal</option><option value="400">slow</option>
+    </select></label>
+    <button id="run" type="button">Run scenario</button>
+    <label>Past runs <select id="history"><option value="">(choose)</option></select></label>
+  </div>
+</header>
+<main>
+  <section id="lanes-panel" class="panel wide">
+    <h2>Messages by agent <span id="msgcount" class="muted"></span></h2>
+    <div id="lanes"></div>
+  </section>
+  <section class="panel">
+    <h2>Topology</h2>
+    <svg id="topo" role="img" aria-label="Campus topology"></svg>
+    <div class="legend">
+      <span class="sw affected"></span>affected
+      <span class="sw evidence"></span>evidence entity
+      <span class="sw normal"></span>other
+    </div>
+  </section>
+  <section class="panel">
+    <h2>Report</h2>
+    <div id="report" class="muted">Run a scenario or pick a past run.</div>
+  </section>
+  <section class="panel">
+    <h2>Evidence</h2>
+    <table id="evidence"><thead><tr><th>metric</th><th>entity</th><th>value</th><th>interpretation</th><th>finding</th></tr></thead><tbody></tbody></table>
+  </section>
+  <section class="panel">
+    <h2>Predictions (logged before the evidence was requested)</h2>
+    <table id="predictions"><thead><tr><th>hypothesis</th><th>signal</th><th>expected</th><th>outcome</th><th>logged at seq</th></tr></thead><tbody></tbody></table>
+  </section>
+  <section class="panel">
+    <h2>Actions <span class="muted">(never executed; human decisions are recorded, the diagnosis is not changed)</span></h2>
+    <table id="actions"><thead><tr><th>id</th><th>action</th><th>decision</th></tr></thead><tbody></tbody></table>
+    <h3>Blocked by policy</h3>
+    <table id="blocked"><thead><tr><th>id</th><th>action</th><th>rule</th><th>reason</th></tr></thead><tbody></tbody></table>
+  </section>
+  <section class="panel">
+    <h2>Normalization log</h2>
+    <div id="normsummary"></div>
+    <table id="quarantine"><thead><tr><th>code</th><th>field</th><th>reason</th><th>source</th></tr></thead><tbody></tbody></table>
+  </section>
+  <section class="panel">
+    <h2>Limitations</h2>
+    <ul id="limitations"></ul>
+  </section>
+</main>
+<footer id="status" class="muted"></footer>
+</body>
+</html>
