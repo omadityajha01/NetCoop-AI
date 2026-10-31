@@ -2,108 +2,30 @@
 
 [![ci](https://github.com/omadityajha01/NetCoop-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/omadityajha01/NetCoop-AI/actions/workflows/ci.yml)
 
-Specialized agents analyze synthetic campus telemetry (IIT Bhubaneswar scenario). They exchange structured
-findings over a documented protocol (**NMP 1.1**), test competing hypotheses by asking each other for
-discriminating evidence, and produce **one JSON diagnostic report**. The report contains evidence, alternative
-causes, a documented confidence score, limitations and policy-checked recommendations.
+## 1. Overview
+
+NetCoop AI is a deterministic multi-agent system for campus network fault diagnosis (IIT Bhubaneswar scenario,
+synthetic telemetry). Specialized agents exchange typed findings over a documented protocol (**NMP 1.4**), test
+competing hypotheses by requesting discriminating evidence from each other, and emit **one JSON diagnostic report**:
+root cause, supporting evidence (traceable to `finding_id`s), alternative causes, a documented confidence score,
+limitations, and policy-checked recommendations.
 
 > **Transport: A2A (borrowed). Semantics: NMP + metric registry (designed).**
 
-![NetCoop architecture](docs/architecture.svg)
+**Design goals**
 
-<sub>Diagram source: [`docs/architecture.mmd`](docs/architecture.mmd) (Mermaid); the SVG is hand-rendered from it, with no scripts and no external fonts.
-Video voiceover: [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md).</sub>
+1. **Hot-plug interoperability.** `wireless_agent` (Node.js, legacy dialect **v0.9**, its own field names) joins at
+   runtime over A2A, passes the conformance kit, and **changes the outcome**: Wi-Fi goes from `insufficient_evidence`
+   to `diagnosed`.
+2. **Predict before you look.** Hypotheses log falsifiable predictions to the event log *before* evidence is requested
+   (enforced by `seq`); hits and misses are scored and every prediction is reported.
+3. **Measured, not claimed.** Per-fault accuracy, confusion matrix, calibration, severity sweep and degradation curves
+   come from `make eval` / `make fuzz` on generated incidents (held-out seed range B), never from demo fixtures.
 
-Three things we optimized for:
+**Decision boundary.** Root cause, confidence, conflict resolution and actions are computed by code. The LLM is
+optional and **off by default**: it may add a candidate hypothesis and write the narrative, nothing else.
 
-1. **Hot-plug external agent.** `wireless_agent` is written in **Node.js** and speaks an older dialect (**v0.9**)
-   with its own field names. It joins mid-session over A2A, passes the conformance kit live, and **changes the
-   diagnosis**: without it the Wi-Fi scenario is `insufficient_evidence`; with it, `diagnosed`.
-2. **Predict before you look.** Each hypothesis logs falsifiable predictions to the event log *before* the
-   evidence is requested. Hits and misses are scored, and every prediction appears in the report.
-3. **Measured, not claimed.** Per-fault accuracy, a confusion matrix, per-source confidence-vs-accuracy tables, a severity sweep and degradation curves under
-   corrupted input are all produced by `make eval` / `make fuzz` on generated incidents, never on the demo fixtures.
-
-The core is deterministic: root cause, confidence, conflicts and actions are computed by code. The LLM is
-optional and **off by default** (it can only add a hint and write the narrative).
-
----
-
-## Setup
-
-Python ≥ 3.11 (+ Node ≥ 18 for the external agent); install with `make setup` or `python tasks.py setup`. Full commands are in [Quick start](#quick-start) below.
-
-## Quick start
-
-```bash
-make setup              # pip install -e .[dev]   (no GPU, no API key)
-make demo               # all 7 scenarios end-to-end via the CLI, LLM off
-make test               # unit + integration + security + property, offline
-```
-
-`tasks.py` is the single source of truth for every target. The Makefile is a thin wrapper for Linux/macOS, and on Windows you run `python tasks.py <target>`. CI (`.github/workflows/ci.yml`) runs lint, tests, the demo and the conformance kit against the Node agent on Ubuntu and Windows (Python 3.11, Node 20).
-
-**Live demo:** `python tasks.py preflight` (red/green, non-zero exit on any failure), then `python tasks.py present`
-(8 scripted steps, Enter between them; `--port N` if 8765 is busy; `--auto` hands-free for recording (~4:05 at the default 34 s per step; `--delay N` overrides); `--no-color` for projectors; `--open` to open each timeline in the browser). Fallback copies of every step live in
-`demo_snapshots/` (regenerate with `python tasks.py snapshots`). The run of show, numbers and judge Q&A are in
-[`docs/DEMO.md`](docs/DEMO.md). Stage runbook (commands, fallbacks, what to do if the port is busy, the agent won't start or the browser won't open): [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
-
-The **hot-plug demo** by hand (the Wi-Fi scenario):
-
-```bash
-netcoop diagnose data/scenarios/weak_wifi/incident.json          # -> insufficient_evidence (no Wi-Fi signals)
-node external_agents/wireless_agent/server.js                     # start the external agent (other terminal)
-make conformance AGENT_URL=http://127.0.0.1:8765                  # 7/7 checks pass
-netcoop diagnose data/scenarios/weak_wifi/incident.json          # -> diagnosed: weak Wi-Fi at AP_H3
-```
-
-Other CLI commands:
-
-```bash
-netcoop diagnose data/scenarios/congestion/incident.json --timeline   # message timeline, predictions, blocked actions
-netcoop timeline <incident_id> --html timeline.html                    # static HTML: agent lanes, predictions, transforms, report
-netcoop replay <incident_id>                                           # byte-identical report.json re-run
-netcoop resume <incident_id>                                           # finish an interrupted run from its event log
-netcoop agents refresh                                                 # re-check the allowlist; new agents join the next run
-netcoop feedback <incident_id> CONG-1 approve --note "ok"              # non-blocking HITL (nothing is executed)
-netcoop serve                                                          # dashboard on http://127.0.0.1:8000/ + API (/docs)
-netcoop mcp                                                            # MCP server over stdio (see docs/MCP.md)
-```
-
-**Dashboard:** `netcoop serve`, then open http://127.0.0.1:8000/. Pick a scenario and press Run: messages stream into
-one lane per agent, replayed from the event log in `seq` order. Alongside them you get the topology with affected and
-evidence entities, the report, evidence linked to the message that carried each `finding_id`, predictions with the
-`seq` at which they were logged, the normalization log and policy-blocked actions. Approve/reject is non-blocking: it
-is recorded as a `human_decision` event. An approved, policy-allowed action also gets a simulated dry-run plan. Nothing
-is executed and the diagnosis does not change. The page is static
-vanilla JS (no build, no CDN). It renders text only and is served with a strict Content-Security-Policy.
-
-**Building a frontend:** the API, SSE stream, every message payload and a glossary are in
-[`docs/FRONTEND_API.md`](docs/FRONTEND_API.md), generated from the code. Real recorded runs are in
-[`docs/frontend_fixtures/`](docs/frontend_fixtures/). `python tools/mock_api.py` serves them on the same endpoints with
-no backend. Put a new UI in `dashboard_v2/` and serve it with `netcoop serve --ui dashboard_v2`; the default UI is
-unchanged.
-
-**Chat with NetCoop via MCP:** `netcoop mcp` exposes `list_scenarios`, `list_agents`, `diagnose`, `get_report` and
-`explain` to an MCP client such as Claude Desktop. The client's LLM can ask and explain, but the code decides. Setup,
-guardrails and example prompts: [`docs/MCP.md`](docs/MCP.md).
-
-Requirements: Python ≥ 3.11 and Node ≥ 18 (only for the external agent; everything else runs without it).
-
-## Optional components
-
-The core (normalizer, agents, scoring, event log, CLI) needs none of these. Each one is opt-in and has its own guardrail.
-
-| Component | Status | How | Guardrail |
-|---|---|---|---|
-| LLM triage + narrative | ✓ off by default | `NETCOOP_LLM=local` (Ollama, `llama3.2:3b`) | Advisory only: a hint can only *add* a hypothesis; the report's `decision_source` is always `deterministic_scoring`; output allowlisted; strict narrative guard with a template fallback ([§10–11](#guardrails-and-security)) |
-| MCP server | ✓ | `netcoop mcp` ([docs/MCP.md](docs/MCP.md)) | Read-only tools plus `diagnose`; strict regexes; paths confined to `data/` and `runs/`; raw quoted input redacted from results |
-| Human in the loop | ✓ non-blocking | dashboard approve/reject, `netcoop feedback`, `POST /incidents/{id}/feedback` | Recorded as an NMP `human_decision` event after the report; never executed; the report and replay are unchanged |
-| Persistence / resume | ✓ | `netcoop resume <incident_id>` | Re-derives the run deterministically; the surviving log must be an exact prefix or resume refuses; idempotent |
-| Dashboard | ✓ | `netcoop serve` → http://127.0.0.1:8000/ | Static vanilla JS, no CDN; text-only rendering (PI8); strict CSP; read-only except Run scenario and HITL |
-| Remediation | ✓ simulated dry-run, human-approved, policy-checked, never executed | approve an action (dashboard, `netcoop feedback`, API) | On approve the policy checker runs again. If the action is blocked, you get the rule id and no plan. If it is allowed, an NMP `remediation_plan` is emitted, labelled "SIMULATED – NOT EXECUTED", with steps and a rollback rendered from the `_dry_run` templates in `playbook.yaml`. No network, no shell (D8, G1, G2); the report and replay are unchanged |
-
-## Scenarios (sample data)
+### Scenarios (sample data)
 
 | Scenario | File | Expected outcome |
 |---|---|---|
@@ -119,9 +41,102 @@ The core (normalizer, agents, scoring, event log, CLI) needs none of these. Each
 exported verbatim to `data/generator/organizer_generator.py`, and its field contract is in `data/generator/SCHEMA.md`.
 Its output (`cpu_utilization_pct`, `queue_drops`, `interface_errors`, `status`, …) is accepted as-is.
 
+### Known limitations
+
+* All telemetry is synthetic. The topology in `config/topology.yaml` is a NetCoop-defined model of the campus,
+  and thresholds and weights are tuned on generated data.
+* The eval generator is ours, so accuracy measures internal consistency under realistic noise, not field performance.
+* The core speaks A2A wire shapes over stdlib HTTP rather than embedding `a2a-sdk`. Compatibility is verified
+  against the official SDK v1.3.0 in an optional test (it pulls protobuf ≥ 6, so it is kept out of the default install).
+* The optional LLM paths (Ollama / cloud API) run in CI only with a mocked model. The live tests (`tests/llm_live`,
+  marker `llm_live`) are opt-in and need a local model.
+
 ---
 
-## Architecture
+## 2. Architecture
+
+### System workflow
+
+Single incident, end to end. Solid edges are NMP messages on the bus; dotted edges are optional or post-run paths.
+
+```mermaid
+flowchart TB
+    %% NetCoop AI: one incident, end to end. Solid = NMP messages; dotted = optional / post-run paths.
+    IN[/"Incident bundle<br/>JSON or CSV, any dialect, 10 MB cap"/]
+
+    subgraph ING["Ingest"]
+        NORM["Normalizer<br/>parse, upcast 0.9 to 1.x, aliases, units, coercion,<br/>plausibility, entity IDs, time, dedupe, validate"]
+        Q[("Quarantine<br/>never silently dropped")]
+    end
+
+    subgraph BUS["In-process message bus"]
+        LOG[("events.jsonl<br/>append-only, seq assigned before delivery")]
+    end
+
+    subgraph R0["Round 0: every analysis agent runs (D9)"]
+        PERF["performance_agent<br/>latency, jitter, loss, utilization"]
+        INFRA["infrastructure_agent<br/>CPU, memory, errors, drops, flaps"]
+        CONN["connectivity_agent<br/>scope, nearest common upstream, DNS/DHCP"]
+        TRI["triage_agent<br/>LLM hint, advisory, off by default"]
+    end
+
+    subgraph EXT["External agents (A2A)"]
+        GW["A2A gateway<br/>allowlist, card validation, 256 KB cap,<br/>timeout, 0.9 to 1.x upcaster"]
+        WIFI["wireless_agent<br/>Node.js, dialect v0.9"]
+    end
+
+    subgraph COR["Correlation"]
+        HYP["Hypotheses from fault signatures"]
+        CONF{"Conflicts<br/>C1 value, C2 state, C3 margin"}
+        PRED["Predictions logged<br/>before evidence is requested"]
+        EVQ["evidence_request / evidence_response<br/>at most 2 rounds"]
+        SCORE["Deterministic scoring<br/>support, coverage, contra, quality, margin"]
+    end
+
+    subgraph REP["Reporting"]
+        PB["Playbook actions"]
+        POL{"Policy checker<br/>hard rules, e.g. R1 class hours"}
+        VAL["Report validator<br/>known IDs, fault enum, no certainty words"]
+    end
+
+    OUT[("report.json + SQLite")]
+
+    subgraph IF["Interfaces"]
+        CLI["CLI: diagnose, replay, resume, timeline"]
+        API["FastAPI + SSE dashboard"]
+        MCP["MCP server: stdio"]
+    end
+
+    HITL["Human decision<br/>approve or reject"]
+    PLAN["remediation_plan<br/>SIMULATED, NOT EXECUTED"]
+
+    IN --> NORM
+    NORM -. unrecoverable .-> Q
+    NORM -->|normalization_summary| LOG
+    LOG -->|task_request| PERF & INFRA & CONN
+    LOG -. complaint, LLM on .-> TRI
+    LOG -->|task_request| GW
+    GW <-->|"JSON-RPC message/send"| WIFI
+    PERF & INFRA & CONN & GW -->|finding_report, coverage_manifest| HYP
+    TRI -. hint adds a candidate only .-> HYP
+    HYP --> CONF --> PRED --> EVQ
+    EVQ -->|hits and misses| SCORE
+    EVQ -. next round .-> PRED
+    SCORE -->|diagnosis| PB --> POL --> VAL --> OUT
+    POL -. blocked, with rule_id .-> OUT
+    OUT --> CLI & API & MCP
+    API --> HITL
+    HITL -->|human_decision| POL
+    POL -. allowed .-> PLAN
+    LOG -. replay and resume, byte identical .-> OUT
+```
+
+![NetCoop architecture](docs/architecture.svg)
+
+<sub>Diagram source: [`docs/architecture.mmd`](docs/architecture.mmd) (Mermaid); the SVG is hand-rendered from it, with no scripts and no external fonts.
+Video voiceover: [`docs/VIDEO_SCRIPT.md`](docs/VIDEO_SCRIPT.md).</sub>
+
+### Component view
 
 ```
                  incident bundle (.json/.csv, any dialect)
@@ -155,7 +170,7 @@ Its output (`cpu_utilization_pct`, `queue_drops`, `interface_errors`, `status`, 
                               └────────────────────┘
 ```
 
-### Agent responsibilities
+#### Agent responsibilities
 
 | agent_id | Owns | Where |
 |---|---|---|
@@ -174,13 +189,11 @@ Every threshold, alias and weight comes from `config/`. All analysis agents alwa
 coverage manifest. Normal values are available only through `evidence_request`. This keeps predictions honest:
 a prediction is made before the agent shows the value.
 
----
+### Communication interfaces
 
-## Communication interfaces
+Agents talk only through typed NMP messages on the bus, and through A2A for external agents. See [Protocol: NMP 1.4](#protocol-netcoop-message-protocol-nmp-14) (envelope, finding, metric registry, versioning) and [A2A transport](#a2a-transport).
 
-Agents talk only through typed NMP messages on the bus, and through A2A for external agents. See [Protocol: NMP 1.1](#protocol-netcoop-message-protocol-nmp-11) (envelope, finding, metric registry, versioning) and [A2A transport](#a2a-transport).
-
-## Protocol: NetCoop Message Protocol (NMP) 1.4
+### Protocol: NetCoop Message Protocol (NMP) 1.4
 
 Minor versions are additive: 1.1 added `normalization_summary`, 1.2 the advisory LLM `hint`, 1.3 `human_decision`
 (a non-blocking HITL record appended after the report), and 1.4 `remediation_plan`, a dry-run for an approved,
@@ -190,7 +203,7 @@ Pydantic v2 models (`netcoop/protocol/`) are the source of truth. `make schemas`
 `docs/schemas/`, and external agents should be pointed at those, not at the Python. The tables below are
 generated from config by `make docs`.
 
-### Envelope (every message)
+#### Envelope (every message)
 
 <!-- BEGIN GENERATED: envelope -->
 | Field | Type | Meaning |
@@ -215,7 +228,7 @@ Payloads per `message_type`: `task_request {task, window, round, params}`, `find
 `report {report}`, `error {code, detail, offending_message_id, field, agent_id}`, `normalization_summary {…}`.
 Error codes: `SCHEMA_VERSION_UNSUPPORTED, MISSING_FIELD, BAD_TYPE, BAD_UNIT, UNKNOWN_ENTITY, MALFORMED, TIMEOUT, TOO_LARGE, AGENT_FAILED, INVALID_OUTPUT, RATE_LIMITED`.
 
-### Finding
+#### Finding
 
 <!-- BEGIN GENERATED: finding -->
 | Field | Type | Meaning |
@@ -237,7 +250,7 @@ Error codes: `SCHEMA_VERSION_UNSUPPORTED, MISSING_FIELD, BAD_TYPE, BAD_UNIT, UNK
 | `placed` | bool |  |
 <!-- END GENERATED: finding -->
 
-### Metric registry (`config/metrics.yaml`): names, units, meanings, aliases, thresholds
+#### Metric registry (`config/metrics.yaml`): names, units, meanings, aliases, thresholds
 
 <!-- BEGIN GENERATED: metrics -->
 | Metric | Unit | Aggregation | Direction | Range | Thresholds warn/high/critical | Aliases | Meaning |
@@ -267,7 +280,7 @@ need an explicit unit (a suffix like `"0.28s"` or a `units` map), or **batch-lev
 only if exactly one unit keeps every value in the batch plausible, or if a `*_pct` metric has every value in [0,1].
 It is never inferred from a single value. Otherwise the field is quarantined.
 
-### Versioning
+#### Versioning
 
 Current version: **1.1**. It is a MINOR bump over 1.0 and purely additive:
 * `Finding.source`
@@ -293,7 +306,7 @@ Current version: **1.1**. It is a MINOR bump over 1.0 and purely additive:
 | `ap-h3` | `AP_H3` | topology alias (case/separator-insensitive) |
 | `dev`, `rtt` (s), `loss`, `cpu` (fractions) | `device_id`, `latency_ms`, `packet_loss_pct`, `cpu_pct` | legacy wired probes |
 
-### A2A transport
+#### A2A transport
 
 **A2A-compatible (verified with a2a-sdk v1.3.0).** The official `a2a-sdk` client resolves the Node
 `wireless_agent`'s card and completes a `message/send` round trip; NetCoop's parser then accepts the reply
@@ -316,9 +329,7 @@ Discovery is **only** from that allowlist, and a card whose `url` leaves the all
 * declares `schema_version`
 * tolerates unknown fields and a newer MINOR version
 
----
-
-## Workflow
+### Workflow
 
 One incident, end to end (details in [Orchestration](#orchestration)):
 
@@ -330,7 +341,7 @@ One incident, end to end (details in [Orchestration](#orchestration)):
 6. **Final scoring → report:** playbook actions, policy check and validator.
 7. **Persist** `report.json` + the append-only `events.jsonl` (replayable byte for byte).
 
-## Orchestration
+### Orchestration
 
 1. **Ingest → normalize**, which emits `normalization_summary`.
 2. **Round 0:** `task_request` goes to *all* analysis agents in parallel: internal agents plus every allowlisted external agent that is reachable now (hot-plug). Timeouts come from `agents.yaml`, with one retry.
@@ -344,7 +355,7 @@ State is **derived from the event log**. `seq` is assigned on append, before del
 content-derived UUIDv4s. `netcoop replay <id>` re-runs from the stored input plus the recorded external
 exchanges, and checks that `report.json` and the event sequence are byte-identical.
 
-### Conflict resolution
+#### Conflict resolution
 
 | Type | Detection | Resolution |
 |---|---|---|
@@ -352,20 +363,18 @@ exchanges, and checks that `report.json` and the event sequence are byte-identic
 | **C2 state** | A device reports `down` but has newer telemetry; or metrics arrive for links absent from topology | Mark the status stale (quality 0.5) and send one re-fetch `evidence_request`. If still unresolved, confidence is capped. Unknown links are quarantined (topology is never invented) |
 | **C3 hypothesis** | margin(top, second) < 0.15 | Prediction rounds. If still < 0.15: `probable` with both co-candidates plus the missing discriminating data |
 
-### Failure handling
+#### Failure handling
 
 * An analysis agent that times out, crashes or returns invalid output (after one retry) is marked `failed` and an `error` message is logged. The run continues, the report gets "`<agent>` failed: `<reason>`", and the confidence category is capped at medium.
 * If correlation fails, the report has status `failed` but still contains the raw anomalous findings.
 * Malformed input fails safely with a `failed` report that explains why (`MALFORMED`, `TOO_LARGE`, `SCHEMA_VERSION_UNSUPPORTED`, …).
 * Every loop is bounded by config: rounds, requests per round, and a total bus message cap.
 
----
-
-## Evidence correlation
+### Evidence correlation
 
 How findings from different agents are combined into one diagnosis: see [Correlation and scoring (documented method)](#correlation-and-scoring-documented-method).
 
-## Correlation and scoring (documented method)
+### Correlation and scoring (documented method)
 
 Fault signatures (`config/signatures.yaml`):
 
@@ -442,9 +451,113 @@ Final constants (`config/scoring.yaml`; tuned on seed range A only):
 | conflicts.c1_relative_diff | 0.2 |
 <!-- END GENERATED: constants -->
 
+### Error handling
+
+Agent failures (timeouts, crashes, invalid output) are covered in [Failure handling](#failure-handling); bad or incompatible input in [Error handling and robustness](#error-handling-and-robustness-normalization-pipeline) below.
+
+### Error handling and robustness (normalization pipeline)
+
+Runs in this order, and every step records `Transform{step, field, from, to, reason}`:
+
+1. **Parse:** stdlib JSON/CSV, 10 MB cap; non-UTF-8 → `MALFORMED`.
+2. **Version:** detect → upcast (embedded v0.9 blocks inside bundles are expanded too).
+3. **Field aliases** from `metrics.yaml`. Unknown fields → `extras` + warning. The generator's `status` label is kept but never used as evidence.
+4. **Units:** explicit unit → `unit_aliases`; missing → batch inference only; otherwise quarantine.
+5. **Coercion:** `"280ms"` → 280 ms. `"N/A"`, `""`, `null` and `NaN` → **missing, never 0**.
+6. **Plausibility:** an out-of-range value (negative latency, utilization > 100, RSSI > 0) quarantines the record.
+7. **Entities:** PI6 regex, then topology aliases (case- and separator-insensitive, IPs too).
+   * An unknown **device** is kept *unplaced*. Its findings carry `placed=false`, no links or upstream are invented,
+     localization is skipped, and the "device not in topology" limitation is added. The confidence category is capped at medium if the diagnosis involves it.
+   * Unknown links, APs and services → quarantine + `UNKNOWN_ENTITY`.
+   * A `topology` object in the input bundle (same shape as `config/topology.yaml`) is validated and merged
+     additively. On a conflicting attribute, config wins and the conflict is listed in limitations, so incident data
+     cannot, for example, demote a core switch to dodge a policy rule. An invalid topology is rejected with a limitation.
+8. **Time:** everything to UTC (epoch s/ms, offsets, naive → UTC + logged). More than 5 min in the future → quarantine. Older than the window → counted. Staleness is computed relative to the incident time.
+9. **Dedupe** on (entity, metric, timestamp, source).
+10. **Validate** against the Pydantic models.
+
+Invariant (tested, and property-tested with `hypothesis`): `records_in == records_used + records_quarantined`.
+Every coercion sets `data_quality.coerced`, lowers quality, and appears in `limitations`.
+
+### Report format
+
+The PS fields are kept exactly: `incident_id, status, suspected_root_cause, confidence, affected_devices,
+supporting_evidence, alternative_causes, recommended_actions, evidence_sources, limitations`.
+These extensions are additive:
+* `schema_version`, `fault_type`, `confidence_category`, `status_reason` (`data_missing` | `no_signature_match`)
+* `observations` (warn-level readings not used as evidence)
+* `scoring{support, coverage, contra, quality, score, margin}`
+* `co_candidates`, `rejected_alternatives`, `predictions`
+* `blocked_actions` (with `rule_id`), `action_details`
+* `missing_signals`, `conflicts`, `agents`
+* `normalization_summary`, `narrative`
+
+`status` ∈ `diagnosed | probable | insufficient_evidence | no_fault_detected | failed`.
+
 ---
 
-## Evaluation (`make eval`, `make fuzz`)
+## 3. Key Features
+
+| Capability | Implementation |
+|---|---|
+| Multi-agent diagnosis | 6 specialized agents on one logged bus. Pure functions, no shared state; every threshold and weight comes from `config/` |
+| Documented protocol | NMP 1.4 (Pydantic v2 → JSON Schema in `docs/schemas/`), metric registry, versioning with upcasters (0.9 → 1.x) |
+| Hot-plug interoperability | Node.js `wireless_agent` joins over A2A at runtime, passes a 7-check conformance kit, and changes the diagnosis |
+| Predict before you look | Falsifiable predictions are logged before evidence is requested, enforced by `seq` ordering; hits and misses are scored |
+| Deterministic, replayable core | Same input → byte-identical report; `netcoop replay` and `netcoop resume` rebuild runs from `events.jsonl` |
+| Robust normalization | Recover, quarantine, never silently drop; every coercion recorded as a `Transform`; property- and fuzz-tested |
+| Measured accuracy | Per-fault accuracy, confusion matrix, calibration, degradation curves, all on held-out seed range B |
+| Safety by construction | Policy-checked playbook actions, human-approved dry-run remediation (never executed), prompt-injection controls ([Guardrails](#guardrails-and-security)) |
+| Interfaces | CLI, FastAPI + SSE dashboard (strict CSP), MCP server, mock API + recorded fixtures for frontend work |
+
+### Optional components
+
+The core (normalizer, agents, scoring, event log, CLI) needs none of these. Each one is opt-in and has its own guardrail.
+
+| Component | Status | How | Guardrail |
+|---|---|---|---|
+| LLM triage + narrative | ✓ off by default | `NETCOOP_LLM=local` (Ollama, `llama3.2:3b`) | Advisory only: a hint can only *add* a hypothesis; the report's `decision_source` is always `deterministic_scoring`; output allowlisted; strict narrative guard with a template fallback ([§10–11](#guardrails-and-security)) |
+| MCP server | ✓ | `netcoop mcp` ([docs/MCP.md](docs/MCP.md)) | Read-only tools plus `diagnose`; strict regexes; paths confined to `data/` and `runs/`; raw quoted input redacted from results |
+| Human in the loop | ✓ non-blocking | dashboard approve/reject, `netcoop feedback`, `POST /incidents/{id}/feedback` | Recorded as an NMP `human_decision` event after the report; never executed; the report and replay are unchanged |
+| Persistence / resume | ✓ | `netcoop resume <incident_id>` | Re-derives the run deterministically; the surviving log must be an exact prefix or resume refuses; idempotent |
+| Dashboard | ✓ | `netcoop serve` → http://127.0.0.1:8000/ | Static vanilla JS, no CDN; text-only rendering (PI8); strict CSP; read-only except Run scenario and HITL |
+| Remediation | ✓ simulated dry-run, human-approved, policy-checked, never executed | approve an action (dashboard, `netcoop feedback`, API) | On approve the policy checker runs again. If the action is blocked, you get the rule id and no plan. If it is allowed, an NMP `remediation_plan` is emitted, labelled "SIMULATED – NOT EXECUTED", with steps and a rollback rendered from the `_dry_run` templates in `playbook.yaml`. No network, no shell (D8, G1, G2); the report and replay are unchanged |
+
+### Guardrails and security
+
+* **Remediation is never executed:** actions are recommendations from `playbook.yaml` only.
+* **Policies are code-enforced hard rules** (`config/policies.yaml`):
+
+<!-- BEGIN GENERATED: policies -->
+| Rule | Type | Applies to | When | Reason |
+|---|---|---|---|---|
+| R1 | forbidden_action | reboot on core_switch | 09:00-17:00 mon,tue,wed,thu,fri | Class hours |
+| R2 | threshold_override | latency_ms in lecture_halls | warn 30, high 50 | Lecture-hall streaming SLA |
+| R3 | forbidden_action | config_change, reboot, restart_service on core_router | always | Core router changes require change-advisory-board approval |
+| R4 | forbidden_action | reboot, restart_service, move_port, replace_optic on any | 2026-11-16–2026-11-28 | End-semester examination period: no disruptive changes |
+| R5 | forbidden_action | restart_service, failover on service | 08:00-22:00 | Campus services may only be restarted outside 08:00-22:00 unless the duty officer approves |
+<!-- END GENERATED: policies -->
+
+* **Validator (G4):** every `supporting_evidence` references an existing `finding_id` (so config or playbook text can never be evidence), every affected device exists in topology, and every `fault_type` is in the enum.
+* **G5 lint:** "confirmed / definitely / certainly / guaranteed" are banned, and every report has at least one limitation.
+* **Prompt injection (§11):**
+  * the LLM is off by default and can only classify the complaint into an enum (a hint that can only *add* a hypothesis) or write the narrative from the validated report
+  * complaint text is truncated, tag-stripped and wrapped
+  * outputs are allowlisted (known IDs only, no URLs or code); otherwise the deterministic template is used
+* **External output is untrusted:** same normalizer, owned metrics only, findings recomputed with *our* registry (agent-authored findings are ignored), 256 KB cap, timeout, rate limit, no tools.
+* **HTML timeline (PI8):** one static file, no JavaScript and no network. Every data value is HTML-escaped, so a
+  device named `<script>…` renders as text (tested).
+* **API:** 10 MB uploads, `.json`/`.csv` only, incident IDs validated before touching `runs/` (path traversal blocked), parameterized SQLite, CSV formula-injection guard, localhost CORS, structured errors.
+* The `tests/security/` suite (PI9) covers:
+  * injection in a device name
+  * injection in the complaint, with LLM off and with LLM mocked
+  * malicious external agents: oversized, wrong types, instruction text, SQL-ish metric name, fake findings, spoofed incident, non-JSON
+  * LLM output naming an unknown device
+  * path traversal
+
+  Each attack must leave the report identical to the clean baseline, or fail safely: the agent is marked failed and confidence is capped.
+
+### Evaluation (`make eval`, `make fuzz`)
 
 Incidents come from `eval/generate.py`, which reuses the organizer's record shape. `harden()` then makes them
 realistic:
@@ -457,7 +570,7 @@ realistic:
 `wireless_agent`**. Constants were tuned on **seed range A** (`python -m eval.run_eval tune`, grid in
 `eval/reports/tune_A.json`); the numbers below are from the held-out **seed range B**.
 
-### Accuracy by data source
+#### Accuracy by data source
 
 Two data sources are evaluated separately:
 
@@ -553,7 +666,7 @@ One raw organizer record per incident (all three labels, 200 seeds each = 600 pe
   hardware_failure → interface_fault cases above. At native severity every organizer diagnosis is confidence 1.00
   and correct.
 
-### Extended generator (held-out seed range B)
+#### Extended generator (held-out seed range B)
 
 <!-- BEGIN GENERATED: eval -->
 #### Seed range B (held-out report)
@@ -635,7 +748,7 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 * `normal` is 0.95. A lone `high` reading that nothing corroborates (a busy link, a CPU
   blip) is an observation, not an anomaly (U4).
 
-### Operating point (`python -m eval.run_eval sweep`)
+#### Operating point (`python -m eval.run_eval sweep`)
 
 `min_top_score` was swept 0.40–0.70 on **seed range A**. The rule, fixed before running: pick the highest accuracy with
 wrong-diagnosis ≤ 3%, normal false-positive ≤ 5% and real-fault-reported-healthy ≤ 3%. Result: **0.55** (re-checked
@@ -675,115 +788,113 @@ Accuracy degrades gently, from 0.943 on clean input to 0.886 at 60% corrupted re
 
 ---
 
-## Error handling
+## 4. Tech Stack
 
-Agent failures (timeouts, crashes, invalid output) are covered in [Failure handling](#failure-handling); bad or incompatible input in [Error handling and robustness](#error-handling-and-robustness-normalization-pipeline) below.
+| Layer | Technology | Role |
+|---|---|---|
+| Language / runtime | Python ≥ 3.11 | Core, agents, scoring, CLI |
+| Protocol models | Pydantic v2 | NMP envelope and payloads; JSON Schema export (`docs/schemas/`) |
+| Configuration | YAML (`pyyaml`, `safe_load` only) | Metrics, signatures, playbook, policies, agents, topology, scoring |
+| Persistence | Append-only JSONL + SQLite (stdlib `sqlite3`) | Event log per run (`runs/<id>/events.jsonl`); reports and HITL feedback |
+| API / UI | FastAPI + Uvicorn; vanilla JS, SVG, CSS | Read-only API, Server-Sent Events, built-in dashboard (no build step, no CDN) |
+| Agent interop | A2A wire shapes over stdlib HTTP (JSON-RPC 2.0) | External agents; compatibility checked against `a2a-sdk` 1.3.0 (optional extra) |
+| External agent | Node.js ≥ 18 (stdlib only) | `wireless_agent`, dialect v0.9 |
+| LLM (optional, off by default) | Ollama (`llama3.2:3b`) or a cloud API via env key | Complaint triage hint + narrative only; never decides |
+| MCP (optional) | `mcp` Python SDK (FastMCP, stdio) | `netcoop mcp` tools: list_scenarios, list_agents, diagnose, get_report, explain |
+| Testing / quality | pytest, Hypothesis, httpx TestClient, ruff | Unit, integration, security, property tests; lint |
+| Evaluation | stdlib + matplotlib (optional `[eval]`) | `eval/` reports and charts |
+| CI | GitHub Actions | Lint, tests, demo, conformance on Ubuntu and Windows |
 
-## Error handling and robustness (normalization pipeline)
+### Repository layout
 
-Runs in this order, and every step records `Transform{step, field, from, to, reason}`:
+```
+config/            metrics, signatures, playbook, policies, agents, topology, scoring (all knowledge lives here)
+netcoop/           protocol/ normalize/ bus/ orchestrator/ agents/ scoring/ policy/ gateway/ llm/ api/ remediation.py hitl.py mcp_server.py cli.py
+external_agents/wireless_agent/   Node.js agent, dialect v0.9 (+ data/demo.json)
+conformance/       conformance kit (runnable against any agent URL)
+data/generator/    organizer generator (verbatim) + SCHEMA.md
+data/scenarios/    7 fixed scenario fixtures
+eval/              generate.py, mutate.py, run_eval.py, golden.py, reports/
+tests/             unit/ integration/ security/ property/ llm_live/
+docs/              schemas/, FRONTEND_API.md, frontend_fixtures/, MCP.md, DEMO.md, RUNBOOK.md, architecture.svg
+dashboard_v2/      place for new UIs (`netcoop serve --ui dashboard_v2`)
+tools/             mock_api.py, record_fixtures.py, gen_frontend_api.py, make_handoff.py
+runs/<id>/         events.jsonl, report.json, input, meta.json, external.jsonl (gitignored)
+```
 
-1. **Parse:** stdlib JSON/CSV, 10 MB cap; non-UTF-8 → `MALFORMED`.
-2. **Version:** detect → upcast (embedded v0.9 blocks inside bundles are expanded too).
-3. **Field aliases** from `metrics.yaml`. Unknown fields → `extras` + warning. The generator's `status` label is kept but never used as evidence.
-4. **Units:** explicit unit → `unit_aliases`; missing → batch inference only; otherwise quarantine.
-5. **Coercion:** `"280ms"` → 280 ms. `"N/A"`, `""`, `null` and `NaN` → **missing, never 0**.
-6. **Plausibility:** an out-of-range value (negative latency, utilization > 100, RSSI > 0) quarantines the record.
-7. **Entities:** PI6 regex, then topology aliases (case- and separator-insensitive, IPs too).
-   * An unknown **device** is kept *unplaced*. Its findings carry `placed=false`, no links or upstream are invented,
-     localization is skipped, and the "device not in topology" limitation is added. The confidence category is capped at medium if the diagnosis involves it.
-   * Unknown links, APs and services → quarantine + `UNKNOWN_ENTITY`.
-   * A `topology` object in the input bundle (same shape as `config/topology.yaml`) is validated and merged
-     additively. On a conflicting attribute, config wins and the conflict is listed in limitations, so incident data
-     cannot, for example, demote a core switch to dodge a policy rule. An invalid topology is rejected with a limitation.
-8. **Time:** everything to UTC (epoch s/ms, offsets, naive → UTC + logged). More than 5 min in the future → quarantine. Older than the window → counted. Staleness is computed relative to the incident time.
-9. **Dedupe** on (entity, metric, timestamp, source).
-10. **Validate** against the Pydantic models.
+---
 
-Invariant (tested, and property-tested with `hypothesis`): `records_in == records_used + records_quarantined`.
-Every coercion sets `data_quality.coerced`, lowers quality, and appears in `limitations`.
+## 5. Installation / Usage
 
-## Guardrails and security
+### Setup
 
-* **Remediation is never executed:** actions are recommendations from `playbook.yaml` only.
-* **Policies are code-enforced hard rules** (`config/policies.yaml`):
+Python ≥ 3.11 (+ Node ≥ 18 for the external agent); install with `make setup` or `python tasks.py setup`. Full commands are in [Quick start](#quick-start) below.
 
-<!-- BEGIN GENERATED: policies -->
-| Rule | Type | Applies to | When | Reason |
-|---|---|---|---|---|
-| R1 | forbidden_action | reboot on core_switch | 09:00-17:00 mon,tue,wed,thu,fri | Class hours |
-| R2 | threshold_override | latency_ms in lecture_halls | warn 30, high 50 | Lecture-hall streaming SLA |
-| R3 | forbidden_action | config_change, reboot, restart_service on core_router | always | Core router changes require change-advisory-board approval |
-| R4 | forbidden_action | reboot, restart_service, move_port, replace_optic on any | 2026-11-16–2026-11-28 | End-semester examination period: no disruptive changes |
-| R5 | forbidden_action | restart_service, failover on service | 08:00-22:00 | Campus services may only be restarted outside 08:00-22:00 unless the duty officer approves |
-<!-- END GENERATED: policies -->
+### Quick start
 
-* **Validator (G4):** every `supporting_evidence` references an existing `finding_id` (so config or playbook text can never be evidence), every affected device exists in topology, and every `fault_type` is in the enum.
-* **G5 lint:** "confirmed / definitely / certainly / guaranteed" are banned, and every report has at least one limitation.
-* **Prompt injection (§11):**
-  * the LLM is off by default and can only classify the complaint into an enum (a hint that can only *add* a hypothesis) or write the narrative from the validated report
-  * complaint text is truncated, tag-stripped and wrapped
-  * outputs are allowlisted (known IDs only, no URLs or code); otherwise the deterministic template is used
-* **External output is untrusted:** same normalizer, owned metrics only, findings recomputed with *our* registry (agent-authored findings are ignored), 256 KB cap, timeout, rate limit, no tools.
-* **HTML timeline (PI8):** one static file, no JavaScript and no network. Every data value is HTML-escaped, so a
-  device named `<script>…` renders as text (tested).
-* **API:** 10 MB uploads, `.json`/`.csv` only, incident IDs validated before touching `runs/` (path traversal blocked), parameterized SQLite, CSV formula-injection guard, localhost CORS, structured errors.
-* The `tests/security/` suite (PI9) covers:
-  * injection in a device name
-  * injection in the complaint, with LLM off and with LLM mocked
-  * malicious external agents: oversized, wrong types, instruction text, SQL-ish metric name, fake findings, spoofed incident, non-JSON
-  * LLM output naming an unknown device
-  * path traversal
+```bash
+make setup              # pip install -e .[dev]   (no GPU, no API key)
+make demo               # all 7 scenarios end-to-end via the CLI, LLM off
+make test               # unit + integration + security + property, offline
+```
 
-  Each attack must leave the report identical to the clean baseline, or fail safely: the agent is marked failed and confidence is capped.
+`tasks.py` is the single source of truth for every target. The Makefile is a thin wrapper for Linux/macOS, and on Windows you run `python tasks.py <target>`. CI (`.github/workflows/ci.yml`) runs lint, tests, the demo and the conformance kit against the Node agent on Ubuntu and Windows (Python 3.11, Node 20).
 
-## Report format
+**Live demo:** `python tasks.py preflight` (red/green, non-zero exit on any failure), then `python tasks.py present`
+(8 scripted steps, Enter between them; `--port N` if 8765 is busy; `--auto` hands-free for recording (~4:05 at the default 34 s per step; `--delay N` overrides); `--no-color` for projectors; `--open` to open each timeline in the browser). Fallback copies of every step live in
+`demo_snapshots/` (regenerate with `python tasks.py snapshots`). The run of show, numbers and judge Q&A are in
+[`docs/DEMO.md`](docs/DEMO.md). Stage runbook (commands, fallbacks, what to do if the port is busy, the agent won't start or the browser won't open): [`docs/RUNBOOK.md`](docs/RUNBOOK.md).
 
-The PS fields are kept exactly: `incident_id, status, suspected_root_cause, confidence, affected_devices,
-supporting_evidence, alternative_causes, recommended_actions, evidence_sources, limitations`.
-These extensions are additive:
-* `schema_version`, `fault_type`, `confidence_category`, `status_reason` (`data_missing` | `no_signature_match`)
-* `observations` (warn-level readings not used as evidence)
-* `scoring{support, coverage, contra, quality, score, margin}`
-* `co_candidates`, `rejected_alternatives`, `predictions`
-* `blocked_actions` (with `rule_id`), `action_details`
-* `missing_signals`, `conflicts`, `agents`
-* `normalization_summary`, `narrative`
+The **hot-plug demo** by hand (the Wi-Fi scenario):
 
-`status` ∈ `diagnosed | probable | insufficient_evidence | no_fault_detected | failed`.
+```bash
+netcoop diagnose data/scenarios/weak_wifi/incident.json          # -> insufficient_evidence (no Wi-Fi signals)
+node external_agents/wireless_agent/server.js                     # start the external agent (other terminal)
+make conformance AGENT_URL=http://127.0.0.1:8765                  # 7/7 checks pass
+netcoop diagnose data/scenarios/weak_wifi/incident.json          # -> diagnosed: weak Wi-Fi at AP_H3
+```
 
-## Testing
+Other CLI commands:
+
+```bash
+netcoop diagnose data/scenarios/congestion/incident.json --timeline   # message timeline, predictions, blocked actions
+netcoop timeline <incident_id> --html timeline.html                    # static HTML: agent lanes, predictions, transforms, report
+netcoop replay <incident_id>                                           # byte-identical report.json re-run
+netcoop resume <incident_id>                                           # finish an interrupted run from its event log
+netcoop agents refresh                                                 # re-check the allowlist; new agents join the next run
+netcoop feedback <incident_id> CONG-1 approve --note "ok"              # non-blocking HITL (nothing is executed)
+netcoop serve                                                          # dashboard on http://127.0.0.1:8000/ + API (/docs)
+netcoop mcp                                                            # MCP server over stdio (see docs/MCP.md)
+```
+
+**Dashboard:** `netcoop serve`, then open http://127.0.0.1:8000/. Pick a scenario and press Run: messages stream into
+one lane per agent, replayed from the event log in `seq` order. Alongside them you get the topology with affected and
+evidence entities, the report, evidence linked to the message that carried each `finding_id`, predictions with the
+`seq` at which they were logged, the normalization log and policy-blocked actions. Approve/reject is non-blocking: it
+is recorded as a `human_decision` event. An approved, policy-allowed action also gets a simulated dry-run plan. Nothing
+is executed and the diagnosis does not change. The page is static
+vanilla JS (no build, no CDN). It renders text only and is served with a strict Content-Security-Policy.
+
+**Building a frontend:** the API, SSE stream, every message payload and a glossary are in
+[`docs/FRONTEND_API.md`](docs/FRONTEND_API.md), generated from the code. Real recorded runs are in
+[`docs/frontend_fixtures/`](docs/frontend_fixtures/). `python tools/mock_api.py` serves them on the same endpoints with
+no backend. Put a new UI in `dashboard_v2/` and serve it with `netcoop serve --ui dashboard_v2`; the default UI is
+unchanged.
+
+**Chat with NetCoop via MCP:** `netcoop mcp` exposes `list_scenarios`, `list_agents`, `diagnose`, `get_report` and
+`explain` to an MCP client such as Claude Desktop. The client's LLM can ask and explain, but the code decides. Setup,
+guardrails and example prompts: [`docs/MCP.md`](docs/MCP.md).
+
+Requirements: Python ≥ 3.11 and Node ≥ 18 (only for the external agent; everything else runs without it).
+
+### Testing
 
 | Command | What it does |
 |---|---|
-| `make test` | 127 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~50 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
+| `make test` | 251 tests (incl. parametrized security cases + 3 property tests × 200–250 examples), offline, ~55 s: one test per PS scenario, normalizer (every alias, every unit conversion, upcaster, quarantine paths, never-silently-drop), property tests, prediction honesty (seq ordering, no prediction on seen signals, tamper rejection), replay determinism, report validator, policy, PI9 security, API |
 | `make demo` | All scenarios via the CLI |
 | `make eval` / `make fuzz` / sweep | Measured accuracy, confidence-vs-accuracy table, degradation curve, operating-point sweep → `eval/reports/` |
 | `make conformance AGENT_URL=…` | Conformance kit |
 | `make schemas` / `make docs` | JSON Schemas; README tables from config |
 
 Tests that need Node start the real `wireless_agent` on a free port, and are skipped if Node is missing.
-
-## Repository layout
-
-```
-config/            metrics, signatures, playbook, policies, agents, topology, scoring (all knowledge lives here)
-netcoop/           protocol/ normalize/ bus/ orchestrator/ agents/ scoring/ policy/ gateway/ llm/ api/ cli.py
-external_agents/wireless_agent/   Node.js agent, dialect v0.9 (+ data/demo.json)
-conformance/       conformance kit (runnable against any agent URL)
-data/generator/    organizer generator (verbatim) + SCHEMA.md
-data/scenarios/    7 fixed scenario fixtures
-eval/              generate.py, mutate.py, run_eval.py, reports/
-tests/             unit/ integration/ security/ property/
-docs/schemas/      exported JSON Schemas
-runs/<id>/         events.jsonl, report.json, input, meta.json, external.jsonl (gitignored)
-```
-
-## Limitations
-
-* All telemetry is synthetic. The topology in `config/topology.yaml` is a NetCoop-defined model of the campus,
-  and thresholds and weights are tuned on generated data.
-* The eval generator is ours, so accuracy measures internal consistency under realistic noise, not field performance.
-* The core speaks A2A wire shapes over stdlib HTTP rather than embedding `a2a-sdk`. Compatibility is verified
-  against the official SDK v1.3.0 in an optional test (it pulls protobuf ≥ 6, so it is kept out of the default install).
-* The optional LLM paths (Ollama / Anthropic API) are implemented but not exercised in CI beyond mocked tests.
