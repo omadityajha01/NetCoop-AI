@@ -57,3 +57,8 @@ button.fid { background: none; border: 0; padding: 0; color: var(--sel); cursor:
 .sw.evidence { border-color: var(--evidence); background: var(--evidence-bg); }
 .sw.normal { border-color: var(--normal); }
 footer { padding: 8px 16px; font-size: 12px; }
+.plan { margin-top: 6px; padding: 6px 8px; border: 1px dashed var(--evidence); border-radius: 4px; background: #fffbeb; }
+.plan-label { font-weight: 600; color: var(--evidence); font-size: 11px; letter-spacing: .02em; }
+.plan ol { margin: 4px 0 4px 18px; padding: 0; }
+.rollback { color: var(--muted); font-size: 11px; }
+.msg.t-remediation_plan { background: #fef3c7; }
