@@ -38,9 +38,11 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import parse_qs, urlparse
 
-ROOT = Path(__file__).resolve().parents[1]
-FIX = ROOT / "docs" / "frontend_fixtures"
-STATIC = ROOT / "netcoop" / "api" / "static"
+HERE = Path(__file__).resolve().parent
+ROOT = HERE.parent
+# Repo layout (tools/mock_api.py) or the standalone handoff layout (mock_api.py next to frontend_fixtures/).
+FIX = HERE / "frontend_fixtures" if (HERE / "frontend_fixtures").is_dir() else ROOT / "docs" / "frontend_fixtures"
+STATIC = ROOT / "netcoop" / "api" / "static"  # built-in dashboard; absent in the handoff zip (use --ui there)
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; "
        "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 SECURITY_HEADERS = {"Content-Security-Policy": CSP, "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
@@ -88,6 +90,9 @@ class MockState:
 
     @staticmethod
     def _load_dry_run() -> dict[str, Any]:
+        standalone = HERE / "dry_run_templates.json"  # shipped in the handoff zip (copy of playbook.yaml _dry_run)
+        if standalone.is_file():
+            return json.loads(standalone.read_text(encoding="utf-8"))
         try:
             import yaml  # optional
 
@@ -247,11 +252,12 @@ def make_handler(state: MockState, ui: Path | None) -> type[BaseHTTPRequestHandl
             q = {k: v[-1] for k, v in parse_qs(u.query).items()}
             parts = [p for p in u.path.split("/") if p]
             try:
-                if u.path == "/":
-                    if ui:
-                        return self._file(ui / "index.html", "text/html; charset=utf-8")
-                    return self._file(STATIC / "dashboard.html", "text/html; charset=utf-8")
-                if u.path == "/dashboard":
+                if u.path == "/" and ui:
+                    return self._file(ui / "index.html", "text/html; charset=utf-8")
+                if u.path in ("/", "/dashboard") or parts[:1] == ["dashboard"]:
+                    if not (STATIC / "dashboard.html").is_file():
+                        raise ApiError(404, "NOT_FOUND", "no built-in dashboard here: start the mock with --ui <folder>")
+                if u.path in ("/", "/dashboard"):
                     return self._file(STATIC / "dashboard.html", "text/html; charset=utf-8")
                 if parts[:1] == ["dashboard"] and len(parts) == 2:
                     if parts[1] not in ("dashboard.js", "dashboard.css"):
@@ -400,8 +406,9 @@ def main() -> int:
         print(f"error: --ui {a.ui}: no index.html in that folder")
         return 2
     srv = build_server(a.port, ui, a.agent == "joined")
-    print(f"NetCoop mock API on http://127.0.0.1:{a.port}/  ({len(srv.state.fixtures)} fixtures; UI: "  # type: ignore[attr-defined]
-          f"{ui or 'built-in dashboard'}; wireless_agent {a.agent}). Ctrl+C to stop.")
+    default_ui = "built-in dashboard" if (STATIC / "dashboard.html").is_file() else "none (pass --ui <folder>)"
+    print(f"NetCoop mock API on http://127.0.0.1:{a.port}/  ({len(srv.state.fixtures)} fixtures from {FIX}; UI: "  # type: ignore[attr-defined]
+          f"{ui or default_ui}; wireless_agent {a.agent}). Ctrl+C to stop.")
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
