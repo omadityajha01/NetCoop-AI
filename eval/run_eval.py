@@ -167,6 +167,9 @@ def summarize(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "macro_accuracy": round(sum(v["accuracy"] for v in per.values()) / len(per), 3),
         "precision_when_diagnosed": round(sum(r["correct"] for r in claimed) / max(1, len(claimed)), 3),
         "wrong_diagnosis_rate": round(sum(not r["correct"] for r in claimed) / len(rows), 3),
+        "fault_to_no_fault_rate": round(sum(r["status"] == "no_fault_detected" for r in rows if r["truth"] != "normal")
+                                        / max(1, sum(r["truth"] != "normal" for r in rows)), 3),
+        "normal_accuracy": per.get("normal", {}).get("accuracy"),
         "false_positive_rate_normal": round(fp, 3),
         "insufficient_evidence_rate": round(sum(r["status"] == "insufficient_evidence" for r in rows) / len(rows), 3),
         "localization_accuracy": round(sum(loc) / max(1, len(loc)), 3),
@@ -182,7 +185,7 @@ def to_markdown(title: str, s: dict[str, Any], note: str) -> str:
     L = [f"## {title}", "", note, ""]
     L += ["| Metric | Value |", "|---|---|"]
     for k in ("n", "overall_accuracy", "macro_accuracy", "precision_when_diagnosed", "wrong_diagnosis_rate",
-              "false_positive_rate_normal",
+              "fault_to_no_fault_rate", "normal_accuracy", "false_positive_rate_normal",
               "insufficient_evidence_rate", "localization_accuracy", "accuracy_on_mutated_inputs", "mutated_share", "crashes",
               "mean_ms_per_incident"):
         L.append(f"| {k.replace('_', ' ')} | {s[k]} |")
@@ -301,14 +304,16 @@ def cmd_tune(a: argparse.Namespace) -> None:
             s = summarize(run_set(cfg_for(base, url, sc), items))
             # objective: a wrong diagnosis costs twice an honest insufficient_evidence
             obj = round(s["macro_accuracy"] - 2 * s["wrong_diagnosis_rate"], 4)
-            results.append((obj, s["macro_accuracy"], s["wrong_diagnosis_rate"], s["false_positive_rate_normal"], mts, mm, cp))
+            results.append((obj, s["macro_accuracy"], s["wrong_diagnosis_rate"], s["false_positive_rate_normal"], mts, mm, cp,
+                            s["fault_to_no_fault_rate"]))
             print(f"min_top_score={mts} min_margin={mm} contra_penalty={cp} -> objective {obj} macro {s['macro_accuracy']} "
-                  f"wrong {s['wrong_diagnosis_rate']} FP {s['false_positive_rate_normal']}")
+                  f"wrong {s['wrong_diagnosis_rate']} FP {s['false_positive_rate_normal']} f2nf {s['fault_to_no_fault_rate']}")
     best = max(results, key=lambda r: (r[0], r[1]))
     print(f"best on A: min_top_score={best[4]} min_margin={best[5]} contra_penalty={best[6]} (objective {best[0]}, macro {best[1]})")
     REPORTS.mkdir(parents=True, exist_ok=True)
     (REPORTS / "tune_A.json").write_text(json.dumps([dict(zip(("objective", "macro", "wrong_rate", "fp_normal", "min_top_score",
-                                                                 "min_margin", "contra_penalty"), r, strict=True)) for r in results],
+                                                                 "min_margin", "contra_penalty", "fault_to_no_fault"), r, strict=True))
+                                                     for r in results],
                                                     indent=2),
                                          encoding="utf-8")
 

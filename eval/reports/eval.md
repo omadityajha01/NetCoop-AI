@@ -5,27 +5,29 @@ seed 1000, 280 generated incidents (24% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.775 |
-| macro accuracy | 0.775 |
+| overall accuracy | 0.811 |
+| macro accuracy | 0.811 |
 | precision when diagnosed | 0.932 |
 | wrong diagnosis rate | 0.054 |
+| fault to no fault rate | 0.013 |
+| normal accuracy | 0.575 |
 | false positive rate normal | 0.1 |
-| insufficient evidence rate | 0.171 |
+| insufficient evidence rate | 0.125 |
 | localization accuracy | 1.0 |
-| accuracy on mutated inputs | 0.794 |
+| accuracy on mutated inputs | 0.838 |
 | mutated share | 0.243 |
 | crashes | 0 |
-| mean ms per incident | 44.1 |
+| mean ms per incident | 45.6 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
-| normal | 40 | 0.325 | 0.575 | 0.0 |
+| normal | 40 | 0.575 | 0.325 | 0.0 |
 | congestion | 40 | 0.875 | 0.125 | 0.05 |
 | interface_fault | 40 | 0.975 | 0.025 | 0.05 |
 | device_overload | 40 | 0.6 | 0.125 | 0.225 |
-| weak_wifi | 40 | 0.65 | 0.35 | 0.05 |
+| weak_wifi | 40 | 0.65 | 0.275 | 0.05 |
 | dns_failure | 40 | 1.0 | 0.0 | 0.0 |
 | dhcp_failure | 40 | 1.0 | 0.0 | 0.025 |
 
@@ -33,11 +35,11 @@ seed 1000, 280 generated incidents (24% with 5–30 % corrupted records), wirele
 
 | truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | no_fault_detected | weak_wifi |
 |---|---|---|---|---|---|---|---|---|
-| normal | 3 | 1 | 0 | 0 | 23 | 0 | 13 | 0 |
+| normal | 3 | 1 | 0 | 0 | 13 | 0 | 23 | 0 |
 | congestion | 35 | 0 | 0 | 0 | 5 | 0 | 0 | 0 |
 | interface_fault | 0 | 0 | 0 | 0 | 1 | 39 | 0 | 0 |
 | device_overload | 11 | 24 | 0 | 0 | 5 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 14 | 0 | 0 | 26 |
+| weak_wifi | 0 | 0 | 0 | 0 | 11 | 0 | 3 | 26 |
 | dns_failure | 0 | 0 | 0 | 40 | 0 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 40 | 0 | 0 | 0 | 0 | 0 |
 
@@ -63,27 +65,29 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.818 |
-| macro accuracy | 0.818 |
+| overall accuracy | 0.846 |
+| macro accuracy | 0.846 |
 | precision when diagnosed | 0.972 |
 | wrong diagnosis rate | 0.021 |
+| fault to no fault rate | 0.013 |
+| normal accuracy | 0.625 |
 | false positive rate normal | 0.05 |
-| insufficient evidence rate | 0.161 |
+| insufficient evidence rate | 0.121 |
 | localization accuracy | 0.995 |
-| accuracy on mutated inputs | 0.81 |
+| accuracy on mutated inputs | 0.845 |
 | mutated share | 0.3 |
 | crashes | 0 |
-| mean ms per incident | 43.2 |
+| mean ms per incident | 43.5 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
-| normal | 40 | 0.425 | 0.525 | 0.0 |
-| congestion | 40 | 0.825 | 0.175 | 0.05 |
+| normal | 40 | 0.625 | 0.325 | 0.0 |
+| congestion | 40 | 0.825 | 0.15 | 0.05 |
 | interface_fault | 40 | 1.0 | 0.0 | 0.0 |
 | device_overload | 40 | 0.8 | 0.1 | 0.25 |
-| weak_wifi | 40 | 0.675 | 0.325 | 0.05 |
+| weak_wifi | 40 | 0.675 | 0.275 | 0.05 |
 | dns_failure | 40 | 1.0 | 0.0 | 0.0 |
 | dhcp_failure | 40 | 1.0 | 0.0 | 0.0 |
 
@@ -91,11 +95,11 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 
 | truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | no_fault_detected | weak_wifi |
 |---|---|---|---|---|---|---|---|---|
-| normal | 1 | 1 | 0 | 0 | 21 | 0 | 17 | 0 |
-| congestion | 33 | 0 | 0 | 0 | 7 | 0 | 0 | 0 |
+| normal | 1 | 1 | 0 | 0 | 13 | 0 | 25 | 0 |
+| congestion | 33 | 0 | 0 | 0 | 6 | 0 | 1 | 0 |
 | interface_fault | 0 | 0 | 0 | 0 | 0 | 40 | 0 | 0 |
 | device_overload | 4 | 32 | 0 | 0 | 4 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 13 | 0 | 0 | 27 |
+| weak_wifi | 0 | 0 | 0 | 0 | 11 | 0 | 2 | 27 |
 | dns_failure | 0 | 0 | 0 | 40 | 0 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 40 | 0 | 0 | 0 | 0 | 0 |
 

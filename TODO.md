@@ -29,6 +29,34 @@ Decisions taken where CLAUDE.md left room ("choose the simpler option and log it
 - **Tuning:** grid on seed range A (`eval/reports/tune_A.json`), objective = macro accuracy − 2 × wrong-diagnosis rate,
   declared before running. Result: `contra_penalty` 0.5 → **1.0**; other constants unchanged. Reported on seed range B.
 
+## T1: status rules revised (normal scenario)
+
+- The §6.3 rule "no anomalous findings and max < 0.20 → no_fault" made any warn-level reading on a healthy
+  network `insufficient_evidence`. New order:
+  - (0) no usable observations, or (a) coverage(top) < 0.50 → `insufficient_evidence`, `status_reason: data_missing`
+  - (b) nothing ≥ high and top < `min_top_score` → `no_fault_detected`
+  - (c) something ≥ high and top < `min_top_score` → `insufficient_evidence`, `status_reason: no_signature_match`
+  - (d) probable/diagnosed unchanged
+- **Decision:** when there are no hypotheses at all, rule (a) has no "top" to check, so it is skipped. Rule (0)
+  still catches the case with no data.
+- **Decision:** the report field `observations` = anomalous findings not cited as supporting evidence (any
+  status, max 20), plus the new `status_reason` field. Both are additive (see T4 for the version bump).
+- `no_fault_max_score` was removed from scoring.yaml (unused under the new rules).
+- **Decision:** the "anomalous" count used by rule (b) now means severity ≥ high; warn-level findings never block `no_fault_detected`.
+- Re-tuned on seed range A (same grid): best is unchanged (min_top_score 0.45, min_margin 0.15 (tie), contra_penalty 1.0).
+
+| Seed B (n=280) | before T1 | after T1 |
+|---|---|---|
+| overall accuracy | 0.818 | 0.846 |
+| normal accuracy | 0.425 | 0.625 |
+| congestion / interface / overload / wifi / dns / dhcp | 0.825 / 1.0 / 0.8 / 0.675 / 1.0 / 1.0 | 0.825 / 1.0 / 0.8 / 0.675 / 1.0 / 1.0 |
+| committed precision (when diagnosed/probable) | 0.972 | 0.972 |
+| wrong-diagnosis rate | 0.021 | 0.021 |
+| fault → no_fault_detected | 0.000 | 0.013 |
+| normal false-positive rate | 0.05 | 0.05 |
+
+Guards: precision ≥ 95% ✓; fault → no_fault ≤ 3% ✓.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

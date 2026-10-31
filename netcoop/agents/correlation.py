@@ -96,7 +96,8 @@ class CorrelationAgent:
         failed = sorted(a for a in st["failed"] if a in asked)
         usable = int((norm.get("summary") or {}).get("observations_used", 0)) + len(
             [f for f in st["findings"] if st["agent_of"].get(f.finding_id) not in cfg.agents["internal"]])
-        dec = decide(cfg, hyps, anomalous_count=len(anomalous), usable_observations=usable, failed_agents=failed,
+        high_count = sum(1 for f in active if f.severity in ("high", "critical"))
+        dec = decide(cfg, hyps, high_count=high_count, usable_observations=usable, failed_agents=failed,
                      unresolved_c2=cs.unresolved_c2, data_coverage=coverage_share)
 
         conflicts = list(cs.conflicts)
@@ -159,6 +160,7 @@ class CorrelationAgent:
             "phase": "final" if task == "finalize" else "interim",
             "round": rnd,
             "status": dec.status,
+            "status_reason": dec.reason,
             "hypotheses": [h.model_dump(mode="json") for h in hyps],
             "top_hypothesis_id": top.hypothesis_id if top and dec.status in ("diagnosed", "probable") else None,
             "co_candidate_ids": dec.co_candidates,

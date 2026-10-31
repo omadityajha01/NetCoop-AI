@@ -310,9 +310,9 @@ Completeness is `samples / (window / interval)`, capped at 0.5 for stale data (o
 
 | Condition (in order) | Status |
 |---|---|
-| no usable observations at all | `insufficient_evidence` |
-| no anomalous findings **and** max score < 0.20 | `no_fault_detected` |
-| top score < 0.45 **or** coverage(top) < 0.50 | `insufficient_evidence` + the exact missing signals |
+| no usable observations, **or** coverage(top) < 0.50 | `insufficient_evidence` (`status_reason: data_missing`) + the exact missing signals |
+| coverage ok, **no** finding ≥ `high`, top score < 0.45 | `no_fault_detected`; warn-level readings listed under `observations` (not evidence) |
+| coverage ok, **some** finding ≥ `high`, top score < 0.45 | `insufficient_evidence` (`status_reason: no_signature_match`) |
 | margin < 0.15 after prediction rounds | `probable`, top 2 reported as co-candidates |
 | otherwise | `diagnosed` (wording stays "Likely …") |
 
@@ -336,7 +336,6 @@ Final constants (`config/scoring.yaml`; tuned on seed range A only):
 | quality_floor | 0.5 |
 | coerced_penalty | 0.05 |
 | stale_quality | 0.5 |
-| status.no_fault_max_score | 0.2 |
 | status.min_top_score | 0.45 |
 | status.min_top_coverage | 0.5 |
 | status.min_margin | 0.15 |
@@ -369,27 +368,29 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 | Metric | Value |
 |---|---|
 | n | 280 |
-| overall accuracy | 0.818 |
-| macro accuracy | 0.818 |
+| overall accuracy | 0.846 |
+| macro accuracy | 0.846 |
 | precision when diagnosed | 0.972 |
 | wrong diagnosis rate | 0.021 |
+| fault to no fault rate | 0.013 |
+| normal accuracy | 0.625 |
 | false positive rate normal | 0.05 |
-| insufficient evidence rate | 0.161 |
+| insufficient evidence rate | 0.121 |
 | localization accuracy | 0.995 |
-| accuracy on mutated inputs | 0.81 |
+| accuracy on mutated inputs | 0.845 |
 | mutated share | 0.3 |
 | crashes | 0 |
-| mean ms per incident | 43.2 |
+| mean ms per incident | 43.5 |
 
 **Per fault**
 
 | fault | n | accuracy | insufficient_evidence | probable |
 |---|---|---|---|---|
-| normal | 40 | 0.425 | 0.525 | 0.0 |
-| congestion | 40 | 0.825 | 0.175 | 0.05 |
+| normal | 40 | 0.625 | 0.325 | 0.0 |
+| congestion | 40 | 0.825 | 0.15 | 0.05 |
 | interface_fault | 40 | 1.0 | 0.0 | 0.0 |
 | device_overload | 40 | 0.8 | 0.1 | 0.25 |
-| weak_wifi | 40 | 0.675 | 0.325 | 0.05 |
+| weak_wifi | 40 | 0.675 | 0.275 | 0.05 |
 | dns_failure | 40 | 1.0 | 0.0 | 0.0 |
 | dhcp_failure | 40 | 1.0 | 0.0 | 0.0 |
 
@@ -397,11 +398,11 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 
 | truth \ pred | congestion | device_overload | dhcp_failure | dns_failure | insufficient_evidence | interface_fault | no_fault_detected | weak_wifi |
 |---|---|---|---|---|---|---|---|---|
-| normal | 1 | 1 | 0 | 0 | 21 | 0 | 17 | 0 |
-| congestion | 33 | 0 | 0 | 0 | 7 | 0 | 0 | 0 |
+| normal | 1 | 1 | 0 | 0 | 13 | 0 | 25 | 0 |
+| congestion | 33 | 0 | 0 | 0 | 6 | 0 | 1 | 0 |
 | interface_fault | 0 | 0 | 0 | 0 | 0 | 40 | 0 | 0 |
 | device_overload | 4 | 32 | 0 | 0 | 4 | 0 | 0 | 0 |
-| weak_wifi | 0 | 0 | 0 | 0 | 13 | 0 | 0 | 27 |
+| weak_wifi | 0 | 0 | 0 | 0 | 11 | 0 | 2 | 27 |
 | dns_failure | 0 | 0 | 0 | 40 | 0 | 0 | 0 | 0 |
 | dhcp_failure | 0 | 0 | 40 | 0 | 0 | 0 | 0 | 0 |
 
@@ -424,9 +425,9 @@ seed 5000, 280 generated incidents (30% with 5–30 % corrupted records), wirele
 **Reading the numbers honestly:**
 * Most errors are *abstentions*, not wrong answers: when NetCoop does commit to a diagnosis it is right
   ~97% of the time, and the wrong-diagnosis rate is ~2%.
-* `normal` accuracy is low because confounders make warn/high readings on healthy networks. The spec's rule
-  ("no anomalous findings") then yields `insufficient_evidence` rather than `no_fault_detected`. That is
-  conservative by design.
+* `normal` accuracy is the weakest class: confounders put readings at or above `high` on healthy networks (a busy
+  link, a CPU spike). Those runs correctly report `insufficient_evidence (no_signature_match)`: something is
+  anomalous but matches no fault. Warn-only readings yield `no_fault_detected`, with the readings under `observations`.
 * Confidence is **under-confident**: in every bin, observed accuracy ≥ mean stated confidence.
 * Operating point: tuning on A preferred `contra_penalty = 1.0` at `min_top_score = 0.45`. `min_top_score = 0.60`
   removes false positives on normal (FP 0.0 on A) at the cost of ~10 points of accuracy. See `eval/reports/tune_A.json`.
@@ -509,7 +510,8 @@ Every coercion sets `data_quality.coerced`, lowers quality, and appears in `limi
 The PS fields are kept exactly: `incident_id, status, suspected_root_cause, confidence, affected_devices,
 supporting_evidence, alternative_causes, recommended_actions, evidence_sources, limitations`.
 These extensions are additive:
-* `schema_version`, `fault_type`, `confidence_category`
+* `schema_version`, `fault_type`, `confidence_category`, `status_reason` (`data_missing` | `no_signature_match`)
+* `observations` (warn-level readings not used as evidence)
 * `scoring{support, coverage, contra, quality, score, margin}`
 * `co_candidates`, `rejected_alternatives`, `predictions`
 * `blocked_actions` (with `rule_id`), `action_details`

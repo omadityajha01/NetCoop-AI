@@ -310,10 +310,13 @@ margin   = score(top) − score(second)
 
 | Condition | Status |
 |---|---|
-| No anomalous findings after normalization **and** max score < 0.20 | `no_fault_detected` |
-| top score < 0.45 **or** coverage(top) < 0.50 | `insufficient_evidence`, plus the exact missing signals that would resolve it |
+| coverage(top) < 0.50 (or no usable observations) | `insufficient_evidence` (`status_reason: data_missing`), plus the exact missing signals that would resolve it |
+| coverage ok **and** no finding ≥ `high` **and** top score < 0.45 | `no_fault_detected`; warn-level findings go to report field `observations` (context, never evidence) |
+| coverage ok **and** some finding ≥ `high` **and** top score < 0.45 | `insufficient_evidence` (`status_reason: no_signature_match`: anomaly present, no known signature matches) |
 | margin < 0.15 after prediction rounds | `probable`, top 2 reported as co-candidates |
 | otherwise | `diagnosed`; wording stays "Likely …", never "confirmed" |
+
+*(Revised: the former first rule, "no anomalous findings and max score < 0.20 → no_fault", turned every warn-level reading on a healthy network into `insufficient_evidence`. See TODO.md T1.)*
 
 **Confidence:**
 - `confidence` = score(top), rounded to 2 decimal places.

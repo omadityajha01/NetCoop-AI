@@ -104,6 +104,7 @@ class DiagnosisPayload(_P):
     phase: Literal["interim", "final"]
     round: int
     status: Literal["diagnosed", "probable", "insufficient_evidence", "no_fault_detected", "failed"]
+    status_reason: Literal["data_missing", "no_signature_match"] | None = None
     hypotheses: list[Hypothesis] = Field(default_factory=list)
     top_hypothesis_id: str | None = None
     co_candidate_ids: list[str] = Field(default_factory=list)

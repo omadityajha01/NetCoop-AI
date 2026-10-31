@@ -130,8 +130,10 @@ def build_report(ctx: ReadOnlyContext, params: dict[str, Any]) -> dict[str, Any]
         top = co[0]
     elif status == "no_fault_detected":
         root = "No fault detected: measurements within expected ranges"
+    elif d.get("status_reason") == "no_signature_match":
+        root = "Insufficient evidence: anomaly present, but no known fault signature matches"
     else:
-        root = "Insufficient evidence to determine a root cause"
+        root = "Insufficient evidence: data missing to determine a root cause"
 
     primary = [top] + [h for h in co if h is not top] if top else []
     evidence: list[dict[str, Any]] = []
@@ -216,6 +218,14 @@ def build_report(ctx: ReadOnlyContext, params: dict[str, Any]) -> dict[str, Any]
     if status == "probable":
         limitations.append(f"Margin {d['margin']:.2f} below {cfg.scoring['status']['min_margin']} after prediction rounds; "
                            "two co-candidates reported")
+    if status == "insufficient_evidence" and d.get("status_reason") == "no_signature_match":
+        best = hyps[0] if hyps else None
+        limitations.append("Anomaly present (finding at or above `high`), but no known fault signature matches"
+                           + (f" (best: {best.fault_type} {best.score:.2f} < {cfg.scoring['status']['min_top_score']})"
+                              if best else ""))
+    if status == "insufficient_evidence" and d.get("status_reason") == "data_missing":
+        limitations.append("Data missing: the leading hypothesis has less than "
+                           f"{cfg.scoring['status']['min_top_coverage']:.0%} of its expected signals observed")
     if status == "insufficient_evidence" and d.get("missing_signals"):
         uncovered = [s for s in d["missing_signals"] if tuple(s.split("@", 1)) not in st["coverage"]]
         limitations.append("Missing signals that would resolve this: " + ", ".join(d["missing_signals"][:8]))
@@ -259,7 +269,15 @@ def build_report(ctx: ReadOnlyContext, params: dict[str, Any]) -> dict[str, Any]
             "expected": f"{p.expected.op} {p.expected.ref}" + (f" ({thr:g} {cfg.metrics[p.signal.metric]['unit']})" if thr is not None else ""),
             "outcome": p.outcome, "observed": obs.value if obs else None, "evidence_finding_id": p.evidence_finding_id,
         })
+    observations = [{"metric": f.metric, "value": f.value, "unit": f.unit, "entity": f.entity.id,
+                     "severity": f.severity, "interpretation": interpretation(cfg, f), "finding_id": f.finding_id}
+                    for f in st["findings"] if f.anomalous and f.finding_id not in ev_ids][:20]
+    if status == "no_fault_detected" and observations:
+        limitations.append(f"{len(observations)} warn-level reading(s) below fault thresholds listed under `observations` "
+                           "(context only, not evidence)")
     extras = {
+        "status_reason": d.get("status_reason"),
+        "observations": observations,
         "fault_type": top.fault_type if top and status in ("diagnosed", "probable") else None,
         "confidence_category": d["confidence_category"],
         "scoring": scoring,

@@ -63,24 +63,33 @@ def _h(cfg, score, cov=1.0, ft="congestion"):
 
 def test_status_rules(cfg):
     kw = dict(usable_observations=10, failed_agents=[], unresolved_c2=False, data_coverage=1.0)
-    assert decide(cfg, [], anomalous_count=0, **kw).status == "no_fault_detected"
-    assert decide(cfg, [_h(cfg, 0.3)], anomalous_count=2, **kw).status == "insufficient_evidence"
-    assert decide(cfg, [_h(cfg, 0.9, cov=0.4)], anomalous_count=2, **kw).status == "insufficient_evidence"
-    d = decide(cfg, [_h(cfg, 0.8), _h(cfg, 0.7, ft="device_overload")], anomalous_count=2, **kw)
+    # 0. no data at all
+    d = decide(cfg, [], high_count=0, usable_observations=0, failed_agents=[], unresolved_c2=False, data_coverage=1)
+    assert d.status == "insufficient_evidence" and d.reason == "data_missing"
+    # a. leading hypothesis lacks coverage -> data missing (even if its score is high)
+    d = decide(cfg, [_h(cfg, 0.9, cov=0.4)], high_count=2, **kw)
+    assert d.status == "insufficient_evidence" and d.reason == "data_missing"
+    # b. coverage ok, nothing >= high, weak top -> no fault (warn readings become observations)
+    assert decide(cfg, [], high_count=0, **kw).status == "no_fault_detected"
+    d = decide(cfg, [_h(cfg, 0.3)], high_count=0, **kw)
+    assert d.status == "no_fault_detected" and d.reason is None
+    # c. coverage ok, something >= high, weak top -> anomaly without a matching signature
+    d = decide(cfg, [_h(cfg, 0.3)], high_count=1, **kw)
+    assert d.status == "insufficient_evidence" and d.reason == "no_signature_match"
+    # d. unchanged
+    d = decide(cfg, [_h(cfg, 0.8), _h(cfg, 0.7, ft="device_overload")], high_count=2, **kw)
     assert d.status == "probable" and len(d.co_candidates) == 2
-    d = decide(cfg, [_h(cfg, 0.9), _h(cfg, 0.2, ft="device_overload")], anomalous_count=2, **kw)
+    d = decide(cfg, [_h(cfg, 0.9), _h(cfg, 0.2, ft="device_overload")], high_count=2, **kw)
     assert d.status == "diagnosed" and d.category == "high" and d.confidence == 0.9
-    assert decide(cfg, [], anomalous_count=0, usable_observations=0, failed_agents=[], unresolved_c2=False,
-                  data_coverage=1).status == "insufficient_evidence"
 
 
 def test_category_and_caps(cfg):
     assert category_for(cfg, 0.8, 0.3) == "high"
     assert category_for(cfg, 0.8, 0.2) == "medium"
     assert category_for(cfg, 0.4, 0.9) == "low"
-    d = decide(cfg, [_h(cfg, 0.95)], anomalous_count=3, usable_observations=9, failed_agents=["performance_agent"],
+    d = decide(cfg, [_h(cfg, 0.95)], high_count=3, usable_observations=9, failed_agents=["performance_agent"],
                unresolved_c2=False, data_coverage=1)
     assert d.category == "medium" and d.caps
-    d = decide(cfg, [_h(cfg, 0.95)], anomalous_count=3, usable_observations=9, failed_agents=[], unresolved_c2=True,
+    d = decide(cfg, [_h(cfg, 0.95)], high_count=3, usable_observations=9, failed_agents=[], unresolved_c2=True,
                data_coverage=1)
     assert d.category == "medium"
