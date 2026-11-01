@@ -520,7 +520,7 @@ The core (normalizer, agents, scoring, event log, CLI) needs none of these. Each
 | MCP server | ✓ | `netcoop mcp` ([docs/MCP.md](docs/MCP.md)) | Read-only tools plus `diagnose`; strict regexes; paths confined to `data/` and `runs/`; raw quoted input redacted from results |
 | Human in the loop | ✓ non-blocking | dashboard approve/reject, `netcoop feedback`, `POST /incidents/{id}/feedback` | Recorded as an NMP `human_decision` event after the report; never executed; the report and replay are unchanged |
 | Persistence / resume | ✓ | `netcoop resume <incident_id>` | Re-derives the run deterministically; the surviving log must be an exact prefix or resume refuses; idempotent |
-| Dashboard | ✓ | `netcoop serve` → http://127.0.0.1:8000/ | Static vanilla JS, no CDN; text-only rendering (PI8); strict CSP; read-only except Run scenario and HITL |
+| Web UI (landing + dashboard) | ✓ | `netcoop serve` → http://127.0.0.1:8000/ (classic dashboard at `/dashboard`) | Static vanilla JS, no CDN; text-only rendering (PI8); strict CSP; read-only except Run scenario and HITL |
 | Remediation | ✓ simulated dry-run, human-approved, policy-checked, never executed | approve an action (dashboard, `netcoop feedback`, API) | On approve the policy checker runs again. If the action is blocked, you get the rule id and no plan. If it is allowed, an NMP `remediation_plan` is emitted, labelled "SIMULATED – NOT EXECUTED", with steps and a rollback rendered from the `_dry_run` templates in `playbook.yaml`. No network, no shell (D8, G1, G2); the report and replay are unchanged |
 
 ### Guardrails and security
@@ -796,7 +796,7 @@ Accuracy degrades gently, from 0.943 on clean input to 0.886 at 60% corrupted re
 | Protocol models | Pydantic v2 | NMP envelope and payloads; JSON Schema export (`docs/schemas/`) |
 | Configuration | YAML (`pyyaml`, `safe_load` only) | Metrics, signatures, playbook, policies, agents, topology, scoring |
 | Persistence | Append-only JSONL + SQLite (stdlib `sqlite3`) | Event log per run (`runs/<id>/events.jsonl`); reports and HITL feedback |
-| API / UI | FastAPI + Uvicorn; vanilla JS, SVG, CSS | Read-only API, Server-Sent Events, built-in dashboard (no build step, no CDN) |
+| API / UI | FastAPI + Uvicorn; vanilla JS, SVG, CSS | Read-only API, Server-Sent Events, bundled web UI: landing + dashboard (no build step, no CDN) |
 | Agent interop | A2A wire shapes over stdlib HTTP (JSON-RPC 2.0) | External agents; compatibility checked against `a2a-sdk` 1.3.0 (optional extra) |
 | External agent | Node.js ≥ 18 (stdlib only) | `wireless_agent`, dialect v0.9 |
 | LLM (optional, off by default) | Ollama (`llama3.2:3b`) or a cloud API via env key | Complaint triage hint + narrative only; never decides |
@@ -809,7 +809,7 @@ Accuracy degrades gently, from 0.943 on clean input to 0.886 at 60% corrupted re
 
 ```
 config/            metrics, signatures, playbook, policies, agents, topology, scoring (all knowledge lives here)
-netcoop/           protocol/ normalize/ bus/ orchestrator/ agents/ scoring/ policy/ gateway/ llm/ api/ remediation.py hitl.py mcp_server.py cli.py
+netcoop/           protocol/ normalize/ bus/ orchestrator/ agents/ scoring/ policy/ gateway/ llm/ api/ (ui/ = web UI) remediation.py hitl.py mcp_server.py cli.py
 external_agents/wireless_agent/   Node.js agent, dialect v0.9 (+ data/demo.json)
 conformance/       conformance kit (runnable against any agent URL)
 data/generator/    organizer generator (verbatim) + SCHEMA.md
@@ -863,23 +863,32 @@ netcoop replay <incident_id>                                           # byte-id
 netcoop resume <incident_id>                                           # finish an interrupted run from its event log
 netcoop agents refresh                                                 # re-check the allowlist; new agents join the next run
 netcoop feedback <incident_id> CONG-1 approve --note "ok"              # non-blocking HITL (nothing is executed)
-netcoop serve                                                          # dashboard on http://127.0.0.1:8000/ + API (/docs)
+netcoop serve                                                          # web UI on http://127.0.0.1:8000/ + API (/docs)
 netcoop mcp                                                            # MCP server over stdio (see docs/MCP.md)
 ```
 
-**Dashboard:** `netcoop serve`, then open http://127.0.0.1:8000/. Pick a scenario and press Run: messages stream into
-one lane per agent, replayed from the event log in `seq` order. Alongside them you get the topology with affected and
-evidence entities, the report, evidence linked to the message that carried each `finding_id`, predictions with the
-`seq` at which they were logged, the normalization log and policy-blocked actions. Approve/reject is non-blocking: it
-is recorded as a `human_decision` event. An approved, policy-allowed action also gets a simulated dry-run plan. Nothing
-is executed and the diagnosis does not change. The page is static
-vanilla JS (no build, no CDN). It renders text only and is served with a strict Content-Security-Policy.
+**Web UI:** `netcoop serve`, then open http://127.0.0.1:8000/. The bundled UI (`netcoop/api/ui/`) has two pages:
+
+* **Landing page** (`/`): a conversational preview. Pick a symptom or type one; it maps to a scenario, runs the real
+  API and streams the answer token by token with evidence cards. It also has a live SSE event stream of a real run,
+  capability cards, integrations and a **Try Now** button that opens the dashboard.
+* **Dashboard** (`/ui/dashboard.html`, `?run=<scenario>` starts a run on load): three columns. **Live collaboration**:
+  messages stream in `seq` order, with agents and the "joined via A2A" status. **Topology + hypotheses &
+  predictions**: affected devices highlighted, the localized root pulses, score bars, and prediction cards that flip
+  hit/miss when their evidence lands. **Report + proposed actions**: confidence bar, evidence linked to the message
+  that carried each `finding_id`, and approve/reject. An approved, policy-allowed action gets a dry-run plan labelled
+  "SIMULATED – NOT EXECUTED"; a blocked one shows its rule (e.g. R1). Replay at 1×/2× and past runs are in the top bar.
+
+Design: neutral palette with an AI-purple accent, system fonts, SVG icons, responsive, `prefers-reduced-motion`
+aware. It is static vanilla JS (no build, no CDN), renders text only and is served with a strict
+Content-Security-Policy. Approve/reject is recorded as a `human_decision` event; nothing is executed and the
+diagnosis does not change. The classic single-page dashboard is still at `/dashboard`.
 
 **Building a frontend:** the API, SSE stream, every message payload and a glossary are in
 [`docs/FRONTEND_API.md`](docs/FRONTEND_API.md), generated from the code. Real recorded runs are in
 [`docs/frontend_fixtures/`](docs/frontend_fixtures/). `python tools/mock_api.py` serves them on the same endpoints with
-no backend. Put a new UI in `dashboard_v2/` and serve it with `netcoop serve --ui dashboard_v2`; the default UI is
-unchanged.
+no backend and the same default UI. Put a new UI in `dashboard_v2/` and serve it with
+`netcoop serve --ui dashboard_v2`.
 
 **Chat with NetCoop via MCP:** `netcoop mcp` exposes `list_scenarios`, `list_agents`, `diagnose`, `get_report` and
 `explain` to an MCP client such as Claude Desktop. The client's LLM can ask and explain, but the code decides. Setup,
