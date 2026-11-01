@@ -115,3 +115,27 @@ def test_no_certainty_or_execution_claims_in_ui_copy():
     text = " ".join(p.read_text(encoding="utf-8") for p in FILES).lower()
     for banned in ("confirmed", "definitely", "guaranteed", "fix verified", "fixed automatically", "auto-remediat"):
         assert banned not in text, banned
+
+
+def test_plain_language_layer():
+    out = node("""
+      const ev = {seq: 16, message_type: 'prediction', sender: 'correlation_agent', recipient: 'orchestrator',
+                  payload: {prediction: {fault_type: 'congestion', signal: {metric: 'queue_drops_count', entity: {id: 'SW_1'}},
+                                          expected: {op: '>=', ref: 'high'}}}};
+      return {
+        pred: D.describe(ev),
+        task: D.describe({message_type: 'task_request', recipient: 'performance_agent', payload: {task: 'analyze', round: 0}}),
+        found: D.describe({message_type: 'finding_report', payload: {findings: [{}, {}, {}]}}),
+        none: D.describe({message_type: 'finding_report', payload: {findings: []}}),
+        sure: [D.sureWord(1), D.sureWord(0.6), D.sureWord(0.2)],
+        problems: Object.keys(D.PROBLEMS).sort(),
+        expect: D.expectText({op: '<', ref: 'high'}),
+      };""")
+    assert out["pred"] == ("Predicts dropped packets on SW_1 will be at or above the high level if it's "
+                           "network congestion (link overloaded)")
+    assert out["task"] == "Asked Performance agent to check the network"
+    assert out["found"] == "Found 3 problems" and out["none"] == "Found nothing unusual"
+    assert out["sure"] == ["High", "Medium", "Low"] and out["expect"] == "below the high level"
+    from netcoop.api.dashboard import scenario_names
+
+    assert set(scenario_names()) <= set(out["problems"])  # every scenario has a plain-language name

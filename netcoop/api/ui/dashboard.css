@@ -37,7 +37,7 @@ body.dash { background: var(--d-bg); color: var(--d-text); min-height: 100vh; fo
 .ev.sel { border-color: var(--ai-300); background: rgb(124 58 237 / .12); }
 .ev .seq { font: 600 12px var(--mono); color: var(--d-muted); padding-top: 2px; }
 .ev .who { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
-.ev .what { font: 12.5px var(--mono); color: var(--d-muted); margin-top: 2px; word-break: break-word; }
+.ev .what { font-size: 13.5px; color: var(--d-muted); margin-top: 2px; word-break: break-word; }
 .ev.t-prediction { border-left-color: var(--ai-300); } .ev.t-evidence_response, .ev.t-finding_report { border-left-color: #22D3EE; }
 .ev.t-diagnosis, .ev.t-report { border-left-color: #34D399; } .ev.t-error { border-left-color: #FB7185; }
 .ev.t-hint { border-left-color: #FBBF24; } .ev.t-human_decision, .ev.t-remediation_plan { border-left-color: #F472B6; }
@@ -140,3 +140,56 @@ body.dash { background: var(--d-bg); color: var(--d-text); min-height: 100vh; fo
   .agents { grid-template-columns: 1fr; }
 }
 .plan.seen { animation: none; }
+
+/* ---------- ease of use: guide, progress, explanations, plain-English answer ---------- */
+.ctl-label { font-size: 13px; color: var(--d-muted); font-weight: 600; }
+.guide { display: flex; align-items: center; gap: 12px; margin: 14px 24px 0; padding: 12px 14px; border-radius: var(--r);
+  background: rgb(124 58 237 / .1); border: 1px solid rgb(167 139 250 / .35); }
+.guide-steps { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; flex: 1; }
+.guide-steps li { display: flex; gap: 10px; align-items: flex-start; opacity: .6; transition: opacity .25s; }
+.guide-steps li.on, .guide-steps li.done { opacity: 1; }
+.guide-steps b { display: block; font-size: 14px; } .guide-steps span { font-size: 13px; color: var(--d-muted); }
+.gn { flex: none; width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; font: 700 13px var(--font);
+  background: var(--d-surface-2); color: var(--d-muted); transition: background-color .25s, color .25s; }
+.guide-steps li.on .gn { background: var(--ai); color: #fff; }
+.guide-steps li.done .gn { background: rgb(5 150 105 / .25); color: #34D399; }
+.guide-x, .guide-show { min-height: 36px; border-radius: 8px; border: 1px solid var(--d-border); background: var(--d-surface);
+  color: var(--d-muted); cursor: pointer; transition: color .2s, border-color .2s; }
+.guide-x { width: 36px; display: grid; place-items: center; }
+.guide-x:hover, .guide-show:hover { color: var(--d-text); border-color: var(--ai-300); }
+.guide-show { display: inline-flex; align-items: center; gap: 6px; padding: 0 12px; margin: 14px 24px 0; font: 600 13px var(--font); }
+
+.progress { margin: 12px 24px 0; }
+.progress-bar { height: 6px; border-radius: 999px; background: var(--d-surface-2); overflow: hidden; }
+.progress-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--ai), #22D3EE); transform: scaleX(0);
+  transform-origin: left; transition: transform .4s ease; }
+.phases { list-style: none; margin: 6px 0 0; padding: 0; display: grid; grid-template-columns: repeat(4, 1fr); font-size: 12px; color: var(--d-muted); }
+.phases li.on { color: var(--d-text); font-weight: 600; } .phases li.done { color: #34D399; }
+
+.grid { height: auto; min-height: calc(100vh - 170px); }
+.explain { margin: -6px 0 2px; font-size: 13px; color: var(--d-muted); line-height: 1.45; }
+.lg.hit { background: #34D399; } .lg.miss { background: #FB7185; }
+.empty-state { display: grid; gap: 4px; padding: 18px; border: 1px dashed var(--d-border); border-radius: var(--r); color: var(--d-muted); font-size: 14px; }
+.empty-state b { color: var(--d-text); }
+.empty-state.small { padding: 12px 14px; font-size: 13px; }
+
+.answer { display: grid; gap: 12px; }
+.answer-card { background: var(--d-surface); border: 1px solid var(--d-border); border-radius: var(--r); padding: 18px; animation: slidein .45s ease-out both; }
+.answer-card.ok { border-color: rgb(52 211 153 / .45); } .answer-card.warn { border-color: rgb(251 191 36 / .45); }
+.answer-card.calm { border-color: rgb(34 211 238 / .45); } .answer-card.bad { border-color: rgb(251 113 133 / .45); }
+.answer-card .headline { font: 650 19px/1.35 var(--font-display); margin: 8px 0 6px; }
+.answer-card .plain { color: var(--d-muted); font-size: 14px; margin: 0 0 12px; }
+.facts { display: grid; grid-template-columns: max-content 1fr; gap: 8px 14px; font-size: 14px; margin: 0; }
+.facts dt { color: var(--d-muted); } .facts dd { margin: 0; }
+.sure { display: inline-flex; align-items: center; gap: 8px; }
+.sure .bar { width: 120px; margin: 0; }
+.next { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: rgb(124 58 237 / .12); border: 1px solid rgb(167 139 250 / .35); font-size: 14px; }
+.next b { color: #DDD6FE; }
+.tech { border: 1px solid var(--d-border); border-radius: var(--r); background: var(--d-surface); }
+.tech > summary { cursor: pointer; padding: 12px 14px; font-weight: 600; font-size: 14px; color: var(--d-muted); list-style-position: inside; }
+.tech > summary:hover { color: var(--d-text); }
+.tech[open] > summary { border-bottom: 1px solid var(--d-border); }
+.tech .report { border: 0; border-radius: 0 0 var(--r) var(--r); }
+.pred .said { font-size: 13px; color: var(--d-text); }
+@media (max-width: 760px) { .guide-steps, .phases { grid-template-columns: 1fr; } .guide { align-items: flex-start; } }
+[hidden] { display: none !important; }

@@ -872,7 +872,11 @@ netcoop mcp                                                            # MCP ser
 * **Landing page** (`/`): a conversational preview. Pick a symptom or type one; it maps to a scenario, runs the real
   API and streams the answer token by token with evidence cards. It also has a live SSE event stream of a real run,
   capability cards, integrations and a **Try Now** button that opens the dashboard.
-* **Dashboard** (`/ui/dashboard.html`, `?run=<scenario>` starts a run on load): three columns. **Live collaboration**:
+* **Dashboard** (`/ui/dashboard.html`, `?run=<scenario>` starts a run on load). Built for non-experts: a 3-step guide
+  (choose a problem → Diagnose → read the answer; it can be hidden), a progress bar with plain-language phases,
+  problems named by symptom ("Wi-Fi keeps dropping"), one-line explanations under every panel, and a **plain-English
+  answer card** (what's wrong, how sure, because, self-check, what to do next), with technical details one click
+  away. Three columns. **Live collaboration**:
   messages stream in `seq` order, with agents and the "joined via A2A" status. **Topology + hypotheses &
   predictions**: affected devices highlighted, the localized root pulses, score bars, and prediction cards that flip
   hit/miss when their evidence lands. **Report + proposed actions**: confidence bar, evidence linked to the message
