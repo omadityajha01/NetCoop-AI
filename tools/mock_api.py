@@ -239,7 +239,7 @@ def make_handler(state: MockState, ui: Path | None) -> type[BaseHTTPRequestHandl
             return self.rfile.read(n) if n else b""
 
         def _file(self, p: Path, ctype: str) -> None:
-            self._send(200, p.read_bytes(), ctype, SECURITY_HEADERS)
+            self._send(200, p.read_bytes(), ctype, {**SECURITY_HEADERS, "Cache-Control": "no-cache"})
 
         # ----- routes -----
         def do_OPTIONS(self) -> None:  # noqa: N802 - CORS preflight, like Starlette's CORSMiddleware

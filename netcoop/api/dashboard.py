@@ -35,6 +35,8 @@ CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'se
        "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 SECURITY_HEADERS = {"Content-Security-Policy": CSP, "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
                     "X-Frame-Options": "DENY"}
+# UI files revalidate on every load (ETag keeps it cheap) so an updated UI is never served from a stale cache.
+UI_HEADERS = {**SECURITY_HEADERS, "Cache-Control": "no-cache"}
 _FILES = {"dashboard.js": "text/javascript", "dashboard.css": "text/css"}
 UI_ENV = "NETCOOP_UI_DIR"  # set by `netcoop serve --ui <folder>`
 UI_TYPES = {".html": "text/html", ".js": "text/javascript", ".mjs": "text/javascript", ".css": "text/css",
@@ -55,12 +57,12 @@ def _err(status: int, code: str, detail: str) -> HTTPException:
 
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
 def index() -> HTMLResponse:
-    return HTMLResponse((ui_dir() / "index.html").read_text(encoding="utf-8"), headers=SECURITY_HEADERS)
+    return HTMLResponse((ui_dir() / "index.html").read_text(encoding="utf-8"), headers=UI_HEADERS)
 
 
 @router.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
 def dashboard() -> HTMLResponse:
-    return HTMLResponse((STATIC / "dashboard.html").read_text(encoding="utf-8"), headers=SECURITY_HEADERS)
+    return HTMLResponse((STATIC / "dashboard.html").read_text(encoding="utf-8"), headers=UI_HEADERS)
 
 
 @router.get("/ui/{path:path}", include_in_schema=False)
@@ -69,14 +71,14 @@ def ui_asset(path: str) -> FileResponse:
     p = (d / path).resolve()
     if not p.is_relative_to(d) or p.suffix.lower() not in UI_TYPES or not p.is_file():
         raise _err(404, "NOT_FOUND", "unknown asset")
-    return FileResponse(p, media_type=UI_TYPES[p.suffix.lower()], headers=SECURITY_HEADERS)
+    return FileResponse(p, media_type=UI_TYPES[p.suffix.lower()], headers=UI_HEADERS)
 
 
 @router.get("/dashboard/{name}", include_in_schema=False)
 def dashboard_asset(name: str) -> FileResponse:
     if name not in _FILES:  # fixed allowlist: no path from the request reaches the filesystem
         raise _err(404, "NOT_FOUND", "unknown asset")
-    return FileResponse(STATIC / name, media_type=_FILES[name], headers=SECURITY_HEADERS)
+    return FileResponse(STATIC / name, media_type=_FILES[name], headers=UI_HEADERS)
 
 
 def scenario_names() -> list[str]:

@@ -195,3 +195,10 @@ def test_ui_has_three_input_modes_and_flow_cards():
         assert path in js
     for card in ("Problem received", "Hand-off", "Coordinator's recommendation"):
         assert card in js
+
+
+def test_ui_files_always_revalidate_and_keep_the_csp(client):
+    for path in ("/", "/ui/dashboard.html", "/ui/dashboard.js", "/ui/styles.css", "/dashboard", "/dashboard/dashboard.js"):
+        r = client.get(path)
+        assert r.headers["cache-control"] == "no-cache", path  # no stale UI after an update
+        assert r.headers["content-security-policy"] == dash.CSP, path
