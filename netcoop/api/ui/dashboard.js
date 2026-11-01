@@ -84,7 +84,76 @@ function describe(ev) {
   }
 }
 
-if (typeof module !== "undefined" && module.exports) module.exports = { ReorderBuffer, describe, INTERNAL, SPEED_MS, PROBLEMS, sureWord, expectText };
+/** What a message contains, as plain [label, value] rows for the click-to-expand details in the feed. */
+function detailRows(ev) {
+  const p = ev.payload || {};
+  const rows = [["From → to", nice(AGENTS, ev.sender) + " → " + nice(AGENTS, ev.recipient)], ["Message", "#" + ev.seq + " · " + ev.message_type]];
+  const finding = f => [`${metric(f.metric)} · ${f.entity.id}`, `${fmtv(f.value)} ${f.unit || ""} · ${f.severity}`.trim()];
+  switch (ev.message_type) {
+    case "normalization_summary": {
+      const s = p.summary || {};
+      rows.push(["Records", `${s.records_in} in · ${s.records_used} used · ${s.records_quarantined} set aside`],
+                ["Repairs", `${s.renamed || 0} fields renamed · ${s.unit_converted || 0} units converted · ${s.coerced || 0} values fixed`],
+                ["Time window", `${(p.window || {}).start} → ${(p.window || {}).end}`]);
+      for (const q of (p.quarantined || []).slice(0, 3)) rows.push(["Set aside", `${q.field}: ${q.reason}`]);
+      break;
+    }
+    case "task_request":
+      rows.push(["Task", `${p.task} (round ${p.round})`]);
+      if (p.window) rows.push(["Time window", `${p.window.start} → ${p.window.end}`]);
+      if (p.params && p.params.entities) rows.push(["Devices to check", p.params.entities.join(", ") || "none"]);
+      break;
+    case "finding_report": case "evidence_response": {
+      const fs = p.findings || [];
+      if (!fs.length) rows.push(["Findings", ev.message_type === "finding_report" ? "nothing unusual" : "none"]);
+      for (const f of fs.slice(0, 8)) rows.push(finding(f));
+      if (fs.length > 8) rows.push(["…", `${fs.length - 8} more`]);
+      for (const u of (p.unavailable || []).slice(0, 3)) rows.push(["Could not measure", `${metric(u.metric)} · ${(u.entity || {}).id}`]);
+      if (p.scope && p.scope.affected_devices) rows.push(["Affected devices", p.scope.affected_devices.join(", ")],
+                                                          ["Nearest common upstream", p.scope.nearest_common_upstream || "-"]);
+      break;
+    }
+    case "coverage_manifest":
+      rows.push(["Can measure", (p.signals || []).slice(0, 6).map(x => `${metric(x.metric)} · ${x.entity.id}`).join("; ") +
+                ((p.signals || []).length > 6 ? ` … (${p.signals.length} in total)` : "")]);
+      break;
+    case "prediction": {
+      const x = p.prediction;
+      rows.push(["Possible cause", nice(FAULTS, x.fault_type)],
+                ["Expects", `${metric(x.signal.metric)} on ${x.signal.entity.id} ${expectText(x.expected)}`],
+                ["Logged", "before the evidence was requested"]);
+      break;
+    }
+    case "evidence_request":
+      for (const r of p.requests || []) rows.push(["Asks for", `${metric(r.metric)} on ${(r.entity || {}).id}`]);
+      if (p.reason) rows.push(["Why", p.reason]);
+      break;
+    case "diagnosis":
+      rows.push(["Verdict", `${p.status.replace(/_/g, " ")} · confidence ${Number(p.confidence).toFixed(2)} (${p.confidence_category})`]);
+      for (const h of [...(p.hypotheses || [])].sort((a, b) => b.score - a.score).slice(0, 3))
+        rows.push(["Cause considered", `${nice(FAULTS, h.fault_type)} at ${h.entity.id} · score ${Math.round(h.score * 100)}%`]);
+      if ((p.missing_signals || []).length) rows.push(["Still missing", p.missing_signals.slice(0, 4).join(", ")]);
+      break;
+    case "report": {
+      const r = p.report || {};
+      rows.push(["Answer", r.suspected_root_cause], ["Confidence", `${Number(r.confidence).toFixed(2)} (${r.confidence_category})`],
+                ["Actions", `${(r.recommended_actions || []).length} suggested · ${(r.blocked_actions || []).length} blocked by rules`]);
+      break;
+    }
+    case "hint": rows.push(["Suggests", nice(FAULTS, p.fault_type) + " (advice only)"], ["Why", p.rationale]); break;
+    case "human_decision": rows.push(["Decision", `${p.decision} ${p.action_id}`], ["Executed", "no (never)"]); break;
+    case "remediation_plan":
+      rows.push(["Plan for", `${p.action_id} on ${p.target || "-"}`], ["Label", p.label]);
+      (p.steps || []).forEach((x, i) => rows.push(["Step " + (i + 1), x]));
+      break;
+    case "error": rows.push(["Error", `${p.code}: ${p.detail}`]); break;
+    default: break;
+  }
+  return rows;
+}
+function fmtv(v) { return typeof v === "number" ? (Number.isInteger(v) ? String(v) : String(+v.toFixed(2))) : String(v); }
+
+if (typeof module !== "undefined" && module.exports) module.exports = { ReorderBuffer, describe, detailRows, INTERNAL, SPEED_MS, PROBLEMS, sureWord, expectText };
 
 // ---------- DOM ----------
 const $ = id => document.getElementById(id);
@@ -136,12 +205,16 @@ function addEvent(ev) {
   const es = feed.querySelector(".empty-state"); if (es) es.remove();
   const card = el("div", "ev t-" + ev.message_type);
   card.id = "ev-" + ev.seq; card.tabIndex = 0;
-  card.title = "Technical: " + ev.message_type + " from " + ev.sender + " to " + ev.recipient + " (seq " + ev.seq + ")";
+  card.title = "Click to see what this message contains";
   const who = el("div", "who", nice(AGENTS, ev.sender));
   who.appendChild(el("span", "tag", ev.message_type.replace(/_/g, " ")));
   if (!INTERNAL.has(ev.sender)) who.appendChild(el("span", "tag a2a", "joined via A2A"));
   const body = el("div"); body.append(who, el("div", "what", describe(ev)));
   card.append(el("span", "seq", "#" + ev.seq), body);
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-expanded", "false");
+  card.addEventListener("click", () => toggleDetails(card, ev));
+  card.addEventListener("keydown", k => { if (k.key === "Enter" || k.key === " ") { k.preventDefault(); toggleDetails(card, ev); } });
   feed.appendChild(card);
   feed.scrollTop = feed.scrollHeight;
   $("msgcount").textContent = S.events.length + " messages";
@@ -153,11 +226,25 @@ function addEvent(ev) {
   if (ev.message_type === "diagnosis") renderHypotheses(p);
   if (ev.message_type === "human_decision" || ev.message_type === "remediation_plan") renderActions();
 }
+function toggleDetails(card, ev, forceOpen) {
+  let box = card.querySelector(".details");
+  if (box && !forceOpen) { box.remove(); card.setAttribute("aria-expanded", "false"); card.classList.remove("open"); return; }
+  if (box) return;
+  box = el("dl", "details");
+  for (const [k, v] of detailRows(ev)) box.append(el("dt", null, k), el("dd", null, v));
+  card.lastElementChild.appendChild(box);
+  card.setAttribute("aria-expanded", "true");
+  card.classList.add("open");
+}
 function receive(ev) { for (const e of S.buf.push(ev)) addEvent(e); }
 function highlight(seq) {
   document.querySelectorAll(".ev.sel").forEach(n => n.classList.remove("sel"));
   const c = $("ev-" + seq);
-  if (c) { c.classList.add("sel"); c.scrollIntoView({ block: "center", behavior: reduced() ? "auto" : "smooth" }); }
+  if (c) {
+    c.classList.add("sel");
+    const ev = S.events.find(e => e.seq === seq); if (ev) toggleDetails(c, ev, true);   // evidence link opens the details
+    c.scrollIntoView({ block: "center", behavior: reduced() ? "auto" : "smooth" });
+  }
 }
 
 // ---------- agents ----------

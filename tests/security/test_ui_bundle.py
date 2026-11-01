@@ -139,3 +139,30 @@ def test_plain_language_layer():
     from netcoop.api.dashboard import scenario_names
 
     assert set(scenario_names()) <= set(out["problems"])  # every scenario has a plain-language name
+
+
+def test_feed_details_for_every_recorded_message():
+    """Clicking a feed card shows detailRows(ev): every real message type must render clean rows."""
+    import typing
+    from pathlib import Path
+
+    from netcoop.protocol.envelope import MessageType
+
+    fix = Path(dash.ROOT) / "docs" / "frontend_fixtures"
+    events = [line for p in sorted(fix.glob("*/events.jsonl"))
+              for line in p.read_text(encoding="utf-8").splitlines() if line.strip()]
+    out = node(f"""
+      const res = {{}};
+      const isBad = x => typeof x !== 'string' || ['undefined', '[object Object]', 'NaN'].some(w => x.includes(w));
+      for (const line of {json.dumps(events)}) {{
+        const ev = JSON.parse(line); const rows = D.detailRows(ev);
+        const bad = rows.filter(r => r.length !== 2 || r.some(isBad));
+        const k = ev.message_type; res[k] = res[k] || {{n: 0, minRows: 99, bad: []}};
+        res[k].n += 1; res[k].minRows = Math.min(res[k].minRows, rows.length); res[k].bad.push(...bad.map(b => JSON.stringify(b)));
+      }}
+      return res;""")
+
+    assert set(out) == set(typing.get_args(MessageType))
+    for mt, r in out.items():
+        assert not r["bad"], (mt, r["bad"][:3])
+        assert r["minRows"] >= 3, mt  # sender/recipient + message + at least one content row
