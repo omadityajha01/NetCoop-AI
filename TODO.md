@@ -477,6 +477,34 @@ Install, 228 passed / 2 skipped, preflight 15/15, then (scratchpad smoke.py over
 | MCP stdio (list_scenarios, diagnose, explain) | PASS: 5 tools, 7 scenarios, 5 evidence, 3 predictions; traversal → BAD_PATH |
 | LLM local llama3.2:3b on interop | PASS: hint dns_failure; device_overload 0.85 identical to LLM off; narrative from llm |
 
+## Final smoke (stage demo-final-9)
+
+Fresh clone of main `caa1a82` from GitHub, new venv, `pip install -e .[dev]`: 263 passed / 2 skipped, preflight 15/15.
+
+| Check | Result |
+|---|---|
+| congestion → diagnosed | PASS: congestion 1.00 on HOSTEL_CORE_SW_01 |
+| weak_wifi, no agent → insufficient_evidence | PASS |
+| Node agent + conformance | PASS: 7/7 |
+| weak_wifi with agent → diagnosed AP_H3 | PASS: weak_wifi 1.00 |
+| approve CONG-1 → human_decision + remediation_plan | PASS: #28 + #29 "SIMULATED – NOT EXECUTED"; report unchanged |
+| approve CONG-4 (reboot) → blocked | PASS: R1 (Class hours), no plan |
+| resume after os._exit kill | PASS: kept 13, appended 14, report byte-identical |
+| MCP stdio (list_scenarios, diagnose, explain) | PASS: 5 tools, 7 scenarios, 5 evidence, 3 predictions; traversal → BAD_PATH |
+| LLM local llama3.2:3b on interop | PASS: hint dns_failure; device_overload 0.85 identical to LLM off |
+| UI 1.1 landing | PASS: hero, streamed answer, evidence cards 98.31 pct / 528 count / R1; Try Now → ?run=congestion |
+| UI 3.1–3.3 congestion | PASS: 27 messages; predictions #15/#16/#17 came true / didn't happen / came true; "Network congestion (link overloaded) at HOSTEL_CORE_SW_01", High (100%), 2 of 3; next step; evidence click highlights its message; switch red, uplink pulses |
+| UI 4.1 Wi-Fi without agent | PASS: insufficient evidence, "Not enough data…", missing list, "Connect the Wi-Fi agent…" (shot list wording corrected to the exact text) |
+| UI 4.4 Wi-Fi with agent | PASS: pill "Wi-Fi agent connected", 3 cards "joined via A2A", "Weak Wi-Fi signal at AP_H3", High (100%) |
+| 4.5 timeline transforms | PASS: signal → rssi_dbm, noise_margin → snr_db, ap-h3 → AP_H3, 0.208 fraction → 20.8 pct |
+| UI 5.1 messy data | PASS: "Data cleaner · Read 48 records, used 36, set aside 12 unreadable"; "Overloaded device at DEPT_CORE_SW_01", High (85%) |
+| UI 7.1 approve CONG-1 / CONG-4 | PASS: plan (3 steps + rollback), toast; "Not allowed right now: safety rule R1 (Class hours)" → "still blocked by rule R1, so no plan"; answer unchanged |
+| UI 8.1 LLM on | PASS: "LLM triage · …suggests dns failure (name lookup) (advice only)"; answer unchanged, decided by deterministic_scoring (shot list casing corrected) |
+
+Notes: `netcoop serve` without `--ui` serves the **new** UI by design since demo-final-8 (classic at `/dashboard`).
+CSP + security headers unchanged since demo-final-3. Reduced motion: CSS media query + JS (`delayFor`/`reduced()`),
+covered by tests; not toggled at OS level during the smoke.
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).
