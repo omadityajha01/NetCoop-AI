@@ -20,6 +20,7 @@ Contents: [Endpoints](#endpoints) · [Errors](#error-shapes) · [SSE stream](#ss
 | GET | `/incidents/{incident_id}/report.csv` | Supporting evidence as CSV (formula-injection safe). |
 | POST | `/incidents/{incident_id}/feedback` | Approve/reject an action (non-blocking HITL). Approve re-runs the policy check; allowed -> dry-run plan. |
 | GET | `/agents` | External agents from the allowlist and whether each is reachable now (joined) or not. |
+| GET | `/scenarios` | Built-in scenario names (folders in data/scenarios). |
 | GET | `/` | UI static file (see [Static UI](#static-ui-files)) |
 | GET | `/dashboard` | UI static file (see [Static UI](#static-ui-files)) |
 | GET | `/ui/{path:path}` | UI static file (see [Static UI](#static-ui-files)) |
@@ -410,6 +411,39 @@ Without the agent running, the same call returns:
       "error": "TIMEOUT"
     }
   }
+}
+```
+
+### GET `/scenarios`
+
+Built-in scenario names (folders in data/scenarios).
+
+Response `200` (real example):
+```json
+{
+  "scenarios": [
+    {
+      "name": "congestion"
+    },
+    {
+      "name": "dhcp_failure"
+    },
+    {
+      "name": "dns_failure"
+    },
+    {
+      "name": "interface_fault"
+    },
+    {
+      "name": "interop"
+    },
+    {
+      "name": "normal"
+    },
+    {
+      "name": "weak_wifi"
+    }
+  ]
 }
 ```
 
@@ -966,7 +1000,7 @@ Nothing is executed, and the report never changes. An `action_id` that is not in
 
 ## Security headers (CSP, CORS)
 
-UI responses (`/`, `/dashboard`, `/dashboard/*`, `/ui/*`) carry, verbatim:
+UI responses (`/`, `/ui/*`, `/dashboard`, `/dashboard/*`) carry, verbatim:
 ```
 Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'
 X-Content-Type-Options: nosniff
@@ -981,8 +1015,9 @@ So a UI served by `netcoop serve` itself (same origin) needs no CORS; a dev serv
 
 ## Static UI files
 
-* Built-in dashboard: `netcoop/api/static/` → `/` and `/dashboard` (dashboard.html), `/dashboard/<name>` for `dashboard.js`, `dashboard.css` (fixed allowlist).
-* `netcoop serve --ui <folder>`: `<folder>/index.html` at `/`, any file under the folder at `/ui/<path>` (extensions .css .html .ico .jpg .js .json .mjs .png .svg .txt .woff2; resolved path must stay inside the folder). `/dashboard` still serves the built-in UI. New UIs go in `dashboard_v2/` (a starter is there). Without `--ui`, behaviour is unchanged and `/ui/*` is 404.
+* Default UI: `netcoop/api/ui/` (bundled). Landing page `index.html` at `/`; every file under the folder at `/ui/<path>`, e.g. the dashboard at `/ui/dashboard.html` (`?run=<scenario>` starts a run on load).
+* Classic dashboard: `netcoop/api/static/` at `/dashboard` (dashboard.html) and `/dashboard/<name>` for `dashboard.js`, `dashboard.css` (fixed allowlist).
+* `netcoop serve --ui <folder>`: `<folder>/index.html` at `/`, any file under the folder at `/ui/<path>` (extensions .css .html .ico .jpg .js .json .mjs .png .svg .txt .woff2; resolved path must stay inside the folder). `/dashboard` still serves the classic UI. New UIs go in `dashboard_v2/` (a starter is there). Without `--ui`, the bundled UI is served.
 
 ## Fixtures
 
@@ -1006,13 +1041,13 @@ So a UI served by `netcoop serve` itself (same origin) needs no CORS; a dev serv
 ## Mock API (no backend)
 
 ```
-python tools/mock_api.py                     # http://127.0.0.1:8000/, built-in dashboard
+python tools/mock_api.py                     # http://127.0.0.1:8000/, bundled UI (+ classic at /dashboard)
 python tools/mock_api.py --ui dashboard_v2   # your UI
 python tools/mock_api.py --port 8080 --agent joined
 ```
 Standard library only. Same endpoints, bodies, errors, headers and SSE framing. `POST /scenarios/{name}/run` returns a new `INC-MOCKnnnn` copy of the recorded run. `weak_wifi` returns the *before* fixture until `POST /mock/agent/join` (or `--agent joined`), then *after*; `interop` includes the LLM hint. The stream honours `delay_ms`; `&timing=recorded` replays the recorded gaps between messages. Feedback appends `human_decision` and, for allowed approvals, `remediation_plan`, like the server. Mock-only: `POST /mock/agent/join|leave`, `GET /mock/fixtures`. `POST /incidents` replays the malformed-input fixture for invalid JSON and answers `501 MOCK_UNSUPPORTED` for anything else.
 
-Handoff bundle: `python tools/make_handoff.py` writes `frontend_handoff.zip` (gitignored) with this file, the fixtures, `mock_api.py`, `dry_run_templates.json`, `architecture.svg` and `README_HANDOFF.md`. Run the mock from the unzipped folder: `python mock_api.py --ui <your_ui>`. It has no built-in dashboard, so pass `--ui`.
+Handoff bundle: `python tools/make_handoff.py` writes `frontend_handoff.zip` (gitignored) with this file, the fixtures, `mock_api.py`, `dry_run_templates.json`, `architecture.svg` and `README_HANDOFF.md`. Run the mock from the unzipped folder: `python mock_api.py --ui <your_ui>`. It has no bundled UI, so pass `--ui`.
 
 ## Glossary
 

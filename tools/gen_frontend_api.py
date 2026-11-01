@@ -79,11 +79,20 @@ def events_of(name: str) -> list[dict[str, Any]]:
 
 
 def api_routes() -> list[Any]:
+    """API routes of the app, including those of the dashboard router (e.g. GET /scenarios), UI files excluded."""
     from fastapi.routing import APIRoute
 
+    from netcoop.api import dashboard as dash
     from netcoop.api.main import app
 
-    return [r for r in app.routes if isinstance(r, APIRoute)]
+    routes = [r for r in app.routes if isinstance(r, APIRoute)]
+    routes += [r for r in dash.router.routes if isinstance(r, APIRoute) and r.include_in_schema]
+    seen, out = set(), []
+    for r in routes:
+        if (r.path, tuple(sorted(r.methods))) not in seen:
+            seen.add((r.path, tuple(sorted(r.methods))))
+            out.append(r)
+    return out
 
 
 def find_exchange(route: Any, method: str, exchanges: dict[str, list[dict[str, Any]]]) -> dict[str, Any] | None:
@@ -349,7 +358,7 @@ def gen() -> str:
     # ---------------- headers ----------------
     w("## Security headers (CSP, CORS)")
     w("")
-    w("UI responses (`/`, `/dashboard`, `/dashboard/*`, `/ui/*`) carry, verbatim:")
+    w("UI responses (`/`, `/ui/*`, `/dashboard`, `/dashboard/*`) carry, verbatim:")
     w("```")
     for k, v in dash.SECURITY_HEADERS.items():
         w(f"{k}: {v}")
@@ -367,12 +376,14 @@ def gen() -> str:
     # ---------------- static ----------------
     w("## Static UI files")
     w("")
-    w(f"* Built-in dashboard: `netcoop/api/static/` → `/` and `/dashboard` (dashboard.html), `/dashboard/<name>` for "
+    w("* Default UI: `netcoop/api/ui/` (bundled). Landing page `index.html` at `/`; every file under the folder at "
+      "`/ui/<path>`, e.g. the dashboard at `/ui/dashboard.html` (`?run=<scenario>` starts a run on load).")
+    w(f"* Classic dashboard: `netcoop/api/static/` at `/dashboard` (dashboard.html) and `/dashboard/<name>` for "
       f"{', '.join(f'`{k}`' for k in dash._FILES)} (fixed allowlist).")
     w(f"* `netcoop serve --ui <folder>`: `<folder>/index.html` at `/`, any file under the folder at `/ui/<path>` "
       f"(extensions {' '.join(sorted(dash.UI_TYPES))}; resolved path must stay inside the folder). `/dashboard` still "
-      "serves the built-in UI. New UIs go in `dashboard_v2/` (a starter is there). Without `--ui`, behaviour is "
-      "unchanged and `/ui/*` is 404.")
+      "serves the classic UI. New UIs go in `dashboard_v2/` (a starter is there). Without `--ui`, the bundled UI is "
+      "served.")
     w("")
 
     # ---------------- fixtures ----------------
@@ -392,7 +403,7 @@ def gen() -> str:
     w("## Mock API (no backend)")
     w("")
     w("```")
-    w("python tools/mock_api.py                     # http://127.0.0.1:8000/, built-in dashboard")
+    w("python tools/mock_api.py                     # http://127.0.0.1:8000/, bundled UI (+ classic at /dashboard)")
     w("python tools/mock_api.py --ui dashboard_v2   # your UI")
     w("python tools/mock_api.py --port 8080 --agent joined")
     w("```")
@@ -406,7 +417,7 @@ def gen() -> str:
     w("")
     w("Handoff bundle: `python tools/make_handoff.py` writes `frontend_handoff.zip` (gitignored) with this file, the "
       "fixtures, `mock_api.py`, `dry_run_templates.json`, `architecture.svg` and `README_HANDOFF.md`. Run the mock from "
-      "the unzipped folder: `python mock_api.py --ui <your_ui>`. It has no built-in dashboard, so pass `--ui`.")
+      "the unzipped folder: `python mock_api.py --ui <your_ui>`. It has no bundled UI, so pass `--ui`.")
     w("")
 
     # ---------------- glossary ----------------
