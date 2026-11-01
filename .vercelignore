@@ -1,0 +1,16 @@
+.venv
+node_modules
+runs
+templates
+.claude
+.git
+tests
+docs
+eval/reports
+*.pptx
+*.pdf
+*.zip
+__pycache__
+.pytest_cache
+.ruff_cache
+.env

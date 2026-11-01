@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 import hashlib
 import json
+import os
 import re
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -38,7 +39,8 @@ from netcoop.protocol.envelope import (
 from netcoop.protocol.findings import Limitation
 from netcoop.storage import Store
 
-RUNS_DIR = ROOT / "runs"
+# NETCOOP_RUNS_DIR lets a read-only host (e.g. a serverless deploy) keep run logs in a writable temp dir.
+RUNS_DIR = Path(os.environ.get("NETCOOP_RUNS_DIR") or ROOT / "runs")
 INTERNAL_AGENTS = {
     "performance_agent": PerformanceAgent,
     "infrastructure_agent": InfrastructureAgent,
