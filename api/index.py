@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 os.environ.setdefault("NETCOOP_RUNS_DIR", "/tmp/netcoop-runs")
+os.environ.setdefault("NETCOOP_INLINE_RUNS", "1")  # see netcoop/api/main.py INLINE_RUNS
 ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))

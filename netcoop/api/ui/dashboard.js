@@ -656,7 +656,7 @@ function noteHandoff(ev) {
 }
 
 // ---------- run / replay ----------
-async function stream(incident, source) {
+async function stream(incident, source, inline) {
   if (S.es) S.es.close();
   Object.assign(S, { incident, events: [], fseq: new Map(), buf: new ReorderBuffer(), predRows: new Map(), shownPlans: new Set(), phase: -1 });
   handoff = null;
@@ -668,14 +668,37 @@ async function stream(incident, source) {
   drawTopology();
   const src = source || { label: "Previous diagnosis " + incident, detail: "reopened from the event log" };
   flowCard("Problem received", `${src.label}${src.detail ? " · " + src.detail : ""}${src.seed != null ? " · seed " + src.seed : ""}`);
-  S.report = await api("/incidents/" + encodeURIComponent(incident) + "/report");   // revealed only at the end
+  // Stateless hosts send the run with the diagnose response; replay it here instead of asking the server again.
+  if (inline) INLINE.set(incident, inline);
+  const local = INLINE.get(incident);
+  S.report = local ? local.report : await api("/incidents/" + encodeURIComponent(incident) + "/report");   // revealed only at the end
   $("replay").disabled = false;
   const delay = reduced() ? 0 : SPEED_MS[S.speed];
+  const onEvent = ev => { receive(ev); if ($("ev-" + ev.seq)) noteHandoff(ev); };
+  if (local) { localReplay(local.events, delay, onEvent, finish); return; }
   const es = new EventSource("/incidents/" + encodeURIComponent(incident) + "/stream?delay_ms=" + delay);
   S.es = es;
-  es.addEventListener("message", e => { const ev = JSON.parse(e.data); receive(ev); if ($("ev-" + ev.seq)) noteHandoff(ev); });
-  es.addEventListener("end", () => {
-    es.close(); S.es = null;
+  es.addEventListener("message", e => onEvent(JSON.parse(e.data)));
+  es.addEventListener("end", () => { es.close(); S.es = null; finish(); });
+  es.onerror = () => { es.close(); S.es = null; toast("Lost the connection to the server. Press Replay to try again."); };
+}
+
+const withoutEvents = r => { const o = { ...r }; delete o.run_events; return o; };
+const INLINE = new Map();   // incident_id -> { report, events } from a stateless host's diagnose response
+function localReplay(events, delay, onEvent, done) {
+  const evs = [...events].sort((a, b) => a.seq - b.seq);
+  const token = {}; S.es = { close() { token.stop = true; } };
+  let i = 0;
+  const step = () => {
+    if (token.stop) return;
+    if (i >= evs.length) { S.es = null; done(); return; }
+    onEvent(evs[i++]);
+    if (delay) setTimeout(step, delay); else step();
+  };
+  step();
+}
+
+function finish() {
     for (const p of S.report.predictions || []) settle(p);
     setPhase(3); $("progress-fill").style.transform = "scaleX(1)";
     renderAnswer(S.report); renderReport(S.report); renderActions(); setGuide(4);
@@ -683,8 +706,6 @@ async function stream(incident, source) {
     flowCard("Coordinator's recommendation", next ? next.textContent.replace(/^What to do next:\s*/, "") : S.report.suspected_root_cause);
     $("feed").scrollTop = $("feed").scrollHeight;
     drawTopology(new Set(S.report.affected_devices || []), new Set((S.report.supporting_evidence || []).map(e => e.entity)), localizedRoot());
-  });
-  es.onerror = () => { es.close(); S.es = null; toast("Lost the connection to the server. Press Replay to try again."); };
 }
 
 async function run() {
@@ -703,7 +724,8 @@ async function run() {
                     { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body });
     }
     S.lastData = SRC.original;
-    await stream(r.incident_id, source);
+    const inline = r.run_events ? { report: r.report || withoutEvents(r), events: r.run_events } : null;
+    await stream(r.incident_id, source, inline);
     if (before) showCompare(before, S.report);
     loadHistory(); loadAgents();
   } catch (err) { toast("Couldn't start the diagnosis: " + err.message + ". Is the server running?"); setGuide(1); }

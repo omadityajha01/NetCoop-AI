@@ -9,6 +9,7 @@ from __future__ import annotations
 import csv
 import io
 import json
+import os
 from pathlib import Path
 from typing import Any
 
@@ -29,6 +30,13 @@ app = FastAPI(title="NetCoop AI", version="1.0.0", description="Multi-agent netw
 app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
                    allow_methods=["GET", "POST"], allow_headers=["Content-Type"])
 RUNS: Path = RUNS_DIR
+# Stateless hosts (e.g. Vercel) may serve follow-up requests from another instance that never saw the run, so the
+# diagnose responses also carry the run's event log for the browser to replay. Off by default (local server unchanged).
+INLINE_RUNS = os.environ.get("NETCOOP_INLINE_RUNS") == "1"
+
+
+def _inline(incident_id: str) -> dict[str, Any]:
+    return {"run_events": EventLog.read(_dir(incident_id) / "events.jsonl")} if INLINE_RUNS else {}
 app.include_router(dashboard_router)
 
 
@@ -64,7 +72,7 @@ async def create_incident(request: Request, external: bool = True, filename: str
     if len(body) > int(cfg.agents["data"]["max_upload_bytes"]):
         raise _err(413, "TOO_LARGE", "upload exceeds 10 MB")
     res = run_incident(body, cfg, RunOptions(runs_dir=RUNS, external=external, filename=Path(filename).name))
-    return res.report
+    return {**res.report, **_inline(res.report["incident_id"])} if INLINE_RUNS else res.report
 
 
 @app.post("/scenarios/{name}/run")
@@ -72,7 +80,8 @@ def run_scenario(name: str, external: bool = True) -> dict[str, Any]:
     """Run one built-in scenario (the dashboard's only write action). Same pipeline as the CLI; LLM per env."""
     path = scenario_path(name)
     res = run_incident(path.read_bytes(), load_config(), RunOptions(runs_dir=RUNS, external=external, filename=path.name))
-    return {"incident_id": res.report["incident_id"], "status": res.report["status"]}
+    out = {"incident_id": res.report["incident_id"], "status": res.report["status"]}
+    return {**out, "report": res.report, **_inline(res.report["incident_id"])} if INLINE_RUNS else out
 
 
 @app.get("/scenarios/{name}/input")
