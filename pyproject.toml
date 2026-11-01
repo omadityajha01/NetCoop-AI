@@ -47,7 +47,7 @@ netcoop = "netcoop.cli:main"
 include = ["netcoop*"]
 
 [tool.setuptools.package-data]
-"netcoop.api" = ["static/*.html", "static/*.js", "static/*.css"]
+"netcoop.api" = ["static/*.html", "static/*.js", "static/*.css", "ui/*.html", "ui/*.js", "ui/*.css"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
