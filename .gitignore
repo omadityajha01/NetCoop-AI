@@ -12,3 +12,6 @@ runs/
 
 # demo_snapshots/ is intentionally tracked (fallback for the live demo)
 frontend_handoff.zip
+
+# screen recordings: too large for GitHub (>100 MB); share via a video link instead
+*.mp4
