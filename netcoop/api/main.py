@@ -75,6 +75,43 @@ def run_scenario(name: str, external: bool = True) -> dict[str, Any]:
     return {"incident_id": res.report["incident_id"], "status": res.report["status"]}
 
 
+@app.get("/scenarios/{name}/input")
+def scenario_input(name: str) -> Any:
+    """Raw telemetry of a built-in example scenario, exactly as stored (shown before the diagnosis; editable in the UI)."""
+    return json.loads(scenario_path(name).read_text(encoding="utf-8"))
+
+
+GEN_LABELS = ("normal", "latency_spike", "hardware_failure")
+
+
+@app.get("/generate")
+def generate(fault: str = "random", seed: str = "random") -> dict[str, Any]:
+    """New incident from the organizer's raw generator (same path as `tasks.py judge`). Nothing is run: diagnose it
+    with POST /incidents."""
+    import random as _random
+
+    from eval.organizer_check import load_generator
+
+    pick = _random.SystemRandom()
+    label = pick.choice(GEN_LABELS) if fault == "random" else fault
+    if label not in GEN_LABELS:
+        raise _err(400, "BAD_FAULT", "fault must be one of " + ", ".join(GEN_LABELS) + " or random")
+    if seed == "random":
+        s = pick.randrange(1_000_000)
+    elif seed.isdigit() and len(seed) <= 9:
+        s = int(seed)
+    else:
+        raise _err(400, "BAD_SEED", "seed must be a non-negative integer (max 9 digits) or random")
+    state = _random.getstate()
+    try:
+        _random.seed(s)
+        record = load_generator()(label)  # exactly what the organizer's generator emits, no preprocessing
+    finally:
+        _random.setstate(state)
+    return {"source": "organizer generator (data/generator/organizer_generator.py)", "fault": label, "seed": s,
+            "record": record}
+
+
 @app.get("/topology")
 def topology() -> dict[str, Any]:
     """Configured topology as nodes (id, type, segment, role, parent) and links (id, a, b) for drawing."""
@@ -97,6 +134,23 @@ def list_incidents(limit: int = 50) -> list[dict[str, Any]]:
 def get_report(incident_id: str) -> dict[str, Any]:
     """The final diagnostic report of a run."""
     return json.loads((_dir(incident_id) / "report.json").read_text(encoding="utf-8"))
+
+
+@app.get("/incidents/{incident_id}/input")
+def get_input(incident_id: str) -> Any:
+    """The raw input this run diagnosed, as stored in runs/<id>/ (JSON parsed; CSV as text)."""
+    d = _dir(incident_id)
+    meta = json.loads((d / "meta.json").read_text(encoding="utf-8"))
+    p = d / str(meta.get("input_file", "input.json"))
+    if p.parent.resolve() != d.resolve() or not p.is_file():
+        raise _err(404, "NOT_FOUND", "no stored input")
+    text = p.read_text(encoding="utf-8", errors="replace")
+    if p.suffix == ".csv":
+        return {"csv": text, "input_sha256": meta.get("input_sha256")}
+    try:
+        return {"json": json.loads(text), "input_sha256": meta.get("input_sha256")}
+    except ValueError:
+        return {"text": text[:20000], "input_sha256": meta.get("input_sha256")}
 
 
 @app.get("/incidents/{incident_id}/events")

@@ -505,6 +505,19 @@ Notes: `netcoop serve` without `--ui` serves the **new** UI by design since demo
 CSP + security headers unchanged since demo-final-3. Reduced motion: CSS media query + JS (`delayFor`/`reduced()`),
 covered by tests; not toggled at OS level during the smoke.
 
+## Not hard-coded (stage demo-final-10)
+
+- Dashboard: *Input data* panel shows the raw telemetry **before** the diagnosis. Sources: Examples (7 recorded), Generate
+  (organizer generator via the judge-mode path, `GET /generate?fault=&seed=`, random seed shown big), Upload (JSON/CSV
+  through `POST /incidents`: same normalizer, 10 MB cap, type check). Numbers are editable (validated); re-run shows
+  Before/After side by side. Feed flow cards: Problem received → Hand-off → Coordinator's recommendation (UI only, not
+  NMP messages). Read-only `GET /scenarios/{name}/input`, `GET /incidents/{id}/input`. No scoring/agent/protocol change.
+- API tests (tests/unit/test_not_hardcoded.py): random seed differs; explicit seed reproducible (generator stamps
+  utcnow(), data is seeded); edited value changes input_sha256; `interface_errors` 200 on HOSTEL_CORE_SW_01 (one cell,
+  any of rows 5/23/41/59/77/95) flips congestion → interface_fault (probable, 0.56); bad JSON → MALFORMED, .exe → 415,
+  >10 MB → 413.
+- Click fix: feed cards expand to show what each message contains (was promised but not wired in demo-final-9).
+
 ## Open
 
 - [ ] Fill `policies.yaml` with the campus's real calendar (exam weeks, class hours per segment, SLAs).

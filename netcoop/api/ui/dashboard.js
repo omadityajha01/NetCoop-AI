@@ -84,7 +84,76 @@ function describe(ev) {
   }
 }
 
-if (typeof module !== "undefined" && module.exports) module.exports = { ReorderBuffer, describe, INTERNAL, SPEED_MS, PROBLEMS, sureWord, expectText };
+/** What a message contains, as plain [label, value] rows for the click-to-expand details in the feed. */
+function detailRows(ev) {
+  const p = ev.payload || {};
+  const rows = [["From → to", nice(AGENTS, ev.sender) + " → " + nice(AGENTS, ev.recipient)], ["Message", "#" + ev.seq + " · " + ev.message_type]];
+  const finding = f => [`${metric(f.metric)} · ${f.entity.id}`, `${fmtv(f.value)} ${f.unit || ""} · ${f.severity}`.trim()];
+  switch (ev.message_type) {
+    case "normalization_summary": {
+      const s = p.summary || {};
+      rows.push(["Records", `${s.records_in} in · ${s.records_used} used · ${s.records_quarantined} set aside`],
+                ["Repairs", `${s.renamed || 0} fields renamed · ${s.unit_converted || 0} units converted · ${s.coerced || 0} values fixed`],
+                ["Time window", `${(p.window || {}).start} → ${(p.window || {}).end}`]);
+      for (const q of (p.quarantined || []).slice(0, 3)) rows.push(["Set aside", `${q.field}: ${q.reason}`]);
+      break;
+    }
+    case "task_request":
+      rows.push(["Task", `${p.task} (round ${p.round})`]);
+      if (p.window) rows.push(["Time window", `${p.window.start} → ${p.window.end}`]);
+      if (p.params && p.params.entities) rows.push(["Devices to check", p.params.entities.join(", ") || "none"]);
+      break;
+    case "finding_report": case "evidence_response": {
+      const fs = p.findings || [];
+      if (!fs.length) rows.push(["Findings", ev.message_type === "finding_report" ? "nothing unusual" : "none"]);
+      for (const f of fs.slice(0, 8)) rows.push(finding(f));
+      if (fs.length > 8) rows.push(["…", `${fs.length - 8} more`]);
+      for (const u of (p.unavailable || []).slice(0, 3)) rows.push(["Could not measure", `${metric(u.metric)} · ${(u.entity || {}).id}`]);
+      if (p.scope && p.scope.affected_devices) rows.push(["Affected devices", p.scope.affected_devices.join(", ")],
+                                                          ["Nearest common upstream", p.scope.nearest_common_upstream || "-"]);
+      break;
+    }
+    case "coverage_manifest":
+      rows.push(["Can measure", (p.signals || []).slice(0, 6).map(x => `${metric(x.metric)} · ${x.entity.id}`).join("; ") +
+                ((p.signals || []).length > 6 ? ` … (${p.signals.length} in total)` : "")]);
+      break;
+    case "prediction": {
+      const x = p.prediction;
+      rows.push(["Possible cause", nice(FAULTS, x.fault_type)],
+                ["Expects", `${metric(x.signal.metric)} on ${x.signal.entity.id} ${expectText(x.expected)}`],
+                ["Logged", "before the evidence was requested"]);
+      break;
+    }
+    case "evidence_request":
+      for (const r of p.requests || []) rows.push(["Asks for", `${metric(r.metric)} on ${(r.entity || {}).id}`]);
+      if (p.reason) rows.push(["Why", p.reason]);
+      break;
+    case "diagnosis":
+      rows.push(["Verdict", `${p.status.replace(/_/g, " ")} · confidence ${Number(p.confidence).toFixed(2)} (${p.confidence_category})`]);
+      for (const h of [...(p.hypotheses || [])].sort((a, b) => b.score - a.score).slice(0, 3))
+        rows.push(["Cause considered", `${nice(FAULTS, h.fault_type)} at ${h.entity.id} · score ${Math.round(h.score * 100)}%`]);
+      if ((p.missing_signals || []).length) rows.push(["Still missing", p.missing_signals.slice(0, 4).join(", ")]);
+      break;
+    case "report": {
+      const r = p.report || {};
+      rows.push(["Answer", r.suspected_root_cause], ["Confidence", `${Number(r.confidence).toFixed(2)} (${r.confidence_category})`],
+                ["Actions", `${(r.recommended_actions || []).length} suggested · ${(r.blocked_actions || []).length} blocked by rules`]);
+      break;
+    }
+    case "hint": rows.push(["Suggests", nice(FAULTS, p.fault_type) + " (advice only)"], ["Why", p.rationale]); break;
+    case "human_decision": rows.push(["Decision", `${p.decision} ${p.action_id}`], ["Executed", "no (never)"]); break;
+    case "remediation_plan":
+      rows.push(["Plan for", `${p.action_id} on ${p.target || "-"}`], ["Label", p.label]);
+      (p.steps || []).forEach((x, i) => rows.push(["Step " + (i + 1), x]));
+      break;
+    case "error": rows.push(["Error", `${p.code}: ${p.detail}`]); break;
+    default: break;
+  }
+  return rows;
+}
+function fmtv(v) { return typeof v === "number" ? (Number.isInteger(v) ? String(v) : String(+v.toFixed(2))) : String(v); }
+
+if (typeof module !== "undefined" && module.exports) module.exports = { ReorderBuffer, describe, detailRows, INTERNAL, SPEED_MS, PROBLEMS, sureWord, expectText };
 
 // ---------- DOM ----------
 const $ = id => document.getElementById(id);
@@ -136,12 +205,16 @@ function addEvent(ev) {
   const es = feed.querySelector(".empty-state"); if (es) es.remove();
   const card = el("div", "ev t-" + ev.message_type);
   card.id = "ev-" + ev.seq; card.tabIndex = 0;
-  card.title = "Technical: " + ev.message_type + " from " + ev.sender + " to " + ev.recipient + " (seq " + ev.seq + ")";
+  card.title = "Click to see what this message contains";
   const who = el("div", "who", nice(AGENTS, ev.sender));
   who.appendChild(el("span", "tag", ev.message_type.replace(/_/g, " ")));
   if (!INTERNAL.has(ev.sender)) who.appendChild(el("span", "tag a2a", "joined via A2A"));
   const body = el("div"); body.append(who, el("div", "what", describe(ev)));
   card.append(el("span", "seq", "#" + ev.seq), body);
+  card.setAttribute("role", "button");
+  card.setAttribute("aria-expanded", "false");
+  card.addEventListener("click", () => toggleDetails(card, ev));
+  card.addEventListener("keydown", k => { if (k.key === "Enter" || k.key === " ") { k.preventDefault(); toggleDetails(card, ev); } });
   feed.appendChild(card);
   feed.scrollTop = feed.scrollHeight;
   $("msgcount").textContent = S.events.length + " messages";
@@ -153,11 +226,25 @@ function addEvent(ev) {
   if (ev.message_type === "diagnosis") renderHypotheses(p);
   if (ev.message_type === "human_decision" || ev.message_type === "remediation_plan") renderActions();
 }
+function toggleDetails(card, ev, forceOpen) {
+  let box = card.querySelector(".details");
+  if (box && !forceOpen) { box.remove(); card.setAttribute("aria-expanded", "false"); card.classList.remove("open"); return; }
+  if (box) return;
+  box = el("dl", "details");
+  for (const [k, v] of detailRows(ev)) box.append(el("dt", null, k), el("dd", null, v));
+  card.lastElementChild.appendChild(box);
+  card.setAttribute("aria-expanded", "true");
+  card.classList.add("open");
+}
 function receive(ev) { for (const e of S.buf.push(ev)) addEvent(e); }
 function highlight(seq) {
   document.querySelectorAll(".ev.sel").forEach(n => n.classList.remove("sel"));
   const c = $("ev-" + seq);
-  if (c) { c.classList.add("sel"); c.scrollIntoView({ block: "center", behavior: reduced() ? "auto" : "smooth" }); }
+  if (c) {
+    c.classList.add("sel");
+    const ev = S.events.find(e => e.seq === seq); if (ev) toggleDetails(c, ev, true);   // evidence link opens the details
+    c.scrollIntoView({ block: "center", behavior: reduced() ? "auto" : "smooth" });
+  }
 }
 
 // ---------- agents ----------
@@ -383,27 +470,208 @@ async function decide(actionId, decision, btn) {
   finally { btn.disabled = false; }
 }
 
+// ---------- input data: examples / generate / upload / edit & re-run ----------
+const ID_KEYS = ["timestamp", "ts", "time", "device_id", "device", "ap", "link_id", "link", "entity", "service"];
+
+/** Records of any bundle shape we accept: {records:[...]}, a bare list, a single flat record, or a v0.9 {obs:[...]}. */
+function recordsOf(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.records)) return data.records;
+  if (data && Array.isArray(data.obs)) return data.obs;
+  if (data && typeof data === "object") return [data];
+  return [];
+}
+
+/** Table model of the raw input: id columns, then every top-level/metrics leaf; numbers are editable. */
+function rawTable(data, maxCols = 16) {
+  const recs = recordsOf(data);
+  const cols = [], seen = new Set();
+  const add = c => { if (!seen.has(c) && cols.length < maxCols) { seen.add(c); cols.push(c); } };
+  for (const r of recs) {
+    if (!r || typeof r !== "object") continue;
+    for (const k of ID_KEYS) if (k in r && typeof r[k] !== "object") add(k);
+  }
+  for (const r of recs) {
+    if (!r || typeof r !== "object") continue;
+    for (const [k, v] of Object.entries(r)) if (!ID_KEYS.includes(k) && (v === null || typeof v !== "object")) add(k);
+    if (r.metrics && typeof r.metrics === "object") for (const [k, v] of Object.entries(r.metrics)) if (v === null || typeof v !== "object") add("metrics." + k);
+  }
+  const rows = recs.map((r, i) => ({ index: i, cells: cols.map(c => {
+    const v = r && typeof r === "object" ? (c.startsWith("metrics.") ? (r.metrics || {})[c.slice(8)] : r[c]) : undefined;
+    return { path: c, value: v, editable: typeof v === "number" && Number.isFinite(v) };
+  }) }));
+  return { columns: cols, rows, total: recs.length };
+}
+
+/** Copy of the bundle with one numeric cell changed (record index + column path). */
+function withEdit(data, index, path, value) {
+  const copy = JSON.parse(JSON.stringify(data));
+  const r = recordsOf(copy)[index];
+  if (path.startsWith("metrics.")) r.metrics[path.slice(8)] = value; else r[path] = value;
+  return copy;
+}
+
+const SRC = { mode: "example", label: "", detail: "", seed: null, original: null, data: null, csv: null, edits: 0, filename: "input.json",
+              example: null };
+
+function setMode(mode) {
+  SRC.mode = mode;
+  document.querySelectorAll(".tab").forEach(t => { const on = t.dataset.mode === mode; t.classList.toggle("on", on); t.setAttribute("aria-selected", String(on)); });
+  document.querySelectorAll(".src").forEach(s => { s.hidden = s.dataset.for !== mode; });
+  $("seed-box").hidden = !(mode === "generate" && SRC.seed !== null);
+  if (mode === "example") loadExample($("scenario").value);
+}
+
+function showInput({ data = null, csv = null, label, detail, seed = null, filename = "input.json", example = null }) {
+  Object.assign(SRC, { data, original: data, csv, label, detail, seed, filename, example, edits: 0 });
+  $("seed-box").hidden = seed === null;
+  if (seed !== null) { $("seed-val").textContent = String(seed); $("seed-fault").textContent = detail; }
+  renderRaw();
+  $("run").disabled = !(data || csv);
+  $("compare").hidden = true;
+  setGuide(2);
+}
+
+function renderRaw() {
+  const head = $("raw").tHead, body = $("raw").tBodies[0]; clear(head); clear(body);
+  const meta = $("input-meta"); clear(meta);
+  if (SRC.csv !== null) {
+    const lines = SRC.csv.split(/\r?\n/).filter(x => x.trim());
+    meta.append(el("b", null, SRC.label), ` · ${Math.max(0, lines.length - 1)} CSV rows (shown as uploaded; edit JSON uploads to change values)`);
+    const tr = el("tr"); for (const c of (lines[0] || "").split(",")) tr.appendChild(el("th", null, c)); head.appendChild(tr);
+    for (const line of lines.slice(1, 201)) { const r = el("tr"); for (const c of line.split(",")) r.appendChild(el("td", "txt", c)); body.appendChild(r); }
+    return;
+  }
+  if (!SRC.data) { meta.textContent = "No data loaded yet."; return; }
+  const t = rawTable(SRC.data);
+  meta.append(el("b", null, SRC.label), ` · ${t.total} record${t.total === 1 ? "" : "s"} · ${SRC.detail}` + (SRC.edits ? ` · ${SRC.edits} value(s) edited by you` : ""));
+  const tr = el("tr"); tr.appendChild(el("th", null, "#")); for (const c of t.columns) tr.appendChild(el("th", null, c.replace("metrics.", ""))); head.appendChild(tr);
+  const orig = rawTable(SRC.original);
+  for (const row of t.rows.slice(0, 300)) {
+    const r = el("tr"); r.appendChild(el("td", "txt", String(row.index + 1)));
+    row.cells.forEach((cell, ci) => {
+      const td = el("td");
+      if (cell.editable) {
+        const inp = el("input"); inp.type = "number"; inp.step = "any"; inp.value = String(cell.value);
+        inp.setAttribute("aria-label", `${cell.path} in record ${row.index + 1}`);
+        const was = orig.rows[row.index].cells[ci].value;
+        if (cell.value !== was) inp.classList.add("changed");
+        inp.addEventListener("change", () => {
+          const v = Number(inp.value);
+          if (inp.value.trim() === "" || !Number.isFinite(v)) { inp.classList.add("invalid"); $("run").disabled = true; toast("Numbers only, please."); return; }
+          inp.classList.remove("invalid");
+          SRC.data = withEdit(SRC.data, row.index, cell.path, v);
+          SRC.edits = countEdits(); inp.classList.toggle("changed", v !== was);
+          $("reset-edits").hidden = SRC.edits === 0; $("run").disabled = false;
+          $("input-meta").lastChild.textContent = ` · ${t.total} record${t.total === 1 ? "" : "s"} · ${SRC.detail}` + (SRC.edits ? ` · ${SRC.edits} value(s) edited by you` : "");
+        });
+        td.appendChild(inp);
+      } else { td.className = "txt"; td.textContent = cell.value === undefined ? "" : String(cell.value); }
+      r.appendChild(td);
+    });
+    body.appendChild(r);
+  }
+  if (t.total > 300) body.appendChild(el("tr")).appendChild(el("td", "txt", `… ${t.total - 300} more records (all are sent)`));
+  $("reset-edits").hidden = SRC.edits === 0;
+}
+
+function countEdits() {
+  const a = rawTable(SRC.data), b = rawTable(SRC.original); let n = 0;
+  a.rows.forEach((r, i) => r.cells.forEach((c, j) => { if (c.value !== b.rows[i].cells[j].value) n += 1; }));
+  return n;
+}
+
+async function loadExample(name) {
+  try {
+    const data = await api("/scenarios/" + encodeURIComponent(name) + "/input");
+    showInput({ data, label: "Example: " + nice(PROBLEMS, name), detail: "recorded scenario data/scenarios/" + name, example: name,
+                filename: name + ".json" });
+  } catch (err) { toast("Couldn't load the example: " + err.message); }
+}
+
+async function generateNew() {
+  const btn = $("gen"); btn.disabled = true;
+  try {
+    const g = await api("/generate?fault=" + encodeURIComponent($("gen-fault").value) + "&seed=random");
+    const hidden = $("gen-fault").value === "random";
+    showInput({ data: g.record, seed: g.seed, filename: "generated.json",
+                label: "Generated incident", detail: hidden ? "fault hidden until the diagnosis" : "fault: " + nice(FAULTS, g.fault).toLowerCase() });
+    SRC.truth = g.fault;
+  } catch (err) { toast("Couldn't generate: " + err.message); }
+  finally { btn.disabled = false; }
+}
+
+function uploadFile(file) {
+  if (!file) return;
+  if (!/\.(json|csv)$/i.test(file.name)) { toast("Only .json or .csv files."); return; }
+  if (file.size > 10 * 1024 * 1024) { toast("That file is over 10 MB."); return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    const text = String(rd.result);
+    if (/\.csv$/i.test(file.name)) { showInput({ csv: text, label: "Upload: " + file.name, detail: "", filename: file.name }); return; }
+    try { showInput({ data: JSON.parse(text), label: "Upload: " + file.name, detail: Math.ceil(file.size / 1024) + " KB", filename: file.name }); }
+    catch { showInput({ csv: null, data: null, label: "Upload: " + file.name, detail: "" }); SRC.badText = text;
+            $("input-meta").textContent = "That file isn't valid JSON. Diagnose it anyway to see how the data cleaner rejects it.";
+            $("run").disabled = false; }
+  };
+  rd.readAsText(file);
+}
+
+function summaryOf(rep) {
+  return { v: rep.status === "diagnosed" || rep.status === "probable" ? nice(FAULTS, rep.fault_type) : (STATUS_TEXT[rep.status] || [rep.status])[0],
+           s: `${rep.status.replace(/_/g, " ")} · ${sureWord(rep.confidence)} (${Math.round(rep.confidence * 100)}%) · ${(rep.affected_devices || []).join(", ") || "-"}` };
+}
+
+function showCompare(before, after) {
+  const box = $("compare"); clear(box); box.hidden = false;
+  const card = (k, rep, cls) => { const c = el("div", "cmp " + cls); const s = summaryOf(rep); c.append(el("div", "k", k), el("div", "v", s.v), el("div", "s", s.s)); return c; };
+  box.append(card("Before your edit", before, "before"), el("div", "cmp-arrow", "→"), card("After your edit", after, "after"));
+}
+
+// ---------- flow cards (UI only: not NMP messages) ----------
+function flowCard(title, text) {
+  const card = el("div", "ev flow");
+  const body = el("div"); body.append(el("div", "who", title), el("div", "what", text));
+  card.append(el("span", "seq", "·"), body);
+  $("feed").appendChild(card);
+  return card;
+}
+let handoff = null;
+function noteHandoff(ev) {
+  if (ev.message_type !== "task_request" || (ev.payload || {}).task !== "analyze") return;
+  const names = new Set((handoff && handoff.names) || []); names.add(nice(AGENTS, ev.recipient));
+  const text = "Coordinator hands the investigation to " + [...names].join(", ");
+  if (!handoff) { const c = flowCard("Hand-off", text); handoff = { card: c, names }; $("ev-" + ev.seq).before(c); }
+  else { handoff.names = names; handoff.card.querySelector(".what").textContent = text; }
+}
+
 // ---------- run / replay ----------
-async function stream(incident) {
+async function stream(incident, source) {
   if (S.es) S.es.close();
   Object.assign(S, { incident, events: [], fseq: new Map(), buf: new ReorderBuffer(), predRows: new Map(), shownPlans: new Set(), phase: -1 });
+  handoff = null;
   clear($("feed")); clear($("hyps")); clear($("preds")); clear($("actions")); clear($("report")); $("report").classList.remove("in");
   $("tech").hidden = true; $("tech").open = false;
   const ans = $("answer"); clear(ans); ans.appendChild(empty("The agents are investigating. The answer appears here when they finish.", "Working on it…"));
   $("msgcount").textContent = "";
   setGuide(2); setPhase(0);
   drawTopology();
+  const src = source || { label: "Previous diagnosis " + incident, detail: "reopened from the event log" };
+  flowCard("Problem received", `${src.label}${src.detail ? " · " + src.detail : ""}${src.seed != null ? " · seed " + src.seed : ""}`);
   S.report = await api("/incidents/" + encodeURIComponent(incident) + "/report");   // revealed only at the end
   $("replay").disabled = false;
   const delay = reduced() ? 0 : SPEED_MS[S.speed];
   const es = new EventSource("/incidents/" + encodeURIComponent(incident) + "/stream?delay_ms=" + delay);
   S.es = es;
-  es.addEventListener("message", e => receive(JSON.parse(e.data)));
+  es.addEventListener("message", e => { const ev = JSON.parse(e.data); receive(ev); if ($("ev-" + ev.seq)) noteHandoff(ev); });
   es.addEventListener("end", () => {
     es.close(); S.es = null;
     for (const p of S.report.predictions || []) settle(p);
     setPhase(3); $("progress-fill").style.transform = "scaleX(1)";
     renderAnswer(S.report); renderReport(S.report); renderActions(); setGuide(4);
+    const next = $("answer").querySelector(".next");
+    flowCard("Coordinator's recommendation", next ? next.textContent.replace(/^What to do next:\s*/, "") : S.report.suspected_root_cause);
+    $("feed").scrollTop = $("feed").scrollHeight;
     drawTopology(new Set(S.report.affected_devices || []), new Set((S.report.supporting_evidence || []).map(e => e.entity)), localizedRoot());
   });
   es.onerror = () => { es.close(); S.es = null; toast("Lost the connection to the server. Press Replay to try again."); };
@@ -411,12 +679,24 @@ async function stream(incident) {
 
 async function run() {
   const btn = $("run"); btn.disabled = true; btn.lastChild.textContent = "Diagnosing…";
+  const before = SRC.edits && S.report && S.lastData === SRC.original ? S.report : null;
   try {
-    const r = await api("/scenarios/" + encodeURIComponent($("scenario").value) + "/run?external=true", { method: "POST" });
-    await stream(r.incident_id);
+    let r;
+    const source = { label: SRC.label, detail: SRC.edits ? `${SRC.edits} value(s) edited by you` : SRC.detail, seed: SRC.seed };
+    if (SRC.mode === "example" && SRC.example && !SRC.edits) {
+      r = await api("/scenarios/" + encodeURIComponent(SRC.example) + "/run?external=true", { method: "POST" });
+    } else {
+      const body = SRC.csv !== null ? SRC.csv : SRC.data ? JSON.stringify(SRC.data) : (SRC.badText || "");
+      const external = SRC.mode === "generate" ? "false" : "true";   // organizer data has no Wi-Fi telemetry (as in judge mode)
+      r = await api("/incidents?external=" + external + "&filename=" + encodeURIComponent(SRC.filename),
+                    { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body });
+    }
+    S.lastData = SRC.original;
+    await stream(r.incident_id, source);
+    if (before) showCompare(before, S.report);
     loadHistory(); loadAgents();
   } catch (err) { toast("Couldn't start the diagnosis: " + err.message + ". Is the server running?"); setGuide(1); }
-  finally { btn.disabled = false; btn.lastChild.textContent = "Diagnose"; }
+  finally { btn.disabled = false; btn.lastChild.textContent = "Diagnose this data"; }
 }
 
 async function loadHistory() {
@@ -426,6 +706,18 @@ async function loadHistory() {
     for (const r of rows) { const o = el("option", null, r.incident_id + " · " + r.status.replace(/_/g, " ")); o.value = r.incident_id; sel.appendChild(o); }
   } catch { /* optional */ }
 }
+
+async function reopen(incident) {
+  try {
+    const inp = await api("/incidents/" + encodeURIComponent(incident) + "/input");
+    if (inp.json !== undefined) showInput({ data: inp.json, label: "Previous diagnosis " + incident, detail: "input hash " + String(inp.input_sha256 || "").slice(0, 12) });
+    else if (inp.csv !== undefined) showInput({ csv: inp.csv, label: "Previous diagnosis " + incident, detail: "" });
+    SRC.mode = "upload"; SRC.example = null;
+  } catch { /* input display is optional */ }
+  stream(incident, { label: "Previous diagnosis " + incident, detail: "reopened from the event log" });
+}
+
+if (typeof module !== "undefined" && module.exports) Object.assign(module.exports, { rawTable, withEdit, recordsOf });
 
 if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded", async () => {
   try {
@@ -437,15 +729,20 @@ if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded
   showGuide(guide !== "hide");
   $("guide-hide").addEventListener("click", () => showGuide(false));
   $("guide-show").addEventListener("click", () => showGuide(true));
-  $("scenario").addEventListener("change", () => setGuide(2));
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => setMode(t.dataset.mode)));
+  $("scenario").addEventListener("change", () => loadExample($("scenario").value));
+  $("gen").addEventListener("click", generateNew);
+  $("file").addEventListener("change", e => uploadFile(e.target.files[0]));
+  $("reset-edits").addEventListener("click", () => { SRC.data = SRC.original; SRC.edits = 0; renderRaw(); });
   loadAgents(); loadHistory();
   $("run").addEventListener("click", run);
-  $("replay").addEventListener("click", () => { if (S.incident) stream(S.incident); });
-  $("history").addEventListener("change", e => { if (e.target.value) stream(e.target.value); });
+  $("replay").addEventListener("click", () => { if (S.incident) stream(S.incident, { label: SRC.label, detail: "replayed from the event log", seed: SRC.seed }); });
+  $("history").addEventListener("change", e => { if (e.target.value) reopen(e.target.value); });
   document.querySelectorAll(".seg-btn").forEach(b => b.addEventListener("click", () => {
     S.speed = Number(b.dataset.speed);
     document.querySelectorAll(".seg-btn").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-pressed", String(on)); });
   }));
   const q = new URLSearchParams(location.search).get("run");
-  if (q && /^[a-z_]{1,40}$/.test(q)) { $("scenario").value = q; run(); }
+  if (q && /^[a-z_]{1,40}$/.test(q)) { $("scenario").value = q; await loadExample(q); run(); }
+  else await loadExample($("scenario").value);
 });

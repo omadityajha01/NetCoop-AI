@@ -22,9 +22,6 @@
 <header class="topbar">
   <a class="brand" href="/" aria-label="Back to the NetCoop landing page"><span class="brand-mark"><svg class="icon"><use href="#i-net"/></svg></span>NetCoop AI</a>
   <div class="controls">
-    <label class="ctl-label" for="scenario">Network problem</label>
-    <select id="scenario" class="select"></select>
-    <button id="run" class="btn btn-primary" type="button"><svg class="icon sm"><use href="#i-play"/></svg>Diagnose</button>
     <div class="seg" role="group" aria-label="Animation speed">
       <button type="button" class="seg-btn on" data-speed="1" aria-pressed="true" title="Normal speed">Normal</button>
       <button type="button" class="seg-btn" data-speed="2" aria-pressed="false" title="Twice as fast">Fast</button>
@@ -38,8 +35,8 @@
 
 <section id="guide" class="guide" aria-label="How to use this page">
   <ol class="guide-steps">
-    <li data-g="1" class="on"><span class="gn">1</span><div><b>Choose a problem</b><span>Pick a symptom from “Network problem” above</span></div></li>
-    <li data-g="2"><span class="gn">2</span><div><b>Press Diagnose</b><span>The AI agents investigate; watch them work live</span></div></li>
+    <li data-g="1" class="on"><span class="gn">1</span><div><b>Choose the data</b><span>An example, a freshly generated incident, or your own file</span></div></li>
+    <li data-g="2"><span class="gn">2</span><div><b>Press Diagnose</b><span>Check the raw data first, then watch the agents investigate</span></div></li>
     <li data-g="3"><span class="gn">3</span><div><b>Read the answer</b><span>See what's wrong, how sure we are, and what to do next</span></div></li>
   </ol>
   <button id="guide-hide" class="guide-x" type="button" aria-label="Hide the guide" title="Hide the guide"><svg class="icon sm"><use href="#i-x"/></svg></button>
@@ -54,10 +51,50 @@
   </ol>
 </div>
 
+<section id="input" class="input-panel" aria-labelledby="h-input">
+  <div class="input-head">
+    <h2 id="h-input">Input data <span class="muted-s">the raw telemetry, shown before any diagnosis</span></h2>
+    <div class="tabs" role="tablist" aria-label="Where the data comes from">
+      <button type="button" class="tab on" role="tab" aria-selected="true" data-mode="example">Examples</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-mode="generate">Generate new incident</button>
+      <button type="button" class="tab" role="tab" aria-selected="false" data-mode="upload">Upload telemetry</button>
+    </div>
+  </div>
+  <div class="src-row">
+    <div class="src" data-for="example">
+      <label class="ctl-label" for="scenario">Recorded example</label>
+      <select id="scenario" class="select"></select>
+    </div>
+    <div class="src" data-for="generate" hidden>
+      <label class="ctl-label" for="gen-fault">Fault</label>
+      <select id="gen-fault" class="select">
+        <option value="random">Random (you won't know which)</option><option value="normal">Normal</option>
+        <option value="latency_spike">Latency spike</option><option value="hardware_failure">Hardware failure</option>
+      </select>
+      <button id="gen" class="btn btn-dark" type="button">Generate with a random seed</button>
+      <span class="note-s">Organizer's own generator, unmodified (same path as judge mode)</span>
+    </div>
+    <div class="src" data-for="upload" hidden>
+      <label class="ctl-label" for="file">Your file (.json or .csv, max 10 MB)</label>
+      <input id="file" type="file" accept=".json,.csv,application/json,text/csv">
+      <span class="note-s">Goes through the same cleaner and validation as everything else</span>
+    </div>
+    <div id="seed-box" class="seed-box" hidden><span>SEED</span><b id="seed-val"></b><i id="seed-fault"></i></div>
+  </div>
+  <div id="input-meta" class="input-meta"></div>
+  <div class="table-wrap"><table id="raw" class="raw"><thead></thead><tbody></tbody></table></div>
+  <div class="input-actions">
+    <button id="run" class="btn btn-primary" type="button" disabled><svg class="icon sm"><use href="#i-play"/></svg>Diagnose this data</button>
+    <button id="reset-edits" class="btn btn-dark" type="button" hidden>Undo my edits</button>
+    <span id="edit-note" class="note-s">Every number above is editable. Change one and press Diagnose again: the new answer is shown next to the old one.</span>
+  </div>
+  <div id="compare" class="compare" hidden></div>
+</section>
+
 <main class="grid">
   <section class="col" aria-labelledby="h-collab">
     <div class="col-head"><h2 id="h-collab">Live collaboration</h2><span id="msgcount" class="count"></span></div>
-    <p class="explain">The AI agents talking to each other, in the order it happened. Click a message for details.</p>
+    <p class="explain">How the investigation unfolds: each card is one message between agents, in order. Click a card to see what it contains (findings, predictions, evidence).</p>
     <div id="feed" class="feed" aria-live="off"><div class="empty-state"><b>Nothing here yet</b><span>Choose a problem above and press <em>Diagnose</em>. You'll see each agent report what it found.</span></div></div>
     <div class="col-head"><h2>Agents</h2></div>
     <p class="explain">Each agent watches one part of the network. Purple ones joined from outside.</p>

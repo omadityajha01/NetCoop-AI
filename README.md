@@ -872,7 +872,13 @@ netcoop mcp                                                            # MCP ser
 * **Landing page** (`/`): a conversational preview. Pick a symptom or type one; it maps to a scenario, runs the real
   API and streams the answer token by token with evidence cards. It also has a live SSE event stream of a real run,
   capability cards, integrations and a **Try Now** button that opens the dashboard.
-* **Dashboard** (`/ui/dashboard.html`, `?run=<scenario>` starts a run on load). Built for non-experts: a 3-step guide
+* **Dashboard** (`/ui/dashboard.html`, `?run=<scenario>` starts a run on load). **Input data** first: the raw
+  telemetry is shown before any diagnosis, from one of three sources: a recorded **example**, a **new incident from
+  the organizer's generator** with a random seed shown on screen (`GET /generate`), or **your own upload** (JSON/CSV,
+  same cleaner and validation). Every number is editable; re-running shows the new answer next to the old one, so it
+  is visibly not hard-coded (e.g. `interface_errors` 200 on the hostel core switch flips congestion to a faulty cable
+  or port). The feed reads as a flow: **Problem received → hand-off to the agents → Coordinator's recommendation**;
+  clicking a card shows what the message contains. Built for non-experts: a 3-step guide
   (choose a problem → Diagnose → read the answer; it can be hidden), a progress bar with plain-language phases,
   problems named by symptom ("Wi-Fi keeps dropping"), one-line explanations under every panel, and a **plain-English
   answer card** (what's wrong, how sure, because, self-check, what to do next), with technical details one click

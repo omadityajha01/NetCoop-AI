@@ -139,3 +139,59 @@ def test_plain_language_layer():
     from netcoop.api.dashboard import scenario_names
 
     assert set(scenario_names()) <= set(out["problems"])  # every scenario has a plain-language name
+
+
+def test_feed_details_for_every_recorded_message():
+    """Clicking a feed card shows detailRows(ev): every real message type must render clean rows."""
+    import typing
+    from pathlib import Path
+
+    from netcoop.protocol.envelope import MessageType
+
+    fix = Path(dash.ROOT) / "docs" / "frontend_fixtures"
+    events = [line for p in sorted(fix.glob("*/events.jsonl"))
+              for line in p.read_text(encoding="utf-8").splitlines() if line.strip()]
+    out = node(f"""
+      const res = {{}};
+      const isBad = x => typeof x !== 'string' || ['undefined', '[object Object]', 'NaN'].some(w => x.includes(w));
+      for (const line of {json.dumps(events)}) {{
+        const ev = JSON.parse(line); const rows = D.detailRows(ev);
+        const bad = rows.filter(r => r.length !== 2 || r.some(isBad));
+        const k = ev.message_type; res[k] = res[k] || {{n: 0, minRows: 99, bad: []}};
+        res[k].n += 1; res[k].minRows = Math.min(res[k].minRows, rows.length); res[k].bad.push(...bad.map(b => JSON.stringify(b)));
+      }}
+      return res;""")
+
+    assert set(out) == set(typing.get_args(MessageType))
+    for mt, r in out.items():
+        assert not r["bad"], (mt, r["bad"][:3])
+        assert r["minRows"] >= 3, mt  # sender/recipient + message + at least one content row
+
+
+def test_input_table_and_edits():
+    out = node("""
+      const b = {incident: {}, records: [
+        {timestamp: 't1', device_id: 'SW_1', metrics: {latency_ms: 10, interface_errors: 2, status: 'ok'}},
+        {timestamp: 't2', device_id: 'SW_2', metrics: {latency_ms: '280ms', queue_drops: 4}}]};
+      const t = D.rawTable(b);
+      const e = D.withEdit(b, 0, 'metrics.interface_errors', 200);
+      const flat = D.rawTable({device_id: 'SW_CAMPUS_5', metrics: {cpu_utilization_pct: 99.9}, status: 'Critical'});
+      return {cols: t.columns, editable: t.rows.map(r => r.cells.filter(c => c.editable).map(c => c.path)),
+              edited: e.records[0].metrics.interface_errors, original: b.records[0].metrics.interface_errors,
+              flat: [flat.total, flat.rows[0].cells.filter(c => c.editable).map(c => c.path)],
+              v09: D.recordsOf({ver: '0.9', obs: [{ap: 'ap-h3', signal: -78}]}).length};""")
+    assert out["cols"][:2] == ["timestamp", "device_id"]
+    assert out["editable"] == [["metrics.latency_ms", "metrics.interface_errors"], ["metrics.queue_drops"]]  # strings stay read-only
+    assert out["edited"] == 200 and out["original"] == 2  # edits never mutate the loaded original
+    assert out["flat"] == [1, ["metrics.cpu_utilization_pct"]] and out["v09"] == 1
+
+
+def test_ui_has_three_input_modes_and_flow_cards():
+    html = (UI / "dashboard.html").read_text(encoding="utf-8")
+    js = (UI / "dashboard.js").read_text(encoding="utf-8")
+    for mode in ('data-mode="example"', 'data-mode="generate"', 'data-mode="upload"'):
+        assert mode in html
+    for path in ("/generate?fault=", "/scenarios/", "/input", "/incidents?external="):
+        assert path in js
+    for card in ("Problem received", "Hand-off", "Coordinator's recommendation"):
+        assert card in js

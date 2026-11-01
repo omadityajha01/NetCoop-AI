@@ -1,7 +1,7 @@
 # Stage runbook (one page)
 
-**Stage version: `demo-final-9`** (`git checkout demo-final-9`). Previous known-good: `demo-final-8`, the same code
-(this tag adds the shot list and video script for the new web UI and the final smoke results).
+**Stage version: `demo-final-10`** (`git checkout demo-final-10`). Previous known-good: `demo-final-8`
+(`demo-final-9` has a broken "click a message" in the dashboard feed; do not use it).
 
 Everything runs offline on `127.0.0.1`. Work from the repo root in a terminal at least 100 columns wide.
 
@@ -31,7 +31,7 @@ A judge can also run the organizer's raw generator directly: `python tasks.py ju
 
 1. **Snapshots:** open `demo_snapshots/<step>/timeline.html` (and `report.json`) in any browser. They are static
    files that work offline, one folder per step, and are kept fresh: preflight checks the code + config hash.
-2. **Known-good code:** `git stash` (if you changed anything), then `git checkout demo-final-9` (or the previous `demo-final-8`), then rerun preflight.
+2. **Known-good code:** `git stash` (if you changed anything), then `git checkout demo-final-10` (or the previous `demo-final-8`), then rerun preflight.
 3. **Another machine:** `git clone https://github.com/omadityajha01/NetCoop-AI`, then
    `python -m venv .venv`, then `.venv\Scripts\pip install -e .[dev]`, then `python tasks.py preflight`.
 
