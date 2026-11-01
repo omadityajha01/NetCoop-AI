@@ -470,27 +470,208 @@ async function decide(actionId, decision, btn) {
   finally { btn.disabled = false; }
 }
 
+// ---------- input data: examples / generate / upload / edit & re-run ----------
+const ID_KEYS = ["timestamp", "ts", "time", "device_id", "device", "ap", "link_id", "link", "entity", "service"];
+
+/** Records of any bundle shape we accept: {records:[...]}, a bare list, a single flat record, or a v0.9 {obs:[...]}. */
+function recordsOf(data) {
+  if (Array.isArray(data)) return data;
+  if (data && Array.isArray(data.records)) return data.records;
+  if (data && Array.isArray(data.obs)) return data.obs;
+  if (data && typeof data === "object") return [data];
+  return [];
+}
+
+/** Table model of the raw input: id columns, then every top-level/metrics leaf; numbers are editable. */
+function rawTable(data, maxCols = 16) {
+  const recs = recordsOf(data);
+  const cols = [], seen = new Set();
+  const add = c => { if (!seen.has(c) && cols.length < maxCols) { seen.add(c); cols.push(c); } };
+  for (const r of recs) {
+    if (!r || typeof r !== "object") continue;
+    for (const k of ID_KEYS) if (k in r && typeof r[k] !== "object") add(k);
+  }
+  for (const r of recs) {
+    if (!r || typeof r !== "object") continue;
+    for (const [k, v] of Object.entries(r)) if (!ID_KEYS.includes(k) && (v === null || typeof v !== "object")) add(k);
+    if (r.metrics && typeof r.metrics === "object") for (const [k, v] of Object.entries(r.metrics)) if (v === null || typeof v !== "object") add("metrics." + k);
+  }
+  const rows = recs.map((r, i) => ({ index: i, cells: cols.map(c => {
+    const v = r && typeof r === "object" ? (c.startsWith("metrics.") ? (r.metrics || {})[c.slice(8)] : r[c]) : undefined;
+    return { path: c, value: v, editable: typeof v === "number" && Number.isFinite(v) };
+  }) }));
+  return { columns: cols, rows, total: recs.length };
+}
+
+/** Copy of the bundle with one numeric cell changed (record index + column path). */
+function withEdit(data, index, path, value) {
+  const copy = JSON.parse(JSON.stringify(data));
+  const r = recordsOf(copy)[index];
+  if (path.startsWith("metrics.")) r.metrics[path.slice(8)] = value; else r[path] = value;
+  return copy;
+}
+
+const SRC = { mode: "example", label: "", detail: "", seed: null, original: null, data: null, csv: null, edits: 0, filename: "input.json",
+              example: null };
+
+function setMode(mode) {
+  SRC.mode = mode;
+  document.querySelectorAll(".tab").forEach(t => { const on = t.dataset.mode === mode; t.classList.toggle("on", on); t.setAttribute("aria-selected", String(on)); });
+  document.querySelectorAll(".src").forEach(s => { s.hidden = s.dataset.for !== mode; });
+  $("seed-box").hidden = !(mode === "generate" && SRC.seed !== null);
+  if (mode === "example") loadExample($("scenario").value);
+}
+
+function showInput({ data = null, csv = null, label, detail, seed = null, filename = "input.json", example = null }) {
+  Object.assign(SRC, { data, original: data, csv, label, detail, seed, filename, example, edits: 0 });
+  $("seed-box").hidden = seed === null;
+  if (seed !== null) { $("seed-val").textContent = String(seed); $("seed-fault").textContent = detail; }
+  renderRaw();
+  $("run").disabled = !(data || csv);
+  $("compare").hidden = true;
+  setGuide(2);
+}
+
+function renderRaw() {
+  const head = $("raw").tHead, body = $("raw").tBodies[0]; clear(head); clear(body);
+  const meta = $("input-meta"); clear(meta);
+  if (SRC.csv !== null) {
+    const lines = SRC.csv.split(/\r?\n/).filter(x => x.trim());
+    meta.append(el("b", null, SRC.label), ` · ${Math.max(0, lines.length - 1)} CSV rows (shown as uploaded; edit JSON uploads to change values)`);
+    const tr = el("tr"); for (const c of (lines[0] || "").split(",")) tr.appendChild(el("th", null, c)); head.appendChild(tr);
+    for (const line of lines.slice(1, 201)) { const r = el("tr"); for (const c of line.split(",")) r.appendChild(el("td", "txt", c)); body.appendChild(r); }
+    return;
+  }
+  if (!SRC.data) { meta.textContent = "No data loaded yet."; return; }
+  const t = rawTable(SRC.data);
+  meta.append(el("b", null, SRC.label), ` · ${t.total} record${t.total === 1 ? "" : "s"} · ${SRC.detail}` + (SRC.edits ? ` · ${SRC.edits} value(s) edited by you` : ""));
+  const tr = el("tr"); tr.appendChild(el("th", null, "#")); for (const c of t.columns) tr.appendChild(el("th", null, c.replace("metrics.", ""))); head.appendChild(tr);
+  const orig = rawTable(SRC.original);
+  for (const row of t.rows.slice(0, 300)) {
+    const r = el("tr"); r.appendChild(el("td", "txt", String(row.index + 1)));
+    row.cells.forEach((cell, ci) => {
+      const td = el("td");
+      if (cell.editable) {
+        const inp = el("input"); inp.type = "number"; inp.step = "any"; inp.value = String(cell.value);
+        inp.setAttribute("aria-label", `${cell.path} in record ${row.index + 1}`);
+        const was = orig.rows[row.index].cells[ci].value;
+        if (cell.value !== was) inp.classList.add("changed");
+        inp.addEventListener("change", () => {
+          const v = Number(inp.value);
+          if (inp.value.trim() === "" || !Number.isFinite(v)) { inp.classList.add("invalid"); $("run").disabled = true; toast("Numbers only, please."); return; }
+          inp.classList.remove("invalid");
+          SRC.data = withEdit(SRC.data, row.index, cell.path, v);
+          SRC.edits = countEdits(); inp.classList.toggle("changed", v !== was);
+          $("reset-edits").hidden = SRC.edits === 0; $("run").disabled = false;
+          $("input-meta").lastChild.textContent = ` · ${t.total} record${t.total === 1 ? "" : "s"} · ${SRC.detail}` + (SRC.edits ? ` · ${SRC.edits} value(s) edited by you` : "");
+        });
+        td.appendChild(inp);
+      } else { td.className = "txt"; td.textContent = cell.value === undefined ? "" : String(cell.value); }
+      r.appendChild(td);
+    });
+    body.appendChild(r);
+  }
+  if (t.total > 300) body.appendChild(el("tr")).appendChild(el("td", "txt", `… ${t.total - 300} more records (all are sent)`));
+  $("reset-edits").hidden = SRC.edits === 0;
+}
+
+function countEdits() {
+  const a = rawTable(SRC.data), b = rawTable(SRC.original); let n = 0;
+  a.rows.forEach((r, i) => r.cells.forEach((c, j) => { if (c.value !== b.rows[i].cells[j].value) n += 1; }));
+  return n;
+}
+
+async function loadExample(name) {
+  try {
+    const data = await api("/scenarios/" + encodeURIComponent(name) + "/input");
+    showInput({ data, label: "Example: " + nice(PROBLEMS, name), detail: "recorded scenario data/scenarios/" + name, example: name,
+                filename: name + ".json" });
+  } catch (err) { toast("Couldn't load the example: " + err.message); }
+}
+
+async function generateNew() {
+  const btn = $("gen"); btn.disabled = true;
+  try {
+    const g = await api("/generate?fault=" + encodeURIComponent($("gen-fault").value) + "&seed=random");
+    const hidden = $("gen-fault").value === "random";
+    showInput({ data: g.record, seed: g.seed, filename: "generated.json",
+                label: "Generated incident", detail: hidden ? "fault hidden until the diagnosis" : "fault: " + nice(FAULTS, g.fault).toLowerCase() });
+    SRC.truth = g.fault;
+  } catch (err) { toast("Couldn't generate: " + err.message); }
+  finally { btn.disabled = false; }
+}
+
+function uploadFile(file) {
+  if (!file) return;
+  if (!/\.(json|csv)$/i.test(file.name)) { toast("Only .json or .csv files."); return; }
+  if (file.size > 10 * 1024 * 1024) { toast("That file is over 10 MB."); return; }
+  const rd = new FileReader();
+  rd.onload = () => {
+    const text = String(rd.result);
+    if (/\.csv$/i.test(file.name)) { showInput({ csv: text, label: "Upload: " + file.name, detail: "", filename: file.name }); return; }
+    try { showInput({ data: JSON.parse(text), label: "Upload: " + file.name, detail: Math.ceil(file.size / 1024) + " KB", filename: file.name }); }
+    catch { showInput({ csv: null, data: null, label: "Upload: " + file.name, detail: "" }); SRC.badText = text;
+            $("input-meta").textContent = "That file isn't valid JSON. Diagnose it anyway to see how the data cleaner rejects it.";
+            $("run").disabled = false; }
+  };
+  rd.readAsText(file);
+}
+
+function summaryOf(rep) {
+  return { v: rep.status === "diagnosed" || rep.status === "probable" ? nice(FAULTS, rep.fault_type) : (STATUS_TEXT[rep.status] || [rep.status])[0],
+           s: `${rep.status.replace(/_/g, " ")} · ${sureWord(rep.confidence)} (${Math.round(rep.confidence * 100)}%) · ${(rep.affected_devices || []).join(", ") || "-"}` };
+}
+
+function showCompare(before, after) {
+  const box = $("compare"); clear(box); box.hidden = false;
+  const card = (k, rep, cls) => { const c = el("div", "cmp " + cls); const s = summaryOf(rep); c.append(el("div", "k", k), el("div", "v", s.v), el("div", "s", s.s)); return c; };
+  box.append(card("Before your edit", before, "before"), el("div", "cmp-arrow", "→"), card("After your edit", after, "after"));
+}
+
+// ---------- flow cards (UI only: not NMP messages) ----------
+function flowCard(title, text) {
+  const card = el("div", "ev flow");
+  const body = el("div"); body.append(el("div", "who", title), el("div", "what", text));
+  card.append(el("span", "seq", "·"), body);
+  $("feed").appendChild(card);
+  return card;
+}
+let handoff = null;
+function noteHandoff(ev) {
+  if (ev.message_type !== "task_request" || (ev.payload || {}).task !== "analyze") return;
+  const names = new Set((handoff && handoff.names) || []); names.add(nice(AGENTS, ev.recipient));
+  const text = "Coordinator hands the investigation to " + [...names].join(", ");
+  if (!handoff) { const c = flowCard("Hand-off", text); handoff = { card: c, names }; $("ev-" + ev.seq).before(c); }
+  else { handoff.names = names; handoff.card.querySelector(".what").textContent = text; }
+}
+
 // ---------- run / replay ----------
-async function stream(incident) {
+async function stream(incident, source) {
   if (S.es) S.es.close();
   Object.assign(S, { incident, events: [], fseq: new Map(), buf: new ReorderBuffer(), predRows: new Map(), shownPlans: new Set(), phase: -1 });
+  handoff = null;
   clear($("feed")); clear($("hyps")); clear($("preds")); clear($("actions")); clear($("report")); $("report").classList.remove("in");
   $("tech").hidden = true; $("tech").open = false;
   const ans = $("answer"); clear(ans); ans.appendChild(empty("The agents are investigating. The answer appears here when they finish.", "Working on it…"));
   $("msgcount").textContent = "";
   setGuide(2); setPhase(0);
   drawTopology();
+  const src = source || { label: "Previous diagnosis " + incident, detail: "reopened from the event log" };
+  flowCard("Problem received", `${src.label}${src.detail ? " · " + src.detail : ""}${src.seed != null ? " · seed " + src.seed : ""}`);
   S.report = await api("/incidents/" + encodeURIComponent(incident) + "/report");   // revealed only at the end
   $("replay").disabled = false;
   const delay = reduced() ? 0 : SPEED_MS[S.speed];
   const es = new EventSource("/incidents/" + encodeURIComponent(incident) + "/stream?delay_ms=" + delay);
   S.es = es;
-  es.addEventListener("message", e => receive(JSON.parse(e.data)));
+  es.addEventListener("message", e => { const ev = JSON.parse(e.data); receive(ev); if ($("ev-" + ev.seq)) noteHandoff(ev); });
   es.addEventListener("end", () => {
     es.close(); S.es = null;
     for (const p of S.report.predictions || []) settle(p);
     setPhase(3); $("progress-fill").style.transform = "scaleX(1)";
     renderAnswer(S.report); renderReport(S.report); renderActions(); setGuide(4);
+    const next = $("answer").querySelector(".next");
+    flowCard("Coordinator's recommendation", next ? next.textContent.replace(/^What to do next:\s*/, "") : S.report.suspected_root_cause);
+    $("feed").scrollTop = $("feed").scrollHeight;
     drawTopology(new Set(S.report.affected_devices || []), new Set((S.report.supporting_evidence || []).map(e => e.entity)), localizedRoot());
   });
   es.onerror = () => { es.close(); S.es = null; toast("Lost the connection to the server. Press Replay to try again."); };
@@ -498,12 +679,24 @@ async function stream(incident) {
 
 async function run() {
   const btn = $("run"); btn.disabled = true; btn.lastChild.textContent = "Diagnosing…";
+  const before = SRC.edits && S.report && S.lastData === SRC.original ? S.report : null;
   try {
-    const r = await api("/scenarios/" + encodeURIComponent($("scenario").value) + "/run?external=true", { method: "POST" });
-    await stream(r.incident_id);
+    let r;
+    const source = { label: SRC.label, detail: SRC.edits ? `${SRC.edits} value(s) edited by you` : SRC.detail, seed: SRC.seed };
+    if (SRC.mode === "example" && SRC.example && !SRC.edits) {
+      r = await api("/scenarios/" + encodeURIComponent(SRC.example) + "/run?external=true", { method: "POST" });
+    } else {
+      const body = SRC.csv !== null ? SRC.csv : SRC.data ? JSON.stringify(SRC.data) : (SRC.badText || "");
+      const external = SRC.mode === "generate" ? "false" : "true";   // organizer data has no Wi-Fi telemetry (as in judge mode)
+      r = await api("/incidents?external=" + external + "&filename=" + encodeURIComponent(SRC.filename),
+                    { method: "POST", headers: { "Content-Type": "application/octet-stream" }, body });
+    }
+    S.lastData = SRC.original;
+    await stream(r.incident_id, source);
+    if (before) showCompare(before, S.report);
     loadHistory(); loadAgents();
   } catch (err) { toast("Couldn't start the diagnosis: " + err.message + ". Is the server running?"); setGuide(1); }
-  finally { btn.disabled = false; btn.lastChild.textContent = "Diagnose"; }
+  finally { btn.disabled = false; btn.lastChild.textContent = "Diagnose this data"; }
 }
 
 async function loadHistory() {
@@ -513,6 +706,18 @@ async function loadHistory() {
     for (const r of rows) { const o = el("option", null, r.incident_id + " · " + r.status.replace(/_/g, " ")); o.value = r.incident_id; sel.appendChild(o); }
   } catch { /* optional */ }
 }
+
+async function reopen(incident) {
+  try {
+    const inp = await api("/incidents/" + encodeURIComponent(incident) + "/input");
+    if (inp.json !== undefined) showInput({ data: inp.json, label: "Previous diagnosis " + incident, detail: "input hash " + String(inp.input_sha256 || "").slice(0, 12) });
+    else if (inp.csv !== undefined) showInput({ csv: inp.csv, label: "Previous diagnosis " + incident, detail: "" });
+    SRC.mode = "upload"; SRC.example = null;
+  } catch { /* input display is optional */ }
+  stream(incident, { label: "Previous diagnosis " + incident, detail: "reopened from the event log" });
+}
+
+if (typeof module !== "undefined" && module.exports) Object.assign(module.exports, { rawTable, withEdit, recordsOf });
 
 if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded", async () => {
   try {
@@ -524,15 +729,20 @@ if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded
   showGuide(guide !== "hide");
   $("guide-hide").addEventListener("click", () => showGuide(false));
   $("guide-show").addEventListener("click", () => showGuide(true));
-  $("scenario").addEventListener("change", () => setGuide(2));
+  document.querySelectorAll(".tab").forEach(t => t.addEventListener("click", () => setMode(t.dataset.mode)));
+  $("scenario").addEventListener("change", () => loadExample($("scenario").value));
+  $("gen").addEventListener("click", generateNew);
+  $("file").addEventListener("change", e => uploadFile(e.target.files[0]));
+  $("reset-edits").addEventListener("click", () => { SRC.data = SRC.original; SRC.edits = 0; renderRaw(); });
   loadAgents(); loadHistory();
   $("run").addEventListener("click", run);
-  $("replay").addEventListener("click", () => { if (S.incident) stream(S.incident); });
-  $("history").addEventListener("change", e => { if (e.target.value) stream(e.target.value); });
+  $("replay").addEventListener("click", () => { if (S.incident) stream(S.incident, { label: SRC.label, detail: "replayed from the event log", seed: SRC.seed }); });
+  $("history").addEventListener("change", e => { if (e.target.value) reopen(e.target.value); });
   document.querySelectorAll(".seg-btn").forEach(b => b.addEventListener("click", () => {
     S.speed = Number(b.dataset.speed);
     document.querySelectorAll(".seg-btn").forEach(x => { const on = x === b; x.classList.toggle("on", on); x.setAttribute("aria-pressed", String(on)); });
   }));
   const q = new URLSearchParams(location.search).get("run");
-  if (q && /^[a-z_]{1,40}$/.test(q)) { $("scenario").value = q; run(); }
+  if (q && /^[a-z_]{1,40}$/.test(q)) { $("scenario").value = q; await loadExample(q); run(); }
+  else await loadExample($("scenario").value);
 });
