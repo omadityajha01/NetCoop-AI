@@ -12,10 +12,13 @@ Contents: [Endpoints](#endpoints) · [Errors](#error-shapes) · [SSE stream](#ss
 |---|---|---|
 | POST | `/incidents` | Upload an incident bundle (JSON/CSV bytes, 10 MB max) and run a diagnosis; returns the full report. |
 | POST | `/scenarios/{name}/run` | Run one built-in scenario (the dashboard's only write action). Same pipeline as the CLI; LLM per env. |
+| GET | `/scenarios/{name}/input` | Raw telemetry of a built-in example scenario, exactly as stored (shown before the diagnosis; editable in the UI). |
+| GET | `/generate` | New incident from the organizer's raw generator (same path as `tasks.py judge`). Nothing is run: diagnose it |
 | GET | `/topology` | Configured topology as nodes (id, type, segment, role, parent) and links (id, a, b) for drawing. |
 | GET | `/incidents/{incident_id}/stream` | Server-sent events: the run's event log in `seq` order, then `event: end`. |
 | GET | `/incidents` | Past runs, newest first (limit 1-500). |
 | GET | `/incidents/{incident_id}/report` | The final diagnostic report of a run. |
+| GET | `/incidents/{incident_id}/input` | The raw input this run diagnosed, as stored in runs/<id>/ (JSON parsed; CSV as text). |
 | GET | `/incidents/{incident_id}/events` | The run's complete event log (every NMP message, in seq order), including post-run HITL messages. |
 | GET | `/incidents/{incident_id}/report.csv` | Supporting evidence as CSV (formula-injection safe). |
 | POST | `/incidents/{incident_id}/feedback` | Approve/reject an action (non-blocking HITL). Approve re-runs the policy check; allowed -> dry-run plan. |
@@ -81,6 +84,23 @@ Response `200` (real example):
   "status": "diagnosed"
 }
 ```
+
+### GET `/scenarios/{name}/input`
+
+Raw telemetry of a built-in example scenario, exactly as stored (shown before the diagnosis; editable in the UI).
+
+| Parameter | In | Type | Required | Default |
+|---|---|---|---|---|
+| `name` | path | string | yes |  |
+
+### GET `/generate`
+
+New incident from the organizer's raw generator (same path as `tasks.py judge`). Nothing is run: diagnose it with POST /incidents.
+
+| Parameter | In | Type | Required | Default |
+|---|---|---|---|---|
+| `fault` | query | string | no | random |
+| `seed` | query | string | no | random |
 
 ### GET `/topology`
 
@@ -228,6 +248,14 @@ Response `200` (real example):
       "entity": "L_HOSTEL_ACC_01",
   … (truncated; full example in the fixture file)
 ```
+
+### GET `/incidents/{incident_id}/input`
+
+The raw input this run diagnosed, as stored in runs/<id>/ (JSON parsed; CSV as text).
+
+| Parameter | In | Type | Required | Default |
+|---|---|---|---|---|
+| `incident_id` | path | string | yes |  |
 
 ### GET `/incidents/{incident_id}/events`
 
