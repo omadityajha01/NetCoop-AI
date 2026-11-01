@@ -1,0 +1,117 @@
+"""Bundled UI (netcoop/api/ui): CSP-safe, text-only (PI8), self-contained, reduced-motion aware; JS helpers tested."""
+
+from __future__ import annotations
+
+import json
+import re
+import shutil
+import subprocess
+
+import pytest
+from fastapi.testclient import TestClient
+
+import netcoop.api.main as api
+from netcoop.api import dashboard as dash
+from tests.conftest import cfg_without_external
+
+UI = dash.DEFAULT_UI
+FILES = sorted(p for p in UI.iterdir() if p.is_file())
+NODE = shutil.which("node")
+
+
+@pytest.fixture
+def client(tmp_path, monkeypatch, cfg):
+    monkeypatch.setattr(api, "RUNS", tmp_path / "runs")
+    monkeypatch.setattr(api, "load_config", lambda: cfg_without_external(cfg))
+    import netcoop.orchestrator.run as runmod
+    monkeypatch.setattr(runmod, "load_config", lambda: cfg_without_external(cfg))
+    monkeypatch.delenv(dash.UI_ENV, raising=False)
+    return TestClient(api.app)
+
+
+@pytest.mark.parametrize("path", FILES, ids=lambda p: p.name)
+def test_csp_safe_and_text_only(path):
+    src = path.read_text(encoding="utf-8")
+    code = re.sub(r"//[^\n]*", "", src) if path.suffix == ".js" else src
+    for banned in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "javascript:"):
+        assert banned not in code, f"{banned} in {path.name}"
+    if path.suffix == ".html":
+        assert not re.search(r"<script(?![^>]*\bsrc=)[^>]*>", src), "inline <script> is blocked by the CSP"
+        assert not re.search(r"\sstyle\s*=", src), "style attributes are blocked by style-src 'self'"
+        assert not re.search(r"\son[a-z]+\s*=", src), "inline event handlers are blocked by the CSP"
+    remote = re.findall(r"https?://[^\s\"')]+", code)
+    assert all(u.startswith("http://www.w3.org/") for u in remote), remote  # no CDN, fonts or trackers
+    assert "@import" not in code and "fonts.googleapis" not in code
+
+
+def test_every_referenced_asset_exists_and_is_served(client):
+    for html in ("index.html", "dashboard.html"):
+        src = (UI / html).read_text(encoding="utf-8")
+        refs = re.findall(r'(?:src|href)="(/ui/[^"#?]+)"', src)
+        assert refs, html
+        for ref in refs:
+            r = client.get(ref)
+            assert r.status_code == 200, ref
+            assert r.headers["content-security-policy"] == dash.CSP
+    for html in ("index.html", "dashboard.html"):
+        assert '<meta name="viewport" content="width=device-width, initial-scale=1">' in (UI / html).read_text(encoding="utf-8")
+
+
+def test_reduced_motion_and_cheap_animation():
+    for css in ("styles.css", "dashboard.css"):
+        src = (UI / css).read_text(encoding="utf-8")
+        for name, body in re.findall(r"@keyframes\s+([\w-]+)\s*\{(.*?)\}\s*\}", src, re.S):
+            props = set(re.findall(r"([a-z-]+)\s*:", body))
+            assert props <= {"opacity", "transform", "stroke-opacity"}, (css, name, props)
+    assert "prefers-reduced-motion: reduce" in (UI / "styles.css").read_text(encoding="utf-8")
+    for js in ("landing.js", "dashboard.js"):
+        assert "prefers-reduced-motion: reduce" in (UI / js).read_text(encoding="utf-8")
+
+
+def test_dashboard_drives_the_real_endpoints(client):
+    js = (UI / "dashboard.js").read_text(encoding="utf-8")
+    for path in ("/scenarios", "/topology", "/agents", "/incidents?limit=", "/run?external=", "/stream?delay_ms=",
+                 "/report", "/events", "/feedback"):
+        assert path in js, path
+    iid = client.post("/scenarios/congestion/run?external=false").json()["incident_id"]
+    assert client.get(f"/incidents/{iid}/stream?delay_ms=0").status_code == 200
+
+
+def node(script: str) -> object:
+    if not NODE:
+        pytest.skip("node not installed")
+    code = (f"const D = require({json.dumps(str(UI / 'dashboard.js'))});\n"
+            f"const L = require({json.dumps(str(UI / 'landing.js'))});\n"
+            f"process.stdout.write(JSON.stringify((() => {{ {script} }})()));")
+    p = subprocess.run([NODE, "-"], input=code, capture_output=True, text=True, encoding="utf-8", timeout=30)
+    assert p.returncode == 0, p.stderr
+    return json.loads(p.stdout)
+
+
+def test_js_helpers():
+    out = node("""
+      const b = new D.ReorderBuffer(); const got = [];
+      for (const s of [2, 1, 1, 4, 3]) for (const e of b.push({seq: s})) got.push(e.seq);
+      return {
+        order: got,
+        speeds: [D.SPEED_MS[1], D.SPEED_MS[2]],
+        external: D.INTERNAL.has('wireless_agent'),
+        pick: ['Wi-Fi keeps dropping', 'websites will not open', 'new laptop gets no IP address', 'slow video calls',
+               'lab PCs disconnect', 'something odd'].map(L.pickScenario),
+        insufficient: L.summarize({status: 'insufficient_evidence', suspected_root_cause: 'Insufficient evidence',
+                                   missing_signals: ['rssi_dbm@AP_H3'], confidence: 0.33, confidence_category: 'low'}),
+        nofault: L.summarize({status: 'no_fault_detected', confidence: 0, confidence_category: 'low'}),
+        steps: L.ORDER,
+      };""")
+    assert out["order"] == [1, 2, 3, 4]
+    assert out["speeds"] == [240, 120] and out["external"] is False
+    assert out["pick"] == ["weak_wifi", "dns_failure", "dhcp_failure", "congestion", "interface_fault", "congestion"]
+    assert "won't guess" in out["insufficient"] and "rssi_dbm@AP_H3" in out["insufficient"]
+    assert out["nofault"].startswith("No fault detected")
+    assert out["steps"] == ["normalize", "analyze", "predict", "decide"]
+
+
+def test_no_certainty_or_execution_claims_in_ui_copy():
+    text = " ".join(p.read_text(encoding="utf-8") for p in FILES).lower()
+    for banned in ("confirmed", "definitely", "guaranteed", "fix verified", "fixed automatically", "auto-remediat"):
+        assert banned not in text, banned

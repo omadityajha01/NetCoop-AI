@@ -93,13 +93,15 @@ def test_fixture_contents():
 
 
 # ---------- F3: serve --ui ----------
-def test_default_ui_is_identical(client):
+def test_default_ui_is_the_bundled_one_and_classic_is_kept(client):
     r = client.get("/")
-    assert r.content == (dash.STATIC / "dashboard.html").read_bytes()
+    assert r.content == (dash.DEFAULT_UI / "index.html").read_bytes()
     assert r.headers["content-security-policy"] == dash.CSP and r.headers["x-frame-options"] == "DENY"
-    assert client.get("/dashboard").content == r.content
+    d = client.get("/ui/dashboard.html")
+    assert d.status_code == 200 and d.content == (dash.DEFAULT_UI / "dashboard.html").read_bytes()
+    assert d.headers["content-security-policy"] == dash.CSP
+    assert client.get("/dashboard").content == (dash.STATIC / "dashboard.html").read_bytes()  # classic still served
     assert client.get("/dashboard/dashboard.js").content == (dash.STATIC / "dashboard.js").read_bytes()
-    assert client.get("/ui/index.html").status_code == 404
 
 
 def test_ui_folder(client, monkeypatch):
