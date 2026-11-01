@@ -514,7 +514,16 @@ function withEdit(data, index, path, value) {
 const SRC = { mode: "example", label: "", detail: "", seed: null, original: null, data: null, csv: null, edits: 0, filename: "input.json",
               example: null };
 
+function setCompact(on) {
+  $("input").classList.toggle("compact", on);
+  const b = $("toggle-input");
+  b.hidden = false;
+  b.textContent = on ? "Show the data" : "Hide the data";
+  b.setAttribute("aria-expanded", String(!on));
+}
+
 function setMode(mode) {
+  setCompact(false);
   SRC.mode = mode;
   document.querySelectorAll(".tab").forEach(t => { const on = t.dataset.mode === mode; t.classList.toggle("on", on); t.setAttribute("aria-selected", String(on)); });
   document.querySelectorAll(".src").forEach(s => { s.hidden = s.dataset.for !== mode; });
@@ -527,6 +536,7 @@ function showInput({ data = null, csv = null, label, detail, seed = null, filena
   $("seed-box").hidden = seed === null;
   if (seed !== null) { $("seed-val").textContent = String(seed); $("seed-fault").textContent = detail; }
   renderRaw();
+  setCompact(false);
   $("run").disabled = !(data || csv);
   $("compare").hidden = true;
   setGuide(2);
@@ -679,6 +689,7 @@ async function stream(incident, source) {
 
 async function run() {
   const btn = $("run"); btn.disabled = true; btn.lastChild.textContent = "Diagnosing…";
+  setCompact(true);
   const before = SRC.edits && S.report && S.lastData === SRC.original ? S.report : null;
   try {
     let r;
@@ -734,6 +745,7 @@ if (typeof document !== "undefined") document.addEventListener("DOMContentLoaded
   $("gen").addEventListener("click", generateNew);
   $("file").addEventListener("change", e => uploadFile(e.target.files[0]));
   $("reset-edits").addEventListener("click", () => { SRC.data = SRC.original; SRC.edits = 0; renderRaw(); });
+  $("toggle-input").addEventListener("click", () => setCompact(!$("input").classList.contains("compact")));
   loadAgents(); loadHistory();
   $("run").addEventListener("click", run);
   $("replay").addEventListener("click", () => { if (S.incident) stream(S.incident, { label: SRC.label, detail: "replayed from the event log", seed: SRC.seed }); });

@@ -32,15 +32,12 @@ body.dash { background: var(--d-bg); color: var(--d-text); min-height: 100vh; fo
 /* feed */
 .feed { display: flex; flex-direction: column; gap: 8px; min-height: 280px; max-height: 52vh; overflow-y: auto; padding: 4px; scroll-behavior: smooth; }
 .ev { display: grid; grid-template-columns: 44px 1fr; gap: 10px; padding: 10px 12px; border-radius: 10px; background: var(--d-surface);
-  border: 1px solid var(--d-border); border-left: 3px solid var(--d-border); animation: rise .28s ease-out both; cursor: pointer; transition: border-color .2s, background-color .2s; }
+  border: 1px solid var(--d-border); animation: rise .28s ease-out both; cursor: pointer; transition: border-color .2s, background-color .2s; }
 .ev:hover { border-color: #52525B; }
 .ev.sel { border-color: var(--ai-300); background: rgb(124 58 237 / .12); }
 .ev .seq { font: 600 12px var(--mono); color: var(--d-muted); padding-top: 2px; }
 .ev .who { font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
 .ev .what { font-size: 13.5px; color: var(--d-muted); margin-top: 2px; word-break: break-word; }
-.ev.t-prediction { border-left-color: var(--ai-300); } .ev.t-evidence_response, .ev.t-finding_report { border-left-color: #22D3EE; }
-.ev.t-diagnosis, .ev.t-report { border-left-color: #34D399; } .ev.t-error { border-left-color: #FB7185; }
-.ev.t-hint { border-left-color: #FBBF24; } .ev.t-human_decision, .ev.t-remediation_plan { border-left-color: #F472B6; }
 .tag { font: 600 10.5px var(--font); padding: 1px 7px; border-radius: 999px; background: var(--d-surface-2); color: var(--d-muted); letter-spacing: .02em; }
 .tag.a2a { background: rgb(124 58 237 / .22); color: #DDD6FE; }
 
@@ -103,8 +100,7 @@ body.dash { background: var(--d-bg); color: var(--d-text); min-height: 100vh; fo
 /* actions */
 .banner { display: flex; align-items: center; gap: 8px; padding: 10px 12px; border-radius: 10px; font-size: 13px; font-weight: 600;
   background: rgb(180 83 9 / .16); color: #FCD34D; border: 1px solid rgb(251 191 36 / .35); }
-.act { background: var(--d-surface); border: 1px solid var(--d-border); border-left: 3px solid #34D399; border-radius: 10px; padding: 12px 14px; animation: rise .3s ease-out both; }
-.act.blocked { border-left-color: #FB7185; }
+.act { background: var(--d-surface); border: 1px solid var(--d-border); border-radius: 10px; padding: 12px 14px; animation: rise .3s ease-out both; }
 .act .top { display: flex; justify-content: space-between; gap: 10px; align-items: flex-start; }
 .act .txt { font-size: 14px; } .act .id { font: 600 11px var(--mono); color: var(--d-muted); display: block; margin-bottom: 2px; }
 .act .rule { margin-top: 6px; font-size: 12px; color: #FDA4AF; display: flex; align-items: center; gap: 6px; }
@@ -236,7 +232,51 @@ table.raw input.invalid { border-color: #FB7185; background: rgb(225 29 72 / .18
 .cmp .v { font: 650 16px/1.35 var(--font-display); margin: 4px 0; }
 .cmp .s { font-size: 13px; color: var(--d-muted); }
 .cmp-arrow { align-self: center; font: 700 22px var(--font); color: var(--ai-300); }
-.ev.flow { border-left-color: var(--ai); background: rgb(124 58 237 / .1); cursor: default; }
+.ev.flow { background: rgb(124 58 237 / .1); cursor: default; }
 .ev.flow .who { color: #DDD6FE; }
 .ev.flow .what { color: var(--d-text); }
 @media (max-width: 760px) { .compare { grid-template-columns: 1fr; } .cmp-arrow { transform: rotate(90deg); justify-self: center; } .seed-box { margin-left: 0; } }
+
+/* ---------- polish pass ---------- */
+body.dash { color-scheme: dark; scrollbar-color: #3F3F46 transparent; }
+body.dash ::selection { background: rgb(124 58 237 / .45); color: #fff; }
+body.dash input { caret-color: var(--ai-300); }
+table.raw input { appearance: textfield; -moz-appearance: textfield; }
+table.raw input::-webkit-outer-spin-button, table.raw input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+table.raw td, .hyp .row, .conf, .evid .v, .seed-box b, .ev .seq, .flip .face, .count, .sure b { font-variant-numeric: tabular-nums; }
+
+/* feed: 1px frame for every card; the message kind is a small dot in its tag, not a colored stripe */
+.feed .ev:hover { border-color: #52525B; }
+.feed .ev.sel, .feed .ev.open { border-color: rgb(167 139 250 / .55); }
+.feed .ev.flow { border-color: rgb(167 139 250 / .3); }
+.ev .tag:not(.a2a)::before { content: ""; display: inline-block; width: 6px; height: 6px; margin-right: 6px; border-radius: 50%;
+  background: var(--k, #71717A); vertical-align: 1px; }
+.ev.t-prediction { --k: var(--ai-300); } .ev.t-evidence_response, .ev.t-finding_report { --k: #22D3EE; }
+.ev.t-diagnosis, .ev.t-report { --k: #34D399; } .ev.t-error { --k: #FB7185; } .ev.t-hint { --k: #FBBF24; }
+.ev.t-human_decision, .ev.t-remediation_plan { --k: #F472B6; }
+.act.blocked { border-color: rgb(251 113 133 / .35); }
+
+/* motion: one crisp curve; entrances ~240 ms; the answer reveal is the single authored moment */
+.ev, .hyp, .pred, .act, .details { animation-duration: 240ms; animation-timing-function: var(--ease-out); }
+.answer-card { animation-duration: 380ms; animation-timing-function: var(--ease-out); }
+.flip .face { transition: transform 420ms var(--ease-in-out); }
+.btn, .mini, .tab, .seg-btn, .guide-x, .guide-show, .evid button {
+  transition: transform 160ms var(--ease-out), background-color 200ms ease, color 200ms ease, border-color 200ms ease; }
+.btn:active:not(:disabled), .mini:active:not(:disabled), .tab:active, .seg-btn:active, .guide-x:active, .guide-show:active,
+.evid button:active { transform: scale(.97); }
+/* the localized root pulses three times to draw the eye, then stays marked (no endless motion) */
+#topo circle.ring.on { opacity: .55; animation: ring 1.8s var(--ease-out) 3; }
+#topo line.root { animation-iteration-count: 3; }
+
+/* input panel folds to a one-line summary while a diagnosis runs, so the answer stays in view */
+.input-panel.compact .src-row, .input-panel.compact .table-wrap, .input-panel.compact #edit-note { display: none; }
+.input-panel.compact .input-meta { margin: 8px 0 0; }
+.input-panel.compact .input-actions { margin-top: 8px; }
+
+/* detector follow-ups: no glow on dark, readable inactive guide, calmer single-hue progress, pill inset */
+.dash .btn-primary { box-shadow: 0 1px 2px rgb(0 0 0 / .4); }
+.guide-steps li { opacity: 1; }
+.guide-steps li:not(.on):not(.done) b { color: #A1A1AA; }
+.guide-steps li:not(.on):not(.done) .gn { color: #A1A1AA; }
+.progress-bar i { background: var(--ai); }
+.pill { padding: 6px 12px; }
