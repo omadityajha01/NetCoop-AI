@@ -1,6 +1,6 @@
 """Mock NetCoop API (F4): serves the recorded fixtures on the same endpoints as `netcoop serve`. No backend needed.
 
-    python tools/mock_api.py                      # http://127.0.0.1:8000/  (built-in dashboard UI)
+    python tools/mock_api.py                      # http://127.0.0.1:8000/  (bundled UI; classic dashboard at /dashboard)
     python tools/mock_api.py --ui dashboard_v2    # your UI folder: index.html at /, files at /ui/<path>
     python tools/mock_api.py --port 8001 --agent joined
 
@@ -42,7 +42,8 @@ HERE = Path(__file__).resolve().parent
 ROOT = HERE.parent
 # Repo layout (tools/mock_api.py) or the standalone handoff layout (mock_api.py next to frontend_fixtures/).
 FIX = HERE / "frontend_fixtures" if (HERE / "frontend_fixtures").is_dir() else ROOT / "docs" / "frontend_fixtures"
-STATIC = ROOT / "netcoop" / "api" / "static"  # built-in dashboard; absent in the handoff zip (use --ui there)
+STATIC = ROOT / "netcoop" / "api" / "static"  # classic dashboard (/dashboard); absent in the handoff zip
+DEFAULT_UI = ROOT / "netcoop" / "api" / "ui"  # default UI like `netcoop serve`; absent in the handoff zip (use --ui)
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; "
        "base-uri 'none'; form-action 'none'; frame-ancestors 'none'")
 SECURITY_HEADERS = {"Content-Security-Policy": CSP, "X-Content-Type-Options": "nosniff", "Referrer-Policy": "no-referrer",
@@ -198,6 +199,8 @@ class MockState:
 
 
 def make_handler(state: MockState, ui: Path | None) -> type[BaseHTTPRequestHandler]:
+    if ui is None and (DEFAULT_UI / "index.html").is_file():
+        ui = DEFAULT_UI.resolve()  # same default as `netcoop serve`: landing at /, files at /ui/<path>
     class H(BaseHTTPRequestHandler):
         protocol_version = "HTTP/1.1"
         server_version = "netcoop-mock"
@@ -252,12 +255,14 @@ def make_handler(state: MockState, ui: Path | None) -> type[BaseHTTPRequestHandl
             q = {k: v[-1] for k, v in parse_qs(u.query).items()}
             parts = [p for p in u.path.split("/") if p]
             try:
-                if u.path == "/" and ui:
+                if u.path == "/":
+                    if not ui:
+                        raise ApiError(404, "NOT_FOUND", "no UI here: start the mock with --ui <folder>")
                     return self._file(ui / "index.html", "text/html; charset=utf-8")
-                if u.path in ("/", "/dashboard") or parts[:1] == ["dashboard"]:
+                if u.path == "/dashboard" or parts[:1] == ["dashboard"]:
                     if not (STATIC / "dashboard.html").is_file():
-                        raise ApiError(404, "NOT_FOUND", "no built-in dashboard here: start the mock with --ui <folder>")
-                if u.path in ("/", "/dashboard"):
+                        raise ApiError(404, "NOT_FOUND", "no classic dashboard here: start the mock with --ui <folder>")
+                if u.path == "/dashboard":
                     return self._file(STATIC / "dashboard.html", "text/html; charset=utf-8")
                 if parts[:1] == ["dashboard"] and len(parts) == 2:
                     if parts[1] not in ("dashboard.js", "dashboard.css"):
@@ -406,7 +411,7 @@ def main() -> int:
         print(f"error: --ui {a.ui}: no index.html in that folder")
         return 2
     srv = build_server(a.port, ui, a.agent == "joined")
-    default_ui = "built-in dashboard" if (STATIC / "dashboard.html").is_file() else "none (pass --ui <folder>)"
+    default_ui = "bundled UI (netcoop/api/ui)" if (DEFAULT_UI / "index.html").is_file() else "none (pass --ui <folder>)"
     print(f"NetCoop mock API on http://127.0.0.1:{a.port}/  ({len(srv.state.fixtures)} fixtures from {FIX}; UI: "  # type: ignore[attr-defined]
           f"{ui or default_ui}; wireless_agent {a.agent}). Ctrl+C to stop.")
     try:

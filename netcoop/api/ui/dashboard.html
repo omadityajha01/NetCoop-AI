@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetCoop AI · diagnosis dashboard</title>
+<link rel="stylesheet" href="/ui/styles.css">
+<link rel="stylesheet" href="/ui/dashboard.css">
+<script src="/ui/dashboard.js" defer></script>
+</head>
+<body class="dash">
+<svg class="sr-only" aria-hidden="true">
+  <symbol id="i-net" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M5 16v-2h14v2"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8L7 4Z"/></symbol>
+  <symbol id="i-replay" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0V7ZM12 17v5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.5"/></symbol>
+</svg>
+
+<header class="topbar">
+  <a class="brand" href="/" aria-label="Back to the NetCoop landing page"><span class="brand-mark"><svg class="icon"><use href="#i-net"/></svg></span>NetCoop AI</a>
+  <div class="controls">
+    <label class="ctl-label" for="scenario">Network problem</label>
+    <select id="scenario" class="select"></select>
+    <button id="run" class="btn btn-primary" type="button"><svg class="icon sm"><use href="#i-play"/></svg>Diagnose</button>
+    <div class="seg" role="group" aria-label="Animation speed">
+      <button type="button" class="seg-btn on" data-speed="1" aria-pressed="true" title="Normal speed">Normal</button>
+      <button type="button" class="seg-btn" data-speed="2" aria-pressed="false" title="Twice as fast">Fast</button>
+    </div>
+    <button id="replay" class="btn btn-dark" type="button" disabled title="Watch the last diagnosis again"><svg class="icon sm"><use href="#i-replay"/></svg>Replay</button>
+    <label class="sr-only" for="history">Open a previous diagnosis</label>
+    <select id="history" class="select" title="Open a previous diagnosis"><option value="">Previous diagnoses</option></select>
+    <span id="agent-pill" class="pill" title="External agents connected over the A2A protocol"><svg class="icon sm"><use href="#i-plug"/></svg><span>checking agents…</span></span>
+  </div>
+</header>
+
+<section id="guide" class="guide" aria-label="How to use this page">
+  <ol class="guide-steps">
+    <li data-g="1" class="on"><span class="gn">1</span><div><b>Choose a problem</b><span>Pick a symptom from “Network problem” above</span></div></li>
+    <li data-g="2"><span class="gn">2</span><div><b>Press Diagnose</b><span>The AI agents investigate; watch them work live</span></div></li>
+    <li data-g="3"><span class="gn">3</span><div><b>Read the answer</b><span>See what's wrong, how sure we are, and what to do next</span></div></li>
+  </ol>
+  <button id="guide-hide" class="guide-x" type="button" aria-label="Hide the guide" title="Hide the guide"><svg class="icon sm"><use href="#i-x"/></svg></button>
+</section>
+<button id="guide-show" class="guide-show" type="button" hidden><svg class="icon sm"><use href="#i-info"/></svg>How to use</button>
+
+<div id="progress" class="progress" hidden aria-live="polite">
+  <div class="progress-bar"><i id="progress-fill"></i></div>
+  <ol class="phases">
+    <li data-p="0">Reading the data</li><li data-p="1">Agents checking the network</li>
+    <li data-p="2">Testing possible causes</li><li data-p="3">Writing the answer</li>
+  </ol>
+</div>
+
+<main class="grid">
+  <section class="col" aria-labelledby="h-collab">
+    <div class="col-head"><h2 id="h-collab">Live collaboration</h2><span id="msgcount" class="count"></span></div>
+    <p class="explain">The AI agents talking to each other, in the order it happened. Click a message for details.</p>
+    <div id="feed" class="feed" aria-live="off"><div class="empty-state"><b>Nothing here yet</b><span>Choose a problem above and press <em>Diagnose</em>. You'll see each agent report what it found.</span></div></div>
+    <div class="col-head"><h2>Agents</h2></div>
+    <p class="explain">Each agent watches one part of the network. Purple ones joined from outside.</p>
+    <div id="agents" class="agents"></div>
+  </section>
+
+  <section class="col" aria-labelledby="h-topo">
+    <div class="col-head"><h2 id="h-topo">Network map</h2><span class="legend"><i class="lg aff"></i>problem <i class="lg root"></i>likely source</span></div>
+    <p class="explain">Your campus network. After a diagnosis, the affected device turns red and the likely source pulses.</p>
+    <div class="panel-d topo-wrap"><svg id="topo" role="img" aria-label="Campus network map"></svg></div>
+    <div class="col-head"><h2>Possible causes</h2></div>
+    <p class="explain">Every cause the AI considered, ranked by how well the evidence fits.</p>
+    <div id="hyps" class="stack"><div class="empty-state small"><span>Possible causes appear while the agents work.</span></div></div>
+    <div class="col-head"><h2>Predictions</h2><span class="legend"><i class="lg hit"></i>came true <i class="lg miss"></i>didn't</span></div>
+    <p class="explain">Before checking, the AI wrote down what it expected to see. This is how it tests itself.</p>
+    <div id="preds" class="stack"></div>
+  </section>
+
+  <section class="col" aria-labelledby="h-report">
+    <div class="col-head"><h2 id="h-report">The answer</h2></div>
+    <div id="answer" class="answer"><div class="empty-state"><b>No diagnosis yet</b><span>The answer appears here in plain English when the agents finish.</span></div></div>
+    <details id="tech" class="tech" hidden>
+      <summary>Show technical details</summary>
+      <div id="report" class="panel-d report"></div>
+    </details>
+    <div class="col-head"><h2>What you can do</h2></div>
+    <div class="banner"><svg class="icon sm"><use href="#i-shield"/></svg><span>Nothing on your network is ever changed. Approving an action shows a step-by-step plan you can follow; it is a simulation only.</span></div>
+    <div id="actions" class="stack"><div class="empty-state small"><span>Suggested actions appear after the diagnosis.</span></div></div>
+  </section>
+</main>
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+</body>
+</html>

@@ -6,9 +6,9 @@
 * SSE (/incidents/{id}/stream) replays the run's event log in `seq` order. It is a view of the log, never a
   second source of truth.
 * Run scenario accepts only names of folders in data/scenarios (regex + existence check).
-* `netcoop serve --ui <folder>` (F3) serves an alternative UI: <folder>/index.html at "/" and its files under
-  /ui/<path>, with the same security headers, an extension allowlist and a resolved-path check. Without --ui,
-  nothing changes: "/" is the built-in dashboard and /ui/* is 404. /dashboard always serves the built-in one.
+* Default UI (netcoop/api/ui/): landing page at "/", its files under /ui/<path> (dashboard at /ui/dashboard.html).
+  `netcoop serve --ui <folder>` replaces it with another folder (same layout), with the same security headers, an
+  extension allowlist and a resolved-path check. The classic dashboard stays at /dashboard.
 """
 
 from __future__ import annotations
@@ -27,7 +27,8 @@ from fastapi.responses import FileResponse, HTMLResponse, StreamingResponse
 from netcoop.bus.eventlog import EventLog
 from netcoop.config import ROOT
 
-STATIC = Path(__file__).parent / "static"
+STATIC = Path(__file__).parent / "static"  # classic dashboard (/dashboard)
+DEFAULT_UI = Path(__file__).parent / "ui"  # default UI: landing (/) + dashboard (/ui/dashboard.html)
 SCEN_DIR = ROOT / "data" / "scenarios"
 SCENARIO_RE = re.compile(r"^[a-z][a-z_]{0,39}$")
 CSP = ("default-src 'none'; script-src 'self'; style-src 'self'; connect-src 'self'; img-src 'self'; "
@@ -41,9 +42,9 @@ UI_TYPES = {".html": "text/html", ".js": "text/javascript", ".mjs": "text/javasc
             ".ico": "image/x-icon", ".woff2": "font/woff2", ".txt": "text/plain"}
 
 
-def ui_dir() -> Path | None:
+def ui_dir() -> Path:
     v = os.environ.get(UI_ENV)
-    return Path(v).resolve() if v else None
+    return Path(v).resolve() if v else DEFAULT_UI.resolve()
 
 router = APIRouter()
 
@@ -54,10 +55,7 @@ def _err(status: int, code: str, detail: str) -> HTTPException:
 
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
 def index() -> HTMLResponse:
-    d = ui_dir()
-    if d is not None:
-        return HTMLResponse((d / "index.html").read_text(encoding="utf-8"), headers=SECURITY_HEADERS)
-    return dashboard()
+    return HTMLResponse((ui_dir() / "index.html").read_text(encoding="utf-8"), headers=SECURITY_HEADERS)
 
 
 @router.get("/dashboard", response_class=HTMLResponse, include_in_schema=False)
@@ -68,8 +66,6 @@ def dashboard() -> HTMLResponse:
 @router.get("/ui/{path:path}", include_in_schema=False)
 def ui_asset(path: str) -> FileResponse:
     d = ui_dir()
-    if d is None:
-        raise _err(404, "NOT_FOUND", "no --ui folder configured")
     p = (d / path).resolve()
     if not p.is_relative_to(d) or p.suffix.lower() not in UI_TYPES or not p.is_file():
         raise _err(404, "NOT_FOUND", "unknown asset")

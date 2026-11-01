@@ -12,7 +12,7 @@ come from `eval/reports/*` (held-out seed range B). Dashboard incident IDs are g
 ```powershell
 .\.venv\Scripts\activate
 python tasks.py preflight          # must end: PREFLIGHT OK (15/15)
-netcoop serve                      # terminal A: dashboard at http://127.0.0.1:8000/ (LLM off)
+netcoop serve                      # terminal A: web UI at http://127.0.0.1:8000/; these shots use the classic dashboard at /dashboard (LLM off)
 ```
 
 **Order matters:** record chapter 3 **before** starting the Wi-Fi agent (chapter 4). With the agent running, the

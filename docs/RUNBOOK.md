@@ -13,7 +13,7 @@ cd C:\Projects\new
 python tasks.py preflight                    # must end: PREFLIGHT OK (15/15). Fix any red line before going on
 python tasks.py present                      # 8 steps, press Enter between them
 python tasks.py present --judge              # same, plus step 9: a judge picks an organizer label + seed
-netcoop serve                                # optional visual: dashboard at http://127.0.0.1:8000/ (Ctrl+C to stop)
+netcoop serve                                # optional visual: web UI at http://127.0.0.1:8000/, classic dashboard at /dashboard (Ctrl+C to stop)
 ```
 
 Useful flags (combine freely):

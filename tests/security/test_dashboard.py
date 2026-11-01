@@ -49,7 +49,7 @@ def test_no_html_sinks_no_remote_origins(name):
 
 
 def test_page_headers_csp(client):
-    r = client.get("/")
+    r = client.get("/dashboard")
     assert r.status_code == 200 and "NetCoop AI dashboard" in r.text
     csp = r.headers["content-security-policy"]
     assert "script-src 'self'" in csp and "frame-ancestors 'none'" in csp and "unsafe-inline" not in csp

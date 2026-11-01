@@ -263,7 +263,7 @@ def cmd_serve(a: argparse.Namespace) -> int:
             print(f"error: --ui {a.ui}: no index.html in that folder", file=sys.stderr)
             return 2
         os.environ[UI_ENV] = str(ui)
-        print(f"UI: {ui} (index.html at /, files at /ui/<path>; built-in dashboard still at /dashboard)")
+        print(f"UI: {ui} (index.html at /, files at /ui/<path>; classic dashboard still at /dashboard)")
     else:
         os.environ.pop(UI_ENV, None)
     uvicorn.run("netcoop.api.main:app", host="127.0.0.1", port=a.port)
@@ -320,7 +320,7 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("serve", help="run the API + dashboard on 127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
     p.add_argument("--ui", default=None, help="serve an alternative UI folder (index.html at /, files at /ui/...); "
-                                              "default: the built-in dashboard")
+                                              "default: the bundled UI (landing at /, dashboard at /ui/dashboard.html)")
     p.set_defaults(fn=cmd_serve)
     a = ap.parse_args(argv)
     try:
