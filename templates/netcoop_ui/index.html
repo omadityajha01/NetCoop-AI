@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetCoop AI: ask your network what broke</title>
+<meta name="description" content="Multi-agent network fault diagnosis. Agents debate with evidence; deterministic scoring decides.">
+<link rel="stylesheet" href="/ui/styles.css">
+<script src="/ui/landing.js" defer></script>
+</head>
+<body>
+<!-- icon sprite (Lucide-style strokes) -->
+<svg class="sr-only" aria-hidden="true">
+  <symbol id="i-net" viewBox="0 0 24 24"><rect x="9" y="2" width="6" height="6" rx="1"/><rect x="2" y="16" width="6" height="6" rx="1"/><rect x="16" y="16" width="6" height="6" rx="1"/><path d="M12 8v4M5 16v-2h14v2"/></symbol>
+  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 5l7 7-7 7"/></symbol>
+  <symbol id="i-send" viewBox="0 0 24 24"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7Z"/></symbol>
+  <symbol id="i-agents" viewBox="0 0 24 24"><circle cx="9" cy="7" r="3"/><circle cx="17" cy="9" r="2.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6M14 20c.3-2.6 1.9-4.5 4-4.5 2 0 3 1.2 3 3"/></symbol>
+  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></symbol>
+  <symbol id="i-plug" viewBox="0 0 24 24"><path d="M9 2v5M15 2v5M6 7h12v4a6 6 0 0 1-12 0V7ZM12 17v5"/></symbol>
+  <symbol id="i-spark" viewBox="0 0 24 24"><path d="M12 3l1.8 4.7L18.5 9.5l-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8L12 3ZM19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8L19 15Z"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10Z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14l4-4"/><path d="M3.3 19A10 10 0 1 1 20.7 19"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M7 4v16l13-8L7 4Z"/></symbol>
+  <symbol id="i-bot" viewBox="0 0 24 24"><rect x="4" y="8" width="16" height="12" rx="3"/><path d="M12 4v4M9 13v1M15 13v1"/></symbol>
+</svg>
+
+<header class="nav">
+  <div class="nav-inner">
+    <a class="brand" href="/" aria-label="NetCoop AI home"><span class="brand-mark"><svg class="icon"><use href="#i-net"/></svg></span>NetCoop AI</a>
+    <nav class="nav-links" aria-label="Sections">
+      <a href="#how">How it works</a><a href="#features">Capabilities</a><a href="#integrations">Integrations</a>
+    </nav>
+    <a class="btn btn-primary" href="/ui/dashboard.html">Try Now</a>
+  </div>
+</header>
+
+<main>
+  <section class="hero">
+    <div class="container hero-grid">
+      <div>
+        <span class="eyebrow"><span class="dot-live"></span>Multi-agent diagnosis, decided by code</span>
+        <h1>Ask your network <span class="accent">what broke.</span></h1>
+        <p class="lede">Describe the symptom. Specialized agents analyse telemetry, predict what they expect to see, request
+          the evidence, and return one explainable diagnosis with confidence, alternatives and policy-checked actions.</p>
+        <div class="hero-ctas">
+          <a class="btn btn-primary btn-lg" href="/ui/dashboard.html?run=congestion">Try Now <svg class="icon sm"><use href="#i-arrow"/></svg></a>
+          <a class="btn btn-ghost btn-lg" href="#how"><svg class="icon sm"><use href="#i-play"/></svg>Watch it reason</a>
+        </div>
+        <div class="trust" aria-label="Measured results">
+          <div><b>90.4%</b>accuracy, held-out seeds</div>
+          <div><b>98.2%</b>right when it commits</div>
+          <div><b>0</b>actions executed, ever</div>
+        </div>
+      </div>
+
+      <div class="chat" aria-label="Conversational preview">
+        <div class="chat-head">
+          <span class="brand-mark"><svg class="icon"><use href="#i-bot"/></svg></span>
+          <span class="title">NetCoop</span>
+          <span class="sub"><span class="status-dot"></span><span id="chat-status">deterministic scoring</span></span>
+        </div>
+        <div class="chat-body" id="chat-body" aria-live="polite"></div>
+        <div class="chat-foot">
+          <div class="chips" id="chips" aria-label="Try a symptom">
+            <button class="chip" type="button" data-scenario="congestion">Hostel internet is slow every evening</button>
+            <button class="chip" type="button" data-scenario="weak_wifi">Wi-Fi in block H3 keeps dropping</button>
+            <button class="chip" type="button" data-scenario="dns_failure">Sites won't open but ping works</button>
+          </div>
+          <form class="composer" id="composer">
+            <label class="sr-only" for="ask">Describe a network problem</label>
+            <input id="ask" autocomplete="off" maxlength="200" placeholder="Describe a network problem…">
+            <button type="submit" aria-label="Send"><svg class="icon sm"><use href="#i-send"/></svg></button>
+          </form>
+          <div class="note">Preview: your text is matched to a built-in scenario; the answer comes from the real API.</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="how">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Streaming, not spinning</div>
+        <h2>Watch the agents reason in real time</h2>
+        <p>Every message is written to an append-only event log first, then streamed. Predictions are logged
+          <em>before</em> the evidence is requested.</p>
+      </div>
+      <div class="stream-demo">
+        <div class="panel">
+          <h3>Live event stream</h3>
+          <p class="sub">Server-sent events from a real run (<span id="stream-id">starting…</span>)</p>
+          <pre class="stream-out" id="stream-out" aria-live="off"></pre>
+        </div>
+        <div class="panel">
+          <h3>What's happening</h3>
+          <p class="sub">The pipeline, step by step</p>
+          <ol class="steps" id="steps">
+            <li data-step="normalize"><span class="n">1</span><div><b>Normalize</b><span>Dialects, units and IDs repaired; nothing silently dropped</span></div></li>
+            <li data-step="analyze"><span class="n">2</span><div><b>Agents analyse</b><span>Performance, infrastructure and connectivity report anomalies</span></div></li>
+            <li data-step="predict"><span class="n">3</span><div><b>Predict, then look</b><span>Hypotheses commit to predictions; evidence settles them</span></div></li>
+            <li data-step="decide"><span class="n">4</span><div><b>Decide</b><span>Deterministic scoring, policy-checked actions, one report</span></div></li>
+          </ol>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="features">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">AI capabilities</div>
+        <h2>An AI that shows its work</h2>
+        <p>Language models explain. Code decides. Every claim links to the evidence behind it.</p>
+      </div>
+      <div class="features">
+        <article class="card"><div class="ico"><svg class="icon"><use href="#i-agents"/></svg></div><h3>Multi-agent diagnosis</h3>
+          <p>Six specialized agents debate over a typed protocol, and every analysis agent runs on every incident.</p><div class="metric">NMP 1.4 · 13 message types</div></article>
+        <article class="card"><div class="ico"><svg class="icon"><use href="#i-target"/></svg></div><h3>Predict before you look</h3>
+          <p>Hypotheses log falsifiable predictions before evidence arrives. Hits and misses are scored and shown.</p><div class="metric">seq-ordered · tamper-checked</div></article>
+        <article class="card"><div class="ico"><svg class="icon"><use href="#i-plug"/></svg></div><h3>Hot-plug agents</h3>
+          <p>An external agent in another language joins mid-run over A2A, passes conformance, and changes the outcome.</p><div class="metric">7/7 conformance checks</div></article>
+        <article class="card"><div class="ico"><svg class="icon"><use href="#i-spark"/></svg></div><h3>LLM explains, code decides</h3>
+          <p>An optional local model triages the complaint and writes the narrative. It never sets cause, confidence or actions.</p><div class="metric">decision_source: deterministic_scoring</div></article>
+        <article class="card"><div class="ico"><svg class="icon"><use href="#i-shield"/></svg></div><h3>Safe by construction</h3>
+          <p>Actions come from a playbook and pass hard policy rules. Approvals produce a dry-run plan, never an execution.</p><div class="metric">SIMULATED · NOT EXECUTED</div></article>
+        <article class="card"><div class="ico"><svg class="icon"><use href="#i-gauge"/></svg></div><h3>Measured, not claimed</h3>
+          <p>Accuracy, calibration and degradation under corrupted input come from held-out data, not from demos.</p><div class="metric">0.94 → 0.89 at 60% corruption</div></article>
+      </div>
+    </div>
+  </section>
+
+  <section class="block" id="integrations">
+    <div class="container">
+      <div class="section-head">
+        <div class="kicker">Integrations</div>
+        <h2>Speaks the protocols you already use</h2>
+        <p>Open standards at the edges, a documented protocol at the core.</p>
+      </div>
+      <div class="logos">
+        <div class="logo"><span class="mark">A2A</span><div><b>Agent2Agent</b><span>External agents, JSON-RPC</span></div></div>
+        <div class="logo"><span class="mark">MCP</span><div><b>Model Context Protocol</b><span>Chat with NetCoop</span></div></div>
+        <div class="logo"><span class="mark">SSE</span><div><b>Server-Sent Events</b><span>Live message stream</span></div></div>
+        <div class="logo"><span class="mark">Fa</span><div><b>FastAPI</b><span>Read-only REST API</span></div></div>
+        <div class="logo"><span class="mark">Ol</span><div><b>Ollama</b><span>Local LLM, optional</span></div></div>
+        <div class="logo"><span class="mark">JS</span><div><b>Node.js</b><span>Hot-plug agent runtime</span></div></div>
+        <div class="logo"><span class="mark">Py</span><div><b>Pydantic</b><span>JSON Schema contracts</span></div></div>
+        <div class="logo"><span class="mark">CI</span><div><b>GitHub Actions</b><span>Ubuntu + Windows</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <div class="cta-band">
+      <h2>See a diagnosis in under ten seconds</h2>
+      <p>Pick a scenario, watch the agents stream their reasoning, then approve or reject the proposed actions.</p>
+      <a class="btn btn-primary btn-lg" href="/ui/dashboard.html?run=congestion">Try Now <svg class="icon sm"><use href="#i-arrow"/></svg></a>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="container"><span>NetCoop AI · multi-agent network fault diagnosis</span><span>Measured, not claimed.</span></div>
+</footer>
+</body>
+</html>
