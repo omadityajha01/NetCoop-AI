@@ -2,6 +2,8 @@
 
 [![ci](https://github.com/omadityajha01/NetCoop-AI/actions/workflows/ci.yml/badge.svg)](https://github.com/omadityajha01/NetCoop-AI/actions/workflows/ci.yml)
 
+**Live demo:** https://netcoop-ai-six.vercel.app (web UI + API on Vercel; runs are temporary and the external Wi-Fi agent is not available there, so the Wi-Fi example shows `insufficient_evidence`. Run locally for the full demo.)
+
 ## 1. Overview
 
 NetCoop AI is a deterministic multi-agent system for campus network fault diagnosis (IIT Bhubaneswar scenario,
